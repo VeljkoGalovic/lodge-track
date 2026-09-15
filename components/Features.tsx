@@ -12,7 +12,7 @@ const features = [
 
 export function Features() {
   return (
-    <section id="features" className="relative py-24 md:py-32 overflow-hidden">
+    <section id="features" className="relative min-h-screen flex items-center py-28 lg:py-36 overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 -z-20">
         <Image
@@ -25,20 +25,26 @@ export function Features() {
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-[#07090E] via-[#07090E]/80 to-[#07090E]" />
 
       <div className="container mx-auto px-6 md:px-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-          {/* Left: feature list card */}
-          <GlassCard className="p-8 md:p-10" hover={false}>
-            <h2 className="text-2xl md:text-3xl font-bold text-[#36BFAE] leading-tight mb-8">
-              Manage properties, bookings, and revenue in one unified platform
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          
+          {/* Left: Expanded feature list card (Spans 7 cols) */}
+          <GlassCard className="lg:col-span-7 p-8 md:p-12 shadow-2xl space-y-8" hover={false}>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md w-fit">
+              <span className="w-2 h-2 rounded-full bg-[#36BFAE]" />
+              <span className="text-xs font-medium text-slate-300">Core Platform Features</span>
+            </div>
+
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-[1.15]">
+              Manage properties, bookings, and revenue in <span className="text-gradient-teal">one unified platform</span>
             </h2>
-            <ul className="space-y-4">
+
+            <ul className="space-y-5 pt-2">
               {features.map((feature) => (
-                <li key={feature} className="flex items-start gap-3">
-                  <CheckCircle
-                    size={18}
-                    className="text-[#BA87FF] mt-0.5 shrink-0"
-                  />
-                  <span className="text-slate-300 text-sm leading-relaxed">
+                <li key={feature} className="flex items-start gap-4">
+                  <div className="mt-1 p-1 rounded-full bg-[#BA87FF]/10 text-[#BA87FF] shrink-0 border border-[#BA87FF]/20">
+                    <CheckCircle size={18} />
+                  </div>
+                  <span className="text-slate-200 text-base md:text-lg leading-relaxed">
                     {feature}
                   </span>
                 </li>
@@ -46,8 +52,13 @@ export function Features() {
             </ul>
           </GlassCard>
 
-          {/* Right: dashboard mockup */}
-          <DashboardMockup />
+          {/* Right: Dashboard mockup container (Spans 5 cols) */}
+          <div className="lg:col-span-5 flex justify-center w-full">
+            <div className="w-full transform hover:scale-[1.02] transition-transform duration-500">
+              <DashboardMockup />
+            </div>
+          </div>
+
         </div>
       </div>
     </section>

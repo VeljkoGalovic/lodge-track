@@ -29,7 +29,7 @@ export function DashboardMockup() {
           </span>
         </div>
 
-        <div className="p-5 space-y-4">
+        <div className="p-8 space-y-4">
           {/* Stat cards */}
           <div className="grid grid-cols-2 gap-3">
             {stats.map((stat) => (
