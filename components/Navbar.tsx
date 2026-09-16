@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { Menu, X } from "lucide-react";
+import Link from "next/link";
 
 const navLinks = [
   { label: "Features", href: "#features" },
@@ -45,15 +46,17 @@ export function Navbar() {
 
       {/* Desktop CTA */}
       <div className="hidden md:flex items-center gap-3">
-        <a
-          href="#"
+        <Link
+          href="/signin"
           className="text-sm font-medium text-slate-400 hover:text-white transition-colors px-3"
         >
           Sign in
-        </a>
-        <Button variant="glass" className="text-sm px-5 py-2 h-9">
-          Sign up
-        </Button>
+        </Link>
+        <Link href="/register">
+          <Button variant="glass" className="text-sm px-5 py-2 h-9">
+            Sign up
+          </Button>
+        </Link>
       </div>
 
       {/* Mobile toggle */}
@@ -66,8 +69,9 @@ export function Navbar() {
       </button>
 
       {/* Mobile drawer */}
+      {/* Mobile drawer */}
       {open && (
-        <div className="absolute top-16 left-0 right-0 bg-[#07090E]/95 backdrop-blur-xl border-b border-white/[0.06] md:hidden p-6 flex flex-col gap-4">
+        <div className="absolute top-16 left-0 right-0 bg-[#07090E]/95 backdrop-blur-xl border-b border-white/[0.06] md:hidden p-6 flex flex-col gap-4 shadow-2xl">
           {navLinks.map((link) => (
             <a
               key={link.label}
@@ -79,12 +83,18 @@ export function Navbar() {
             </a>
           ))}
           <div className="flex flex-col gap-3 pt-2">
-            <a href="#" className="text-sm text-slate-400 hover:text-white text-center">
+            <Link 
+              href="/api/auth/signin" 
+              onClick={() => setOpen(false)}
+              className="text-sm text-slate-400 hover:text-white text-center py-2"
+            >
               Sign in
-            </a>
-            <Button variant="glass" className="text-sm w-full">
-              Sign up
-            </Button>
+            </Link>
+            <Link href="/register" onClick={() => setOpen(false)}>
+              <Button variant="glass" className="text-sm w-full">
+                Sign up
+              </Button>
+            </Link>
           </div>
         </div>
       )}

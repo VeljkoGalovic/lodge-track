@@ -72,3 +72,13 @@
 img {
   @apply max-w-full h-auto;
 }
+
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Optional: offset if you have a sticky navbar covering content on jump */
+section {
+  scroll-margin-top: 5rem; 
+}

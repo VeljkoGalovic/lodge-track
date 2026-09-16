@@ -1,0 +1,48 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  MAINTENANCE
+}
+
+model User {
+  id            String       @id @default(cuid())
+  name          String?
+  email         String       @unique
+  passwordHash  String?      // For credentials provider
+  role          Role         @default(OWNER)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  properties    Property[]
+}
+
+model Property {
+  id          String    @id @default(cuid())
+  name        String
+  address     String
+  icalUrl     String?   // For automated booking calendar sync via iCal
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings    Booking[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Booking {
+  id          String    @id @default(cuid())
+  propertyId  String
+  property    Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  guestName   String
+  startDate   DateTime
+  endDate     DateTime
+  source      String    @default("Direct") // e.g., "Airbnb", "Booking.com"
+  createdAt   DateTime  @default(now())
+}
