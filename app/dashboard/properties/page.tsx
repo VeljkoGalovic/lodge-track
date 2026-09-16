@@ -49,11 +49,9 @@ export default async function PropertiesPage() {
           <h1 className="text-3xl font-bold tracking-tight">Properties</h1>
           <p className="text-muted-foreground mt-1">Manage your property portfolio</p>
         </div>
-        <Button asChild>
-          <Link href="/dashboard/properties/new">
+        <Button asChild href="/dashboard/properties/new">
             <Plus className="mr-2 h-4 w-4" />
             Add Property
-          </Link>
         </Button>
       </div>
 

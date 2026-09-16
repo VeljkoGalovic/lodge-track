@@ -49,10 +49,11 @@ export function RecentActivityTable({ type, items, emptyMessage }: RecentActivit
       <Card>
         <CardContent className="py-12 text-center">
           <p className="text-muted-foreground">{emptyMessage || `No ${type} found`}</p>
-          <Button variant="outline" asChild className="mt-4">
-            <a href={isProperties ? "/dashboard/properties" : "/dashboard/bookings"}>
-              View all {type}
-            </a>
+          <Button 
+            variant="outline" 
+            href={isProperties ? "/dashboard/properties" : "/dashboard/bookings"} 
+            className="mt-4">
+            View all {type}
           </Button>
         </CardContent>
       </Card>

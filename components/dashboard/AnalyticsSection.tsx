@@ -28,11 +28,9 @@ export function AnalyticsSection({ hasAccess, data }: AnalyticsSectionProps) {
           <p className="mb-6 text-muted-foreground max-w-md mx-auto">
             Unlock detailed revenue reports, occupancy trends, and financial forecasting with the Pro plan.
           </p>
-          <Button size="lg" asChild>
-            <a href="/dashboard/billing">
-              <ArrowUpRight className="mr-2 h-4 w-4" />
-              Upgrade to Pro
-            </a>
+          <Button size="lg" href="/dashboard/billing">
+            <ArrowUpRight className="mr-2 h-4 w-4" />
+            Upgrade to Pro
           </Button>
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent pointer-events-none" />

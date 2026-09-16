@@ -66,11 +66,9 @@ export default async function BookingsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Bookings</h1>
           <p className="text-muted-foreground mt-1">Manage all your bookings</p>
         </div>
-        <Button variant="outline" asChild>
-          <Link href="/dashboard/bookings/new">
+        <Button variant="outline" asChild href="/dashboard/bookings/new">
             <Plus className="mr-2 h-4 w-4" />
             New Booking
-          </Link>
         </Button>
       </div>
 

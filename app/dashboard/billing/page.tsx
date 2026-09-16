@@ -213,16 +213,12 @@ export default async function BillingPage() {
                   <Button
                     className="w-full"
                     variant={isCurrent ? "outline" : config.popular ? "primary" : "outline"}
-                    asChild
+                    href={config.priceId ? `/api/billing/checkout?priceId=${config.priceId}` : "#"}
+                    onClick={config.priceId ? undefined : (e: React.MouseEvent) => e.preventDefault()}
                     disabled={isCurrent}
                   >
-                    <Link
-                      href={config.priceId ? `/api/billing/checkout?priceId=${config.priceId}` : "#"}
-                      onClick={config.priceId ? undefined : (e: React.MouseEvent) => e.preventDefault()}
-                    >
-                      {config.cta}
-                      {!isCurrent && !config.priceId && <ArrowUpRight className="ml-2 h-4 w-4" />}
-                    </Link>
+                    {config.cta}
+                    {!isCurrent && !config.priceId && <ArrowUpRight className="ml-2 h-4 w-4" />}
                   </Button>
                 </CardContent>
               </Card>

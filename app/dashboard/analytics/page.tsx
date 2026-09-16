@@ -55,11 +55,9 @@ export default async function AnalyticsPage() {
             <p className="mb-8 text-muted-foreground max-w-2xl mx-auto">
               Unlock detailed revenue reports, occupancy trends, financial forecasting, and advanced analytics with the Pro plan.
             </p>
-            <Button size="lg" asChild>
-              <Link href="/dashboard/billing">
+            <Button size="lg" asChild href="/dashboard/billing">
                 <ArrowUpRight className="mr-2 h-4 w-4" />
                 Upgrade to Pro
-              </Link>
             </Button>
           </div>
         </Card>
