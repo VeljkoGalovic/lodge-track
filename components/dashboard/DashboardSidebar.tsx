@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
@@ -11,20 +12,33 @@ import {
   Users,
   CreditCard,
   Lock,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react"
 import { clsx } from "clsx"
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton, SidebarTrigger, SidebarInset, SidebarHeader, SidebarFooter, SidebarRail, SidebarSeparator } from "@/components/ui/sidebar"
-import { Button } from "@/components/ui/Button"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarTrigger,
+  SidebarHeader,
+  SidebarFooter,
+  SidebarRail,
+} from "@/components/ui/sidebar"
 import { Badge } from "@/components/ui/badge"
 import { OrgFeatures } from "@/lib/subscriptions"
 
 interface DashboardSidebarProps {
   features: OrgFeatures;
   orgName: string;
-  onToggleSidebar: () => void;
-  sidebarOpen: boolean;
+  /** Desktop icon-only state. */
+  collapsed: boolean;
+  onToggleCollapse: () => void;
+  /** Dismiss the mobile drawer after navigating. */
+  onCloseMobile: () => void;
 }
 
 interface NavItem {
@@ -43,19 +57,41 @@ const navigation: NavItem[] = [
   { name: "Billing & Subscription", href: "/dashboard/billing", icon: CreditCard },
 ]
 
-export function DashboardSidebar({ features, orgName, onToggleSidebar, sidebarOpen }: DashboardSidebarProps) {
+export function DashboardSidebar({
+  features,
+  orgName,
+  collapsed,
+  onToggleCollapse,
+  onCloseMobile,
+}: DashboardSidebarProps) {
   const pathname = usePathname()
 
   return (
     <>
-      <Sidebar>
+      <Sidebar collapsed={collapsed}>
         <SidebarHeader>
-          <div className="flex items-center justify-between h-12 px-3">
-            <Link href="/dashboard" className="flex items-center gap-2 font-bold text-lg text-foreground">
-              <Building2 className="h-5 w-5 text-brand-teal" />
-              <span className="truncate">LodgeTracker</span>
+          <div className="flex h-10 items-center gap-2 px-1">
+            <Link
+              href="/dashboard"
+              onClick={onCloseMobile}
+              className="flex min-w-0 items-center gap-2.5"
+            >
+              <Image
+                src="/images/logo/LogoNoBG.png"
+                alt="LodgeTrack logo"
+                width={28}
+                height={28}
+                className="h-7 w-7 shrink-0 object-contain"
+              />
+              <span className="truncate text-base font-semibold tracking-tight text-white group-data-[collapsible=icon]:hidden">
+                Lodge<span className="text-[#36BFAE]">Track</span>
+              </span>
             </Link>
-            <SidebarTrigger onClick={onToggleSidebar} className="md:hidden" />
+            <SidebarTrigger
+              onClick={onCloseMobile}
+              className="ml-auto md:hidden"
+              aria-label="Close navigation"
+            />
           </div>
         </SidebarHeader>
 
@@ -65,22 +101,32 @@ export function DashboardSidebar({ features, orgName, onToggleSidebar, sidebarOp
             <SidebarGroupContent>
               <SidebarMenu>
                 {navigation.map((item) => {
-                  const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
+                  const isActive =
+                    pathname === item.href ||
+                    (item.href !== "/dashboard" && pathname.startsWith(item.href))
                   const isLocked = item.requiresFeature && !features[item.requiresFeature]
 
                   return (
                     <SidebarMenuItem key={item.name}>
                       <SidebarMenuButton
-                        className={clsx(
-                          "data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground",
-                          isLocked && "opacity-50 cursor-not-allowed"
-                        )}
                         asChild
+                        title={collapsed ? item.name : undefined}
+                        className={clsx(
+                          isActive &&
+                            "bg-[#36BFAE]/10 text-[#36BFAE] ring-1 ring-[#36BFAE]/20 hover:bg-[#36BFAE]/15 hover:text-[#36BFAE]",
+                          isLocked && "cursor-not-allowed opacity-50"
+                        )}
                       >
-                        <Link href={item.href}>
+                        <Link
+                          href={item.href}
+                          onClick={onCloseMobile}
+                          aria-current={isActive ? "page" : undefined}
+                        >
                           <item.icon className="h-4 w-4" />
-                          <span>{item.name}</span>
-                          {isLocked && <Lock className="ml-auto h-4 w-4 text-muted-foreground" />}
+                          <span className="group-data-[collapsible=icon]:hidden">{item.name}</span>
+                          {isLocked && (
+                            <Lock className="ml-auto h-3.5 w-3.5 text-slate-500 group-data-[collapsible=icon]:hidden" />
+                          )}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -92,16 +138,18 @@ export function DashboardSidebar({ features, orgName, onToggleSidebar, sidebarOp
         </SidebarContent>
 
         <SidebarFooter>
-          <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
-            <span className="truncate">{orgName}</span>
-            <Badge variant="secondary" className="ml-auto">
+          <div className="flex items-center gap-2 px-2 py-1 group-data-[collapsible=icon]:justify-center">
+            <span className="truncate text-xs text-slate-400 group-data-[collapsible=icon]:hidden">
+              {orgName}
+            </span>
+            <Badge variant="secondary" className="ml-auto group-data-[collapsible=icon]:hidden">
               {features.tier}
             </Badge>
           </div>
         </SidebarFooter>
       </Sidebar>
 
-      <SidebarRail />
+      <SidebarRail collapsed={collapsed} onClick={onToggleCollapse} />
     </>
   )
 }

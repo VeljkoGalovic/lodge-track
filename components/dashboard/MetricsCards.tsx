@@ -1,12 +1,10 @@
 "use client"
 
 import * as React from "react"
-import { Building2, Calendar, DollarSign, TrendingUp, AlertCircle, ArrowUpRight } from "lucide-react"
+import { TrendingUp, AlertCircle, ArrowUpRight } from "lucide-react"
 import { clsx } from "clsx"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/Button"
 import { Progress } from "@/components/ui/progress"
-import { Badge } from "@/components/ui/badge"
 
 interface MetricCardProps {
   title: string
@@ -32,57 +30,63 @@ export function MetricCard({
   className
 }: MetricCardProps) {
   return (
-    <Card className={clsx("relative overflow-hidden", className)}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          {title}
-        </CardTitle>
-        <div className="text-muted-foreground">{icon}</div>
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+    <div
+      className={clsx(
+        "relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/5 p-6 backdrop-blur-xl transition-all duration-300 hover:border-white/[0.15] hover:bg-white/[0.07]",
+        className
+      )}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <p className="text-sm font-medium text-slate-400">{title}</p>
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.04]">
+          {icon}
+        </div>
+      </div>
 
-        {progress && (
-          <div className="mt-4 space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">{progress.label}</span>
-              <span className="font-medium">
-                {progress.current} / {progress.max === Infinity ? "∞" : progress.max}
-              </span>
-            </div>
-            <Progress value={progress.max === Infinity ? 0 : Math.min(100, (progress.current / progress.max) * 100)} className="h-2" />
-            {isAtLimit && (
-              <div className="flex items-center gap-2 text-xs text-orange-500">
-                <AlertCircle className="h-3 w-3" />
-                <span>Limit reached</span>
-              </div>
-            )}
-          </div>
-        )}
+      <p className="mt-4 text-2xl font-bold tracking-tight text-white md:text-3xl">{value}</p>
+      {subtitle && <p className="mt-1 text-xs text-slate-400">{subtitle}</p>}
 
-        {trend && (
-          <div className="mt-4 flex items-center gap-2 text-sm">
-            <TrendingUp className={clsx("h-4 w-4", trend.value >= 0 ? "text-green-500" : "text-red-500")} />
-            <span className={clsx("font-medium", trend.value >= 0 ? "text-green-500" : "text-red-500")}>
-              {trend.value >= 0 ? "+" : ""}{trend.value}%
+      {progress && (
+        <div className="mt-5 space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-slate-400">{progress.label}</span>
+            <span className="font-medium text-slate-300">
+              {progress.current} / {progress.max === Infinity ? "∞" : progress.max}
             </span>
-            <span className="text-muted-foreground">{trend.label}</span>
           </div>
-        )}
+          <Progress
+            value={progress.max === Infinity ? 0 : Math.min(100, (progress.current / progress.max) * 100)}
+            className="h-2"
+          />
+          {isAtLimit && (
+            <div className="flex items-center gap-2 text-xs text-amber-400">
+              <AlertCircle className="h-3 w-3" />
+              <span>Property limit reached</span>
+            </div>
+          )}
+        </div>
+      )}
 
-        {action && isAtLimit && (
-          <div className="mt-4 pt-4 border-t">
-            <Button variant="outline" size="sm" asChild className="w-full">
-              <a href={action.href}>
-                <ArrowUpRight className="mr-2 h-4 w-4" />
-                {action.label}
-              </a>
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      {trend && (
+        <div className="mt-5 flex items-center gap-2 text-sm">
+          <TrendingUp className={clsx("h-4 w-4", trend.value >= 0 ? "text-[#36BFAE]" : "text-red-400")} />
+          <span className={clsx("font-medium", trend.value >= 0 ? "text-[#36BFAE]" : "text-red-400")}>
+            {trend.value >= 0 ? "+" : ""}
+            {trend.value}%
+          </span>
+          <span className="text-slate-400">{trend.label}</span>
+        </div>
+      )}
+
+      {action && isAtLimit && (
+        <div className="mt-5 border-t border-white/[0.06] pt-5">
+          <Button variant="outline" size="sm" href={action.href} className="w-full">
+            <ArrowUpRight className="mr-2 h-4 w-4" />
+            {action.label}
+          </Button>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -101,7 +105,7 @@ interface MetricsGridProps {
 
 export function MetricsGrid({ metrics }: MetricsGridProps) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {metrics.map((metric, index) => (
         <MetricCard key={index} {...metric} />
       ))}

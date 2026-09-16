@@ -1,5 +1,5 @@
 import * as React from "react"
-import { clsx } from "clsx"
+import { cn } from "@/lib/utils"
 
 interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: "default" | "secondary" | "destructive" | "outline" | "success" | "warning"
@@ -7,18 +7,18 @@ interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
 
 function Badge({ className, variant = "default", ...props }: BadgeProps) {
   const variants = {
-    default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
-    secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-    destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-    outline: "text-foreground",
-    success: "border-transparent bg-green-500/20 text-green-400 border-green-500/30",
-    warning: "border-transparent bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+    default: "border-transparent bg-[#36BFAE]/15 text-[#36BFAE]",
+    secondary: "border-white/10 bg-white/5 text-slate-300",
+    destructive: "border-transparent bg-red-500/15 text-red-400",
+    outline: "border-white/10 text-slate-300",
+    success: "border-[#36BFAE]/25 bg-[#36BFAE]/10 text-[#36BFAE]",
+    warning: "border-amber-400/25 bg-amber-400/10 text-amber-400",
   }
 
   return (
     <div
-      className={clsx(
-        "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[#36BFAE]/40 focus:ring-offset-2 focus:ring-offset-[#07090E]",
         variants[variant],
         className
       )}

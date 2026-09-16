@@ -1,19 +1,45 @@
-import { ReactNode } from "react";
-import { clsx } from "clsx";
+import { Children, cloneElement, isValidElement, ReactElement, ReactNode } from "react";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
-interface ButtonProps {
+type ButtonVariant = "primary" | "glass" | "outline" | "ghost" | "destructive";
+type ButtonSize = "default" | "sm" | "lg" | "icon";
+
+interface ButtonProps
+  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "type" | "onClick"> {
   children: ReactNode;
-  variant?: "primary" | "glass" | "outline" | "ghost" | "destructive";
-  size?: "default" | "sm" | "lg" | "icon";
+  variant?: ButtonVariant;
+  size?: ButtonSize;
   className?: string;
+  /** Renders a link. Internal paths use `next/link`; `/api/*`, hashes and
+   *  absolute URLs fall back to a plain anchor so the router isn't asked to
+   *  fetch a non-page response. */
   href?: string;
-  onClick?: () => void;
+  onClick?: React.MouseEventHandler<HTMLElement>;
+  /** Merges the button's classes onto a single child element instead of
+   *  wrapping it. Prevents `<a>`-inside-`<a>` when the child is a `Link`. */
   asChild?: boolean;
   disabled?: boolean;
   type?: "button" | "submit" | "reset";
 }
 
-export function Button({ children, variant = "glass", size = "default", className, href, onClick, asChild = false, disabled = false, type = "button" }: ButtonProps) {
+/** Paths the client router should not try to handle. */
+function needsPlainAnchor(href: string): boolean {
+  return href.startsWith("#") || href.startsWith("/api/") || /^[a-z]+:\/\//i.test(href);
+}
+
+export function Button({
+  children,
+  variant = "glass",
+  size = "default",
+  className,
+  href,
+  onClick,
+  asChild = false,
+  disabled = false,
+  type = "button",
+  ...rest
+}: ButtonProps) {
   const base =
     "inline-flex items-center justify-center font-medium transition-all duration-300 rounded-full cursor-pointer";
 
@@ -29,24 +55,70 @@ export function Button({ children, variant = "glass", size = "default", classNam
       "bg-[#36BFAE] hover:bg-[#2aa899] text-white shadow-[0_0_20px_rgba(54,191,174,0.4)] hover:shadow-[0_0_30px_rgba(54,191,174,0.6)]",
     glass:
       "bg-white/10 hover:bg-white/15 border border-white/20 backdrop-blur-md text-white shadow-[0_0_15px_rgba(255,255,255,0.05)] hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]",
-    outline:
-      "border border-[#36BFAE] text-[#36BFAE] hover:bg-[#36BFAE]/10",
+    outline: "border border-[#36BFAE] text-[#36BFAE] hover:bg-[#36BFAE]/10",
     ghost: "text-slate-400 hover:text-white hover:bg-white/5",
-    destructive: "bg-red-500 hover:bg-red-600 text-white shadow-[0_0_20px_rgba(239,68,68,0.4)] hover:shadow-[0_0_30px_rgba(239,68,68,0.6)]",
+    destructive:
+      "bg-red-500 hover:bg-red-600 text-white shadow-[0_0_20px_rgba(239,68,68,0.4)] hover:shadow-[0_0_30px_rgba(239,68,68,0.6)]",
   };
 
-  const finalClassName = clsx(base, variants[variant], sizeStyles[size], className, disabled && "opacity-50 cursor-not-allowed pointer-events-none");
+  const disabledStyles = "opacity-50 cursor-not-allowed pointer-events-none";
 
-  if (href || asChild) {
+  const finalClassName = cn(
+    base,
+    variants[variant],
+    sizeStyles[size],
+    className,
+    disabled && disabledStyles
+  );
+
+  /**
+   * The props are declared against `<button>`, but when `href` sends the
+   * component through an anchor the same attribute bag still applies — both
+   * elements accept ids, roles, aria-* and data-* attributes. The cast is the
+   * cost of one prop type driving two elements; the public API is unchanged.
+   */
+  const anchorProps = rest as React.AnchorHTMLAttributes<HTMLAnchorElement>;
+
+  if (asChild) {
+    // `Children.only` throws unless given exactly one element — intentional, so
+    // misuse fails loudly rather than producing nested anchors.
+    const child = Children.only(children) as ReactElement<{ className?: string }>;
+    if (!isValidElement(child)) {
+      throw new Error("Button: `asChild` requires a single React element child.");
+    }
+    return cloneElement(child, {
+      className: cn(finalClassName, child.props.className),
+    });
+  }
+
+  if (href) {
+    // An anchor cannot be disabled — render an inert span so the `disabled`
+    // prop stays honest instead of being silently dropped.
+    if (disabled) {
+      return (
+        <span aria-disabled="true" className={finalClassName} {...rest}>
+          {children}
+        </span>
+      );
+    }
+
+    if (needsPlainAnchor(href)) {
+      return (
+        <a href={href} className={finalClassName} onClick={onClick} {...anchorProps}>
+          {children}
+        </a>
+      );
+    }
+
     return (
-      <a href={href} className={finalClassName}>
+      <Link href={href} className={finalClassName} onClick={onClick} {...anchorProps}>
         {children}
-      </a>
+      </Link>
     );
   }
 
   return (
-    <button onClick={onClick} className={finalClassName} disabled={disabled} type={type}>
+    <button onClick={onClick} className={finalClassName} disabled={disabled} type={type} {...rest}>
       {children}
     </button>
   );

@@ -1,60 +1,58 @@
+import { NextResponse } from "next/server"
+import type { SubscriptionTier } from "@prisma/client"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
-import { NextResponse } from "next/server"
+import { canAdminister } from "@/lib/authorization"
+import { createCheckoutUrl } from "@/lib/billing"
+import { absoluteUrl } from "@/lib/origin"
 
-export async function GET(req: Request) {
+/**
+ * Starts a subscription purchase.
+ *
+ * A GET that redirects, because its whole job is to hand the browser to the
+ * hosted checkout page — there is no JSON for a client component to consume, and
+ * the links that reach it are plain `href`s on the billing page.
+ *
+ * `tier` is a tier name rather than a provider price id: the variant ids are
+ * configuration, and letting the browser name one would let it name any variant
+ * in the store, including ones this app does not sell.
+ */
+export async function GET(request: Request) {
   const session = await auth()
-
   if (!session?.user?.email) {
-    return NextResponse.redirect(new URL("/signin", req.url))
+    return NextResponse.redirect(absoluteUrl("/signin", request))
   }
 
-  const { searchParams } = new URL(req.url)
-  const priceId = searchParams.get("priceId")
-
-  if (!priceId) {
-    return NextResponse.redirect(new URL("/dashboard/billing?error=missing_price", req.url))
+  const tier = new URL(request.url).searchParams.get("tier")
+  if (tier !== "PRO" && tier !== "ENTERPRISE") {
+    return NextResponse.redirect(absoluteUrl("/dashboard/billing?error=unknown_tier", request))
   }
 
-  try {
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      include: {
-        organization: {
-          include: {
-            subscription: true
-          }
-        }
-      }
-    })
-
-    if (!user?.organization) {
-      return NextResponse.redirect(new URL("/onboarding", req.url))
-    }
-
-    // In a real implementation, you would:
-    // 1. Create a Stripe checkout session
-    // 2. Redirect to Stripe
-    // For now, we'll redirect back with a message
-
-    // TODO: Implement Stripe checkout
-    // const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
-    // const checkoutSession = await stripe.checkout.sessions.create({
-    //   customer: user.organization.subscription?.stripeCustomerId || undefined,
-    //   line_items: [{ price: priceId, quantity: 1 }],
-    //   mode: "subscription",
-    //   success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?success=true`,
-    //   cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?canceled=true`,
-    //   metadata: {
-    //     orgId: user.organization.id,
-    //     priceId,
-    //   },
-    // })
-    // return NextResponse.redirect(checkoutSession.url!)
-
-    return NextResponse.redirect(new URL("/dashboard/billing?success=demo_mode", req.url))
-  } catch (error) {
-    console.error("Checkout error:", error)
-    return NextResponse.redirect(new URL("/dashboard/billing?error=checkout_failed", req.url))
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+    include: { organization: true },
+  })
+  if (!user) {
+    return NextResponse.redirect(absoluteUrl("/signin", request))
   }
+
+  // Buying a plan commits the organization, not the person clicking.
+  if (!canAdminister(user.role)) {
+    return NextResponse.redirect(absoluteUrl("/dashboard/billing?error=not_owner", request))
+  }
+
+  const checkoutUrl = await createCheckoutUrl({
+    tier: tier as SubscriptionTier,
+    email: user.email,
+    orgId: user.orgId,
+    redirectUrl: absoluteUrl("/dashboard/billing?checkout=complete", request),
+  })
+
+  // Also the path taken when the deployment simply has no Lemon Squeezy
+  // credentials yet, which the billing page reports in full.
+  if (!checkoutUrl) {
+    return NextResponse.redirect(absoluteUrl("/dashboard/billing?error=not_configured", request))
+  }
+
+  return NextResponse.redirect(checkoutUrl)
 }

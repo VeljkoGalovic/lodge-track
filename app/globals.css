@@ -7,6 +7,55 @@
   --color-brand-purple: #ba87ff;
   --color-brand-dark: #07090e; /* Deep rich dark background */
 
+  /* ─────────────────────────────────────────────────────────────────────
+     Semantic surface tokens
+
+     The dashboard's UI primitives are written against these names
+     (the shadcn convention: bg-card, text-muted-foreground, border-input…).
+     They were previously never defined, and Tailwind v4 emits nothing for an
+     undefined theme colour — so every card, table, badge and input rendered
+     with no surface at all. The values below map each name onto the landing
+     page's palette so both surfaces speak one language.
+     ───────────────────────────────────────────────────────────────────── */
+
+  /* Surfaces */
+  --color-background: #07090e;
+  --color-foreground: #e2e8f0; /* slate-200 */
+
+  --color-card: #0c0f16;
+  --color-card-foreground: #e2e8f0;
+  --color-popover: #0c0f16;
+  --color-popover-foreground: #e2e8f0;
+
+  /* Interaction */
+  --color-primary: #36bfae;
+  --color-primary-foreground: #07090e;
+  --color-secondary: #ffffff14; /* white/8 */
+  --color-secondary-foreground: #e2e8f0;
+  --color-muted: #ffffff0f; /* white/6 */
+  --color-muted-foreground: #94a3b8; /* slate-400 */
+  --color-accent: #ffffff14;
+  --color-accent-foreground: #ffffff;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+
+  /* Lines & focus */
+  --color-border: #ffffff1a; /* white/10 */
+  --color-input: #ffffff1a;
+  --color-ring: #36bfae;
+
+  /* Sidebar */
+  --color-sidebar: #0a0d13;
+  --color-sidebar-foreground: #cbd5e1; /* slate-300 */
+  --color-sidebar-border: #ffffff0f;
+  --color-sidebar-accent: #ffffff0f;
+  --color-sidebar-accent-foreground: #ffffff;
+  --color-sidebar-primary: #36bfae;
+  --color-sidebar-primary-foreground: #07090e;
+  --color-sidebar-secondary: #ffffff14;
+  --color-sidebar-secondary-foreground: #e2e8f0;
+  --color-sidebar-ring: #36bfae;
+
   --animate-pulse-slow: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   --animate-float: float 6s ease-in-out infinite;
 
@@ -29,6 +78,12 @@
   }
 }
 
+/* Declared here rather than in @theme so the variable is always emitted to
+   the stylesheet — the sidebar's rail geometry reads it in calc() expressions. */
+:root {
+  --sidebar-width: 16rem;
+}
+
 /* Custom base styles */
 @layer base {
   body {
@@ -44,6 +99,18 @@
 
   .glass-button {
     @apply bg-white/10 hover:bg-white/15 border border-white/20 backdrop-blur-md rounded-full transition-all duration-300 shadow-[0_0_15px_rgba(255,255,255,0.05)] hover:shadow-[0_0_20px_rgba(255,255,255,0.1)];
+  }
+
+  /* Page-header eyebrow — the landing page's section pill, reused on the
+     dashboard so page headers and section headers read identically. */
+  .eyebrow-pill {
+    @apply inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-300 backdrop-blur-md;
+  }
+
+  /* Ambient background orbs. Purely decorative: they sit behind content and
+     never intercept pointer events. */
+  .ambient-orb {
+    @apply pointer-events-none absolute rounded-full;
   }
 
   /* Text gradients */
@@ -89,5 +156,5 @@ html {
 }
 
 section {
-  scroll-margin-top: 5rem; 
+  scroll-margin-top: 5rem;
 }

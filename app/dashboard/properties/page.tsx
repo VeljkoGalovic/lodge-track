@@ -2,10 +2,11 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { getOrgFeatures } from "@/lib/subscriptions"
 import { redirect } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/Button"
-import { Building2, Plus, Search, Filter } from "lucide-react"
-import Link from "next/link"
+import { Badge } from "@/components/ui/badge"
+import { PageHeader } from "@/components/dashboard/PageHeader"
+import { Building2, Plus } from "lucide-react"
 
 export default async function PropertiesPage() {
   const session = await auth()
@@ -42,63 +43,103 @@ export default async function PropertiesPage() {
     subscription?.maxPropertiesOverride ?? undefined
   )
 
+  const now = new Date()
+  const properties = [...org.properties].sort((a, b) => a.name.localeCompare(b.name))
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Properties</h1>
-          <p className="text-muted-foreground mt-1">Manage your property portfolio</p>
-        </div>
-        <Button asChild href="/dashboard/properties/new">
+      <PageHeader
+        eyebrow="Portfolio"
+        title="Properties"
+        description="Manage your property portfolio."
+        action={
+          <Button href="/dashboard/properties/new">
             <Plus className="mr-2 h-4 w-4" />
             Add Property
-        </Button>
-      </div>
+          </Button>
+        }
+      />
 
       <Card>
         <CardHeader>
           <CardTitle>All Properties</CardTitle>
           <CardDescription>
-            {org.properties.length} / {features.maxProperties === Infinity ? "∞" : features.maxProperties} properties used
+            {properties.length} / {features.maxProperties === Infinity ? "∞" : features.maxProperties} properties used
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {org.properties.length === 0 ? (
-            <div className="text-center py-12">
-              <Building2 className="mx-auto h-12 w-12 text-muted-foreground/50" />
-              <h3 className="mt-4 text-lg font-medium">No properties yet</h3>
-              <p className="mt-2 text-muted-foreground">Get started by adding your first property</p>
-              <Button asChild className="mt-4">
-                <Link href="/dashboard/properties/new">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Property
-                </Link>
+          {properties.length === 0 ? (
+            <div className="py-12 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.04]">
+                <Building2 className="h-6 w-6 text-[#36BFAE]" />
+              </div>
+              <h3 className="mt-4 text-lg font-medium text-white">No properties yet</h3>
+              <p className="mt-2 text-sm text-slate-400">
+                Get started by adding your first property
+              </p>
+              <Button href="/dashboard/properties/new" className="mt-6">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Property
               </Button>
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {org.properties.map((property) => (
-                <div key={property.id} className="border rounded-lg p-4 hover:bg-accent transition-colors">
-                  <h3 className="font-semibold">{property.name}</h3>
-                  <p className="text-sm text-muted-foreground">{property.address}</p>
-                  <div className="mt-2 flex items-center gap-2 text-sm">
-                    <span className="px-2 py-1 rounded-full bg-green-500/20 text-green-400">
-                      {property.bookings.filter(b => new Date(b.startDate) <= new Date() && new Date(b.endDate) >= new Date()).length} active
-                    </span>
-                    <span className="px-2 py-1 rounded-full bg-blue-500/20 text-blue-400">
-                      {property.bookings.length} total bookings
-                    </span>
+              {properties.map((property) => {
+                const occupied = property.bookings.some(
+                  (booking) =>
+                    booking.status !== "CANCELLED" &&
+                    new Date(booking.startDate) <= now &&
+                    new Date(booking.endDate) >= now
+                )
+                const bookingCount = property.bookings.length
+
+                return (
+                  <div
+                    key={property.id}
+                    className="relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-white/5 p-5 backdrop-blur-xl transition-all duration-300 hover:border-white/[0.15] hover:bg-white/[0.07]"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="truncate font-semibold text-white">{property.name}</h3>
+                        <p className="mt-1 line-clamp-2 text-sm text-slate-400">
+                          {property.address}
+                        </p>
+                      </div>
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.04]">
+                        <Building2 className="h-5 w-5 text-[#36BFAE]" />
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      {occupied ? (
+                        <Badge variant="success">Occupied</Badge>
+                      ) : (
+                        <Badge variant="secondary">Available</Badge>
+                      )}
+                      <Badge variant="outline">
+                        {bookingCount} booking{bookingCount === 1 ? "" : "s"}
+                      </Badge>
+                    </div>
+
+                    <div className="mt-5 flex gap-2 border-t border-white/[0.06] pt-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        href={`/dashboard/properties/${property.id}`}
+                      >
+                        View
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        href={`/dashboard/properties/${property.id}/edit`}
+                      >
+                        Edit
+                      </Button>
+                    </div>
                   </div>
-                  <div className="mt-4 flex gap-2">
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={`/dashboard/properties/${property.id}`}>View</Link>
-                    </Button>
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={`/dashboard/properties/${property.id}/edit`}>Edit</Link>
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </CardContent>

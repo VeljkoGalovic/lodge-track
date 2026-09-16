@@ -24,6 +24,10 @@ enum SubscriptionStatus {
   PAST_DUE
   CANCELED
   TRIALING
+  /// Lemon Squeezy reports `paused` distinctly from `cancelled`; a paused
+  /// subscription keeps its data and can resume, so it is not folded into
+  /// CANCELED.
+  PAUSED
 }
 
 enum BookingStatus {
@@ -37,6 +41,12 @@ enum BookingStatus {
 model Organization {
   id        String   @id @default(cuid())
   name      String
+  /**
+   * ISO 4217 code for every monetary amount in this organization. Bookings
+   * store minor units (cents) with no currency of their own, so this is the
+   * single place the app decides how to render them.
+   */
+  currency  String   @default("USD")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -44,6 +54,7 @@ model Organization {
   users        User[]
   properties   Property[]
   subscription Subscription?
+  invitations  Invitation[]
 }
 
 model User {
@@ -52,13 +63,55 @@ model User {
   email        String        @unique
   passwordHash String?
   role         Role          @default(OWNER)
-  
+
+  /**
+   * TOTP second factor. The secret is encrypted at rest (AES-256-GCM, key
+   * derived from AUTH_SECRET) — see lib/crypto.ts. `twoFactorEnabled` is only
+   * set once the member has proved they can generate a valid code, so a
+   * half-finished setup can never lock anyone out.
+   */
+  twoFactorEnabled Boolean @default(false)
+  twoFactorSecret  String?
+
+  // Which kinds of event this member wants to see in the activity feed.
+  notifyCheckInsDue Boolean @default(true)
+  notifyStaysEnding Boolean @default(true)
+  notifyMissingRate Boolean @default(true)
+
   // Organization scoping
   orgId        String
   organization Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
+  sentInvitations Invitation[] @relation("InvitationSender")
+
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+}
+
+/**
+ * A one-time invitation link. The token is the only credential needed to join,
+ * so it is single-use (`acceptedAt`), expires, and can be revoked — the accept
+ * page refuses a token that is any of those.
+ */
+model Invitation {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  email     String
+  role      Role     @default(MANAGER)
+
+  orgId        String
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  invitedById String?
+  invitedBy   User?   @relation("InvitationSender", fields: [invitedById], references: [id], onDelete: SetNull)
+
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([orgId])
+  @@index([email])
 }
 
 model Subscription {
@@ -66,13 +119,20 @@ model Subscription {
   orgId                String             @unique
   organization         Organization       @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
-  // Stripe / Payment Gateway identifiers
-  stripeCustomerId     String?            @unique
-  stripeSubscriptionId String?            @unique
-  
+  /**
+   * Payment-provider identifiers. Lemon Squeezy is the provider; the names are
+   * deliberately provider-neutral so swapping it later is a code change, not a
+   * data migration. All nullable: an organization sits on the free STARTER tier
+   * from registration and may never have been through a checkout at all.
+   */
+  billingCustomerId     String?            @unique
+  billingSubscriptionId String?            @unique
+  /// Lemon Squeezy variant id of the purchased plan.
+  billingVariantId      String?
+
   tier                 SubscriptionTier   @default(STARTER)
   status               SubscriptionStatus @default(ACTIVE)
-  
+
   // Custom Overrides (For beta users, special enterprise deals, or free passes)
   maxPropertiesOverride Int?               // Null = use tier default, e.g., 999999 for unlimited
   hasApiAccessOverride  Boolean?           // Override feature flags manually
@@ -81,6 +141,18 @@ model Subscription {
   currentPeriodEnd     DateTime?
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
+}
+
+/**
+ * Idempotency ledger for billing webhooks. Lemon Squeezy retries deliveries and
+ * can deliver the same event more than once, so each event id is recorded and
+ * replays are dropped rather than applied twice.
+ */
+model WebhookEvent {
+  id         String   @id
+  provider   String   @default("lemonsqueezy")
+  type       String
+  receivedAt DateTime @default(now())
 }
 
 model Property {
@@ -108,5 +180,12 @@ model Booking {
   endDate    DateTime
   source     String   @default("Direct")
   status     BookingStatus @default(PENDING)
+  /*
+    Total booking value in the smallest currency unit (cents).
+    Nullable on purpose: revenue metrics sum this and skip nulls rather than
+    falling back to an estimate, so an unrecorded rate shows as "—" instead of
+    presenting a fabricated figure as real.
+  */
+  totalAmount Int?
   createdAt  DateTime @default(now())
 }

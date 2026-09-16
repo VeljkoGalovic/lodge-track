@@ -4,15 +4,15 @@ import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 import { clsx } from "clsx"
-import { X } from "lucide-react"
+import { ChevronLeft, ChevronRight, X } from "lucide-react"
 
 const sidebarMenuButtonVariants = cva(
-  "flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:justify-center [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
+  "flex w-full items-center gap-2 overflow-hidden rounded-xl p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding,background-color,color] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:justify-center [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
   {
     variants: {
       variant: {
         default: "text-sidebar-foreground",
-        outline: "bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))]",
+        outline: "bg-white/[0.03] ring-1 ring-white/10",
       },
       size: {
         default: "h-10 px-3",
@@ -55,7 +55,7 @@ const SidebarMenuSubButton = React.forwardRef<
     <a
       ref={ref}
       className={clsx(
-        "flex w-full items-center gap-2 overflow-hidden rounded-md px-2 py-1.5 text-xs text-sidebar-foreground outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-data-[collapsible=icon]:size-9 group-data-[collapsible=icon]:justify-center [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
+        "flex w-full items-center gap-2 overflow-hidden rounded-lg px-2 py-1.5 text-xs text-sidebar-foreground outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-data-[collapsible=icon]:size-9 group-data-[collapsible=icon]:justify-center [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
         className
       )}
       {...props}
@@ -96,7 +96,7 @@ function SidebarMenuSkeleton({ className, showIcon = false }: SidebarMenuSkeleto
   return (
     <div
       className={clsx(
-        "rounded-md h-10 w-full animate-pulse bg-sidebar-accent",
+        "h-10 w-full animate-pulse rounded-xl bg-sidebar-accent",
         showIcon && "pl-10",
         className
       )}
@@ -114,7 +114,11 @@ SidebarMenuSubItem.displayName = "SidebarMenuSubItem"
 
 const SidebarMenuSub = React.forwardRef<HTMLUListElement, React.HTMLAttributes<HTMLUListElement>>(
   ({ className, ...props }, ref) => (
-    <ul ref={ref} className={clsx("mx-2 my-1.5 space-y-1 overflow-hidden text-sidebar-foreground", className)} {...props} />
+    <ul
+      ref={ref}
+      className={clsx("mx-2 my-1.5 space-y-1 overflow-hidden text-sidebar-foreground", className)}
+      {...props}
+    />
   )
 )
 SidebarMenuSub.displayName = "SidebarMenuSub"
@@ -134,7 +138,7 @@ const SidebarGroupLabel = React.forwardRef<HTMLDivElement, SidebarGroupLabelProp
       <Comp
         ref={ref}
         className={clsx(
-          "flex h-8 shrink-0 items-center px-4 text-xs font-medium text-sidebar-foreground/70 outline-none ring-sidebar-ring transition-colors hover:text-sidebar-foreground",
+          "flex h-8 shrink-0 items-center rounded-lg px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500 outline-none ring-sidebar-ring transition-[margin,opacity] hover:text-sidebar-foreground group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0",
           className
         )}
         {...props}
@@ -166,66 +170,98 @@ const SidebarMenu = React.forwardRef<HTMLUListElement, React.HTMLAttributes<HTML
 )
 SidebarMenu.displayName = "SidebarMenu"
 
-const Sidebar = ({
-  children,
-  className,
-}: React.HTMLAttributes<HTMLDivElement>) => {
-  return <div className={clsx("group h-screen w-[--sidebar-width] flex flex-col", className)}>{children}</div>
+interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
+  /** Desktop icon-only state. Exposes `data-collapsible="icon"` so descendants
+   *  can adapt via `group-data-[collapsible=icon]:` variants. */
+  collapsed?: boolean
+}
+
+const Sidebar = ({ children, className, collapsed = false, ...props }: SidebarProps) => {
+  return (
+    <div
+      data-collapsible={collapsed ? "icon" : "expanded"}
+      className={clsx("group flex h-full w-full flex-col", className)}
+      {...props}
+    >
+      {children}
+    </div>
+  )
 }
 Sidebar.displayName = "Sidebar"
 
 const SidebarHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={clsx("flex flex-col gap-2 border-b p-3", className)} {...props} />
+    <div
+      ref={ref}
+      className={clsx("flex flex-col gap-2 border-b border-white/[0.06] p-3", className)}
+      {...props}
+    />
   )
 )
 SidebarHeader.displayName = "SidebarHeader"
 
 const SidebarFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={clsx("flex flex-col gap-2 border-t p-3", className)} {...props} />
+    <div
+      ref={ref}
+      className={clsx("flex flex-col gap-2 border-t border-white/[0.06] p-3", className)}
+      {...props}
+    />
   )
 )
 SidebarFooter.displayName = "SidebarFooter"
 
 const SidebarContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={clsx("flex flex-1 overflow-y-auto group-data-[collapsible=icon]:overflow-hidden p-3", className)} {...props} />
+    <div
+      ref={ref}
+      className={clsx("flex flex-1 overflow-y-auto overflow-x-hidden p-2 group-data-[collapsible=icon]:overflow-hidden", className)}
+      {...props}
+    />
   )
 )
 SidebarContent.displayName = "SidebarContent"
 
+/** Mobile-only drawer dismiss control. */
 const SidebarTrigger = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(
-  ({ className, onClick, ...props }, ref) => (
+  ({ className, children, ...props }, ref) => (
     <button
       ref={ref}
-      onClick={onClick}
-      className={clsx("flex h-9 w-9 items-center justify-center rounded-md bg-sidebar text-sidebar-foreground shadow transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-ring", className)}
+      type="button"
+      className={clsx(
+        "flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-400 transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-[#36BFAE]/40 focus-visible:outline-none",
+        className
+      )}
       {...props}
     >
-      <X className="h-4 w-4" />
-      <span className="sr-only">Toggle Sidebar</span>
+      {children ?? <X className="h-4 w-4" />}
+      <span className="sr-only">Close sidebar</span>
     </button>
   )
 )
 SidebarTrigger.displayName = "SidebarTrigger"
 
-const SidebarRail = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(
-  ({ className, ...props }, ref) => (
+interface SidebarRailProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  collapsed?: boolean
+}
+
+/** Desktop collapse toggle, pinned to the sidebar's outer edge. */
+const SidebarRail = React.forwardRef<HTMLButtonElement, SidebarRailProps>(
+  ({ className, collapsed = false, ...props }, ref) => (
     <button
       ref={ref}
+      type="button"
+      aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+      aria-expanded={!collapsed}
+      title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       className={clsx(
-        "absolute z-20 hidden h-full w-[calc(var(--sidebar-width)_+_0.5rem)] items-center justify-center bg-transparent px-1 transition-opacity hover:bg-sidebar group-data-[collapsible=off]:flex",
+        "absolute top-20 z-30 hidden h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-[#0C0F16] text-slate-400 shadow-lg transition-colors hover:border-[#36BFAE]/40 hover:text-[#36BFAE] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#36BFAE]/40 md:flex",
+        "-right-3.5",
         className
       )}
       {...props}
     >
-      <span
-        className={clsx(
-          "h-[calc(100%_-_2rem)] w-px rounded-full bg-sidebar-border transition-[width,height,margin] group-data-[collapsible=icon]:h-[calc(100%_-_8rem)] group-data-[collapsible=icon]:w-[3px] group-has-[[data-variant=inset]]:h-[calc(100%_-_2.5rem)]",
-          className
-        )}
-      />
+      {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
     </button>
   )
 )
@@ -233,7 +269,7 @@ SidebarRail.displayName = "SidebarRail"
 
 const SidebarInset = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={clsx("relative flex min-h-screen flex-1 flex-col bg-background", className)} {...props} />
+    <div ref={ref} className={clsx("relative flex min-h-svh flex-1 flex-col", className)} {...props} />
   )
 )
 SidebarInset.displayName = "SidebarInset"
@@ -242,7 +278,10 @@ const SidebarInput = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
   ({ className, ...props }, ref) => (
     <input
       ref={ref}
-      className={clsx("flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50", className)}
+      className={clsx(
+        "flex h-10 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white transition-colors placeholder:text-slate-500 focus:border-[#36BFAE] focus:outline-none focus:ring-1 focus:ring-[#36BFAE]/30 disabled:cursor-not-allowed disabled:opacity-50",
+        className
+      )}
       {...props}
     />
   )
@@ -251,7 +290,7 @@ SidebarInput.displayName = "SidebarInput"
 
 const SidebarSeparator = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={clsx("mx-2 w-auto h-px bg-sidebar-border", className)} {...props} />
+    <div ref={ref} className={clsx("mx-2 h-px w-auto bg-sidebar-border", className)} {...props} />
   )
 )
 SidebarSeparator.displayName = "SidebarSeparator"
