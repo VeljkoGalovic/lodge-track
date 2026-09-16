@@ -37,3 +37,4 @@ export async function registerUser(prevState: any, formData: FormData) {
 
   return { success: "Account created successfully! You can now log in." }
 }
+

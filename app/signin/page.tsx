@@ -5,6 +5,7 @@ import { useState } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import Script from "next/script"
 
 export default function SignInPage() {
   const router = useRouter()
@@ -28,7 +29,7 @@ export default function SignInPage() {
       if (result?.error) {
         setError("Invalid email or password.")
       } else {
-        router.push("/") // Redirect to dashboard/home after successful login
+        router.push("/")
         router.refresh()
       }
     } catch (err) {
@@ -39,8 +40,21 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#07090E] px-4">
-      <div className="glass-card w-full max-w-md p-8">
+    <section className="relative isolate flex min-h-screen items-center justify-center bg-[#07090E] px-4 overflow-hidden">
+      {/* Aurora Flow Background Effect */}
+      <div>
+        data-aifx="aurora-flow"
+        data-aifx-bg-alpha="0.9"
+        data-aifx-speed="0.55"
+        data-aifx-softness="0.18"
+        data-aifx-amplitude="0.41"
+        data-aifx-scale="1.38"
+        data-aifx-y-focus="0.28"
+        class="absolute inset-0 -z-10 pointer-events-none"
+        aria-hidden="true"
+    </div>
+
+      <div className="glass-card w-full max-w-md p-8 relative z-10">
         <h1 className="text-2xl font-bold text-white mb-2">Welcome back</h1>
         <p className="text-sm text-slate-400 mb-6">Sign in to your LodgeTrack account</p>
 
@@ -89,6 +103,9 @@ export default function SignInPage() {
           </Link>
         </p>
       </div>
-    </div>
+
+      {/* Effect runtime script */}
+      <Script src="https://cdn.aidesigner.ai/effects/runtime/v1.js" strategy="lazyOnload" />
+    </section>
   )
 }
