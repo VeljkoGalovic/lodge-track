@@ -1,7 +1,7 @@
 // app/signin/page.tsx
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -12,6 +12,7 @@ export default function SignInPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [shouldRedirect, setShouldRedirect] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,8 +29,7 @@ export default function SignInPage() {
       if (result?.error) {
         setError("Invalid email or password.")
       } else {
-        router.push("/")
-        router.refresh()
+        setShouldRedirect(true)
       }
     } catch (err) {
       setError("An unexpected error occurred.")
@@ -37,6 +37,13 @@ export default function SignInPage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (shouldRedirect) {
+      router.push("/dashboard")
+      router.refresh()
+    }
+  }, [shouldRedirect, router])
 
   return (
     <section className="relative isolate flex min-h-screen items-center justify-center px-4 overflow-hidden">

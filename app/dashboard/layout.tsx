@@ -27,7 +27,7 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
   })
 
   if (!user?.organization) {
-    redirect("/onboarding")
+    redirect("/register")
   }
 
   const org = user.organization

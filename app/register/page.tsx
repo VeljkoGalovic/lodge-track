@@ -2,11 +2,22 @@
 "use client"
 
 import { useActionState } from "react"
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 import { registerUser } from "@/app/actions/auth"
 import Link from "next/link"
 
 export default function RegisterPage() {
+  const router = useRouter()
   const [state, formAction, isPending] = useActionState(registerUser, { error: "", success: "" })
+
+  // Handle redirect after successful registration
+  useEffect(() => {
+    if (state?.redirect) {
+      router.push(state.redirect)
+      router.refresh()
+    }
+  }, [state?.redirect, router])
 
   return (
     <section className="relative isolate flex min-h-screen items-center justify-center bg-[#07090E] px-4 overflow-hidden">

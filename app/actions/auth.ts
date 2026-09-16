@@ -4,7 +4,7 @@
 import { prisma } from "@/lib/prisma" // Use your shared prisma client instance
 import bcrypt from "bcrypt"
 
-export async function registerUser(prevState: { error?: string; success?: string }, formData: FormData): Promise<{ error?: string; success?: string }> {
+export async function registerUser(prevState: { error?: string; success?: string }, formData: FormData): Promise<{ error?: string; success?: string; redirect?: string }> {
   const email = formData.get("email") as string
   const password = formData.get("password") as string
   const name = formData.get("name") as string
@@ -48,10 +48,10 @@ export async function registerUser(prevState: { error?: string; success?: string
       data: {
         orgId: organization.id,
         tier: "STARTER",
-        status: "TRIALING",
+        status: "ACTIVE",
       },
     })
   })
 
-  return { success: "Account created successfully! You can now log in." }
+  return { success: "Account created successfully!", redirect: "/dashboard" }
 }
