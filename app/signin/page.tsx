@@ -5,7 +5,6 @@ import { useState } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import Script from "next/script"
 
 export default function SignInPage() {
   const router = useRouter()
@@ -40,19 +39,12 @@ export default function SignInPage() {
   }
 
   return (
-    <section className="relative isolate flex min-h-screen items-center justify-center bg-[#07090E] px-4 overflow-hidden">
-      {/* Aurora Flow Background Effect */}
-      <div>
-        data-aifx="aurora-flow"
-        data-aifx-bg-alpha="0.9"
-        data-aifx-speed="0.55"
-        data-aifx-softness="0.18"
-        data-aifx-amplitude="0.41"
-        data-aifx-scale="1.38"
-        data-aifx-y-focus="0.28"
-        class="absolute inset-0 -z-10 pointer-events-none"
-        aria-hidden="true"
-    </div>
+    <section className="relative isolate flex min-h-screen items-center justify-center px-4 overflow-hidden">
+      {/* Aurora Background - z-0 keeps it visible above section but below form */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none" aria-hidden="true">
+        <div className="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] rounded-full bg-gradient-to-br from-[#36bfae]/30 to-[#ba87ff]/25 blur-[120px] animate-aurora" />
+        <div className="absolute top-[30%] -right-[10%] w-[50%] h-[50%] rounded-full bg-gradient-to-tl from-[#ba87ff]/25 to-[#36bfae]/30 blur-[100px] animate-aurora [animation-delay:3s]" />
+      </div>
 
       <div className="glass-card w-full max-w-md p-8 relative z-10">
         <h1 className="text-2xl font-bold text-white mb-2">Welcome back</h1>
@@ -103,9 +95,6 @@ export default function SignInPage() {
           </Link>
         </p>
       </div>
-
-      {/* Effect runtime script */}
-      <Script src="https://cdn.aidesigner.ai/effects/runtime/v1.js" strategy="lazyOnload" />
     </section>
   )
 }

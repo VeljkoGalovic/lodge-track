@@ -1,12 +1,9 @@
 // app/actions/auth.ts
 "use server"
 
-import { PrismaClient } from "@prisma/client"
+import { prisma } from "@/lib/prisma" // Use your shared prisma client instance
 import bcrypt from "bcrypt"
 
-const prisma = new PrismaClient()
-
-// Accept previousState as the first argument to match useActionState expectations
 export async function registerUser(prevState: any, formData: FormData) {
   const email = formData.get("email") as string
   const password = formData.get("password") as string
@@ -26,15 +23,35 @@ export async function registerUser(prevState: any, formData: FormData) {
 
   const passwordHash = await bcrypt.hash(password, 10)
 
-  await prisma.user.create({
-    data: {
-      email,
-      name,
-      passwordHash,
-      role: "OWNER"
-    }
+  // Use a Prisma transaction to create the Organization, User, and default Starter Subscription atomically
+  await prisma.$transaction(async (tx) => {
+    // 1. Create the firm/organization
+    const organization = await tx.organization.create({
+      data: {
+        name: name ? `${name}'s Organization` : "My Organization",
+      },
+    })
+
+    // 2. Create the user linked to this organization
+    const user = await tx.user.create({
+      data: {
+        email,
+        name,
+        passwordHash,
+        role: "OWNER",
+        orgId: organization.id,
+      },
+    })
+
+    // 3. Create a default Trial/Starter subscription for the organization
+    await tx.subscription.create({
+      data: {
+        orgId: organization.id,
+        tier: "STARTER",
+        status: "TRIALING",
+      },
+    })
   })
 
   return { success: "Account created successfully! You can now log in." }
 }
-

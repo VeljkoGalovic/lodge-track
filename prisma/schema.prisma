@@ -13,36 +13,91 @@ enum Role {
   MAINTENANCE
 }
 
+enum SubscriptionTier {
+  STARTER
+  PRO
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Multi-tenancy relations
+  users        User[]
+  properties   Property[]
+  subscription Subscription?
+}
+
 model User {
-  id            String       @id @default(cuid())
-  name          String?
-  email         String       @unique
-  passwordHash  String?      // For credentials provider
-  role          Role         @default(OWNER)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  properties    Property[]
+  id           String        @id @default(cuid())
+  name         String?
+  email        String        @unique
+  passwordHash String?
+  role         Role          @default(OWNER)
+  
+  // Organization scoping
+  orgId        String
+  organization Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  orgId                String             @unique
+  organization         Organization       @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  // Stripe / Payment Gateway identifiers
+  stripeCustomerId     String?            @unique
+  stripeSubscriptionId String?            @unique
+  
+  tier                 SubscriptionTier   @default(STARTER)
+  status               SubscriptionStatus @default(ACTIVE)
+  
+  // Custom Overrides (For beta users, special enterprise deals, or free passes)
+  maxPropertiesOverride Int?               // Null = use tier default, e.g., 999999 for unlimited
+  hasApiAccessOverride  Boolean?           // Override feature flags manually
+  isLifetimeFree        Boolean            @default(false)
+
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
 }
 
 model Property {
-  id          String    @id @default(cuid())
-  name        String
-  address     String
-  icalUrl     String?   // For automated booking calendar sync via iCal
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bookings    Booking[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        String    @id @default(cuid())
+  name      String
+  address   String
+  icalUrl   String?
+  
+  // Property belongs to Organization now, not individual User
+  orgId     String
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  bookings  Booking[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Booking {
-  id          String    @id @default(cuid())
-  propertyId  String
-  property    Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  guestName   String
-  startDate   DateTime
-  endDate     DateTime
-  source      String    @default("Direct") // e.g., "Airbnb", "Booking.com"
-  createdAt   DateTime  @default(now())
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  
+  guestName  String
+  startDate  DateTime
+  endDate    DateTime
+  source     String   @default("Direct")
+  createdAt  DateTime @default(now())
 }

@@ -45,8 +45,8 @@ const TIERS: PricingTier[] = [
     featured: true,
   },
   {
-    name: "Enterprise",
-    price: "Custom",
+    name: "Business",
+    price: "$99",
     period: "",
     description: "Custom solutions for large rental portfolios and teams.",
     features: [

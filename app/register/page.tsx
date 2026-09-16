@@ -4,19 +4,17 @@
 import { useActionState } from "react"
 import { registerUser } from "@/app/actions/auth"
 import Link from "next/link"
-import Script from "next/script"
 
 export default function RegisterPage() {
   const [state, formAction, isPending] = useActionState(registerUser, null)
 
   return (
     <section className="relative isolate flex min-h-screen items-center justify-center bg-[#07090E] px-4 overflow-hidden">
-      {/* Aurora Flow Background Effect */}
-      <div
-        data-aifx="aurora-flow"
-        className="absolute inset-0 -z-10 pointer-events-none"
-        aria-hidden="true"
-      ></div>
+      {/* Pure Tailwind/CSS Aurora Background Effect */}
+      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
+        <div className="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] rounded-full bg-gradient-to-br from-[#36bfae]/25 to-[#ba87ff]/20 blur-[120px] animate-aurora" />
+        <div className="absolute top-[30%] -right-[10%] w-[50%] h-[50%] rounded-full bg-gradient-to-tl from-[#ba87ff]/20 to-[#36bfae]/25 blur-[100px] animate-aurora [animation-delay:3s]" />
+      </div>
 
       <div className="glass-card w-full max-w-md p-8 relative z-10">
         <h1 className="text-2xl font-bold text-white mb-6">Create your LodgeTrack account</h1>
@@ -79,9 +77,6 @@ export default function RegisterPage() {
           </Link>
         </p>
       </div>
-
-      {/* Effect runtime script */}
-      <Script src="https://cdn.aidesigner.ai/effects/runtime/v1.js" strategy="lazyOnload" />
     </section>
   )
 }
