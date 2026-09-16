@@ -6,7 +6,7 @@ import { registerUser } from "@/app/actions/auth"
 import Link from "next/link"
 
 export default function RegisterPage() {
-  const [state, formAction, isPending] = useActionState(registerUser, null)
+  const [state, formAction, isPending] = useActionState(registerUser, { error: "", success: "" })
 
   return (
     <section className="relative isolate flex min-h-screen items-center justify-center bg-[#07090E] px-4 overflow-hidden">

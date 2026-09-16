@@ -1,29 +1,58 @@
-import { prisma } from "./prisma";
 import { SubscriptionTier } from "@prisma/client";
 
-const TIER_PROPERTY_LIMITS: Record<SubscriptionTier, number> = {
+export type Tier = SubscriptionTier;
+
+export interface OrgFeatures {
+  tier: Tier;
+  maxProperties: number;
+  hasAdvancedAnalytics: boolean;
+  hasTeamRoles: boolean;
+  hasApiAccess: boolean;
+}
+
+const TIER_LIMITS: Record<Tier, number> = {
   STARTER: 3,
   PRO: 15,
   ENTERPRISE: Infinity,
 };
 
-export async function canAddProperty(orgId: string): Promise<boolean> {
-  const org = await prisma.organization.findUnique({
-    where: { id: orgId },
-    include: {
-      subscription: true,
-      _count: { select: { properties: true } },
-    },
-  });
+const TIER_FEATURES: Record<Tier, Omit<OrgFeatures, "tier" | "maxProperties">> = {
+  STARTER: {
+    hasAdvancedAnalytics: false,
+    hasTeamRoles: false,
+    hasApiAccess: false,
+  },
+  PRO: {
+    hasAdvancedAnalytics: true,
+    hasTeamRoles: true,
+    hasApiAccess: true,
+  },
+  ENTERPRISE: {
+    hasAdvancedAnalytics: true,
+    hasTeamRoles: true,
+    hasApiAccess: true,
+  },
+};
 
-  if (!org) return false;
+export function getOrgFeatures(tier: Tier, maxPropertiesOverride?: number | null): OrgFeatures {
+  return {
+    tier,
+    maxProperties: maxPropertiesOverride ?? TIER_LIMITS[tier],
+    ...TIER_FEATURES[tier],
+  };
+}
 
-  const sub = org.subscription;
-  if (sub?.isLifetimeFree) return true;
+export function getTierBadgeColor(tier: Tier): string {
+  switch (tier) {
+    case "STARTER":
+      return "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300";
+    case "PRO":
+      return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
+    case "ENTERPRISE":
+      return "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400";
+  }
+}
 
-  const maxAllowed =
-    sub?.maxPropertiesOverride ??
-    (sub ? TIER_PROPERTY_LIMITS[sub.tier] : TIER_PROPERTY_LIMITS.STARTER);
-
-  return org._count.properties < maxAllowed;
+export function getTierLabel(tier: Tier): string {
+  return tier.charAt(0) + tier.slice(1).toLowerCase();
 }

@@ -26,6 +26,14 @@ enum SubscriptionStatus {
   TRIALING
 }
 
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CHECKED_IN
+  CHECKED_OUT
+  CANCELLED
+}
+
 model Organization {
   id        String   @id @default(cuid())
   name      String
@@ -94,10 +102,11 @@ model Booking {
   id         String   @id @default(cuid())
   propertyId String
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  
+
   guestName  String
   startDate  DateTime
   endDate    DateTime
   source     String   @default("Direct")
+  status     BookingStatus @default(PENDING)
   createdAt  DateTime @default(now())
 }
