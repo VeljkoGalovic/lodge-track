@@ -52,13 +52,13 @@ export function Button({
 
   const variants = {
     primary:
-      "bg-[#36BFAE] hover:bg-[#2aa899] text-white shadow-[0_0_20px_rgba(54,191,174,0.4)] hover:shadow-[0_0_30px_rgba(54,191,174,0.6)]",
+      "bg-primary hover:bg-primary-hover text-foreground shadow-[0_0_20px_rgba(54,191,174,0.4)] hover:shadow-[0_0_30px_rgba(54,191,174,0.6)]",
     glass:
-      "bg-white/10 hover:bg-white/15 border border-white/20 backdrop-blur-md text-white shadow-[0_0_15px_rgba(255,255,255,0.05)] hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]",
-    outline: "border border-[#36BFAE] text-[#36BFAE] hover:bg-[#36BFAE]/10",
-    ghost: "text-slate-400 hover:text-white hover:bg-white/5",
+      "bg-raised hover:bg-raised-hover border border-input backdrop-blur-md text-foreground shadow-[0_0_15px_rgba(255,255,255,0.05)] hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]",
+    outline: "border border-primary text-primary hover:bg-primary/10",
+    ghost: "text-subtle-foreground hover:text-foreground hover:bg-card",
     destructive:
-      "bg-red-500 hover:bg-red-600 text-white shadow-[0_0_20px_rgba(239,68,68,0.4)] hover:shadow-[0_0_30px_rgba(239,68,68,0.6)]",
+      "bg-destructive hover:bg-destructive-hover text-foreground shadow-[0_0_20px_rgba(239,68,68,0.4)] hover:shadow-[0_0_30px_rgba(239,68,68,0.6)]",
   };
 
   const disabledStyles = "opacity-50 cursor-not-allowed pointer-events-none";

@@ -12,7 +12,7 @@ const sidebarMenuButtonVariants = cva(
     variants: {
       variant: {
         default: "text-sidebar-foreground",
-        outline: "bg-white/[0.03] ring-1 ring-white/10",
+        outline: "bg-muted ring-1 ring-input",
       },
       size: {
         default: "h-10 px-3",
@@ -138,7 +138,7 @@ const SidebarGroupLabel = React.forwardRef<HTMLDivElement, SidebarGroupLabelProp
       <Comp
         ref={ref}
         className={clsx(
-          "flex h-8 shrink-0 items-center rounded-lg px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500 outline-none ring-sidebar-ring transition-[margin,opacity] hover:text-sidebar-foreground group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0",
+          "flex h-8 shrink-0 items-center rounded-lg px-3 text-[11px] font-semibold uppercase tracking-wider text-subtle-foreground outline-none ring-sidebar-ring transition-[margin,opacity] hover:text-sidebar-foreground group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0",
           className
         )}
         {...props}
@@ -193,7 +193,7 @@ const SidebarHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTML
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={clsx("flex flex-col gap-2 border-b border-white/[0.06] p-3", className)}
+      className={clsx("flex flex-col gap-2 border-b border-border p-3", className)}
       {...props}
     />
   )
@@ -204,7 +204,7 @@ const SidebarFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTML
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={clsx("flex flex-col gap-2 border-t border-white/[0.06] p-3", className)}
+      className={clsx("flex flex-col gap-2 border-t border-border p-3", className)}
       {...props}
     />
   )
@@ -229,7 +229,7 @@ const SidebarTrigger = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttri
       ref={ref}
       type="button"
       className={clsx(
-        "flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-400 transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-[#36BFAE]/40 focus-visible:outline-none",
+        "flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-subtle-foreground transition-colors hover:bg-raised hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none",
         className
       )}
       {...props}
@@ -255,7 +255,7 @@ const SidebarRail = React.forwardRef<HTMLButtonElement, SidebarRailProps>(
       aria-expanded={!collapsed}
       title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       className={clsx(
-        "absolute top-20 z-30 hidden h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-[#0C0F16] text-slate-400 shadow-lg transition-colors hover:border-[#36BFAE]/40 hover:text-[#36BFAE] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#36BFAE]/40 md:flex",
+        "absolute top-20 z-30 hidden h-7 w-7 items-center justify-center rounded-full border border-border bg-popover text-subtle-foreground shadow-lg transition-colors hover:border-primary/40 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 md:flex",
         "-right-3.5",
         className
       )}
@@ -279,7 +279,7 @@ const SidebarInput = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
     <input
       ref={ref}
       className={clsx(
-        "flex h-10 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white transition-colors placeholder:text-slate-500 focus:border-[#36BFAE] focus:outline-none focus:ring-1 focus:ring-[#36BFAE]/30 disabled:cursor-not-allowed disabled:opacity-50",
+        "flex h-10 w-full rounded-xl border border-border bg-card px-4 py-2 text-sm text-foreground transition-colors placeholder:text-subtle-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}
       {...props}

@@ -5,8 +5,11 @@ import { createProperty, updateProperty } from "@/app/actions/properties"
 import { EMPTY_ACTION_STATE } from "@/lib/action-state"
 import { useActionRedirect } from "@/lib/use-action-redirect"
 import { Input } from "@/components/ui/input"
+import { Select } from "@/components/ui/select"
 import { FormMessage } from "@/components/dashboard/FormMessage"
 import { SubmitButton } from "@/components/dashboard/SubmitButton"
+import { useI18n } from "@/components/i18n/LocaleProvider"
+import { SUPPORTED_CURRENCIES } from "@/lib/currency"
 
 interface PropertyFormProps {
   /** Editing carries the existing values and a hidden id; creating carries neither. */
@@ -15,10 +18,12 @@ interface PropertyFormProps {
     name: string
     address: string
     icalUrl: string | null
+    currency: string | null
   }
 }
 
 export function PropertyForm({ property }: PropertyFormProps) {
+  const { t } = useI18n()
   const action = property ? updateProperty : createProperty
   const [state, formAction] = useActionState(action, EMPTY_ACTION_STATE)
   useActionRedirect(state)
@@ -30,8 +35,8 @@ export function PropertyForm({ property }: PropertyFormProps) {
       <FormMessage error={state.error} success={state.success} />
 
       <div className="space-y-2">
-        <label htmlFor="name" className="text-sm font-medium text-slate-300">
-          Property name
+        <label htmlFor="name" className="text-sm font-medium text-muted-foreground">
+          {t.forms.propertyName}
         </label>
         <Input
           id="name"
@@ -44,8 +49,8 @@ export function PropertyForm({ property }: PropertyFormProps) {
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="address" className="text-sm font-medium text-slate-300">
-          Address
+        <label htmlFor="address" className="text-sm font-medium text-muted-foreground">
+          {t.forms.address}
         </label>
         <Input
           id="address"
@@ -58,8 +63,26 @@ export function PropertyForm({ property }: PropertyFormProps) {
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="icalUrl" className="text-sm font-medium text-slate-300">
-          iCal URL <span className="text-slate-500">(optional)</span>
+        <label htmlFor="currency" className="text-sm font-medium text-muted-foreground">
+          Currency
+        </label>
+        <Select id="currency" name="currency" defaultValue={property?.currency ?? "INHERIT"}>
+          <option value="INHERIT">Inherit from organization</option>
+          {SUPPORTED_CURRENCIES.map((option) => (
+            <option key={option.code} value={option.code}>
+              {option.code} — {option.label}
+            </option>
+          ))}
+        </Select>
+        <p className="text-xs text-subtle-foreground">
+          If this property charges guests in a different currency from the rest of your organization.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <label htmlFor="icalUrl" className="text-sm font-medium text-muted-foreground">
+          {t.forms.icalUrl}{" "}
+          <span className="text-subtle-foreground">({t.common.optional})</span>
         </label>
         <Input
           id="icalUrl"
@@ -68,14 +91,14 @@ export function PropertyForm({ property }: PropertyFormProps) {
           defaultValue={property?.icalUrl ?? ""}
           placeholder="https://example.com/calendar.ics"
         />
-        <p className="text-xs text-slate-500">
-          Stored for reference. Importing from this URL is not built yet.
+        <p className="text-xs text-subtle-foreground">
+          {t.forms.icalStored}
         </p>
       </div>
 
       <div className="flex flex-wrap gap-3 pt-2">
-        <SubmitButton pendingLabel="Saving...">
-          {property ? "Save changes" : "Add property"}
+        <SubmitButton pendingLabel={t.common.saving}>
+          {property ? t.forms.saveChanges : t.forms.addProperty}
         </SubmitButton>
       </div>
     </form>

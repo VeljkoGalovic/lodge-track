@@ -41,7 +41,7 @@ export function NotificationPreferencesForm({
     <form action={formAction} className="space-y-4">
       <FormMessage error={state.error} success={state.success} />
 
-      <div className="divide-y divide-white/[0.06]">
+      <div className="divide-y divide-border">
         {OPTIONS.map((option) => (
           <label
             key={option.name}
@@ -53,12 +53,12 @@ export function NotificationPreferencesForm({
               name={option.name}
               type="checkbox"
               defaultChecked={preferences[option.name]}
-              className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-white/20 bg-white/5 accent-[#36BFAE]"
+              className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-input bg-card accent-primary"
             />
             <span className="min-w-0">
-              <span className="block font-medium text-white">{option.label}</span>
-              <span className="block text-sm text-slate-400">{option.description}</span>
-              <span className="mt-1 block text-xs text-slate-500">
+              <span className="block font-medium text-foreground">{option.label}</span>
+              <span className="block text-sm text-subtle-foreground">{option.description}</span>
+              <span className="mt-1 block text-xs text-subtle-foreground">
                 {counts[option.name]} item{counts[option.name] === 1 ? "" : "s"} right now
               </span>
             </span>

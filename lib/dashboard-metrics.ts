@@ -1,4 +1,13 @@
 import type { BookingStatus } from "@prisma/client"
+import { type ExchangeRates, convertAmount } from "@/lib/exchange-rates"
+import type { ChartPoint } from "@/lib/metrics-display"
+import type { Locale } from "@/lib/i18n/locales"
+
+// `ChartPoint` and `percentChange` now live in the boundary-safe
+// `lib/metrics-display.ts` (importable from client components); they are
+// re-exported here so existing server call sites keep resolving.
+export type { ChartPoint } from "@/lib/metrics-display"
+export { percentChange } from "@/lib/metrics-display"
 
 /**
  * Pure helpers behind the dashboard's headline numbers.
@@ -21,6 +30,7 @@ export interface MetricsBooking {
 }
 
 export interface MetricsProperty {
+  currency: string | null
   bookings: MetricsBooking[]
 }
 
@@ -32,14 +42,8 @@ export interface MonthWindow {
    * booking starting late on the month's final day is not dropped.
    */
   end: Date
-  /** Short month name for chart axes, e.g. "Sep". */
+  /** Short month name for chart axes, in the requested locale. */
   label: string
-}
-
-export interface ChartPoint {
-  month: string
-  /** Cents for revenue series, whole percent for occupancy series. */
-  value: number
 }
 
 export interface WindowStats {
@@ -51,10 +55,14 @@ export interface WindowStats {
 }
 
 /** The calendar month `offset` months away from `reference`. */
-export function monthWindow(reference: Date, offset = 0): MonthWindow {
+export function monthWindow(reference: Date, offset = 0, locale: Locale = "en"): MonthWindow {
   const start = new Date(reference.getFullYear(), reference.getMonth() + offset, 1)
   const end = new Date(start.getFullYear(), start.getMonth() + 1, 1)
-  return { start, end, label: start.toLocaleDateString("en-US", { month: "short" }) }
+  return {
+    start,
+    end,
+    label: start.toLocaleDateString(locale === "sr" ? "sr-Latn-RS" : "en-US", { month: "short" }),
+  }
 }
 
 /** Shifts by whole months, clamping the day so 31 Mar → 28/29 Feb. */
@@ -82,17 +90,35 @@ export function coversInstant(booking: MetricsBooking, instant: Date): boolean {
  * Revenue is recognised in the month the stay begins, so a window's bookings
  * and its revenue always describe the same set of stays.
  */
-export function statsForWindow(properties: MetricsProperty[], window: MonthWindow): WindowStats {
-  const inWindow = properties
-    .flatMap((property) => property.bookings)
-    .filter((booking) => !isCancelled(booking) && startsWithin(booking, window))
+export function statsForWindow(
+  properties: MetricsProperty[],
+  window: MonthWindow,
+  targetCurrency?: string,
+  rates?: ExchangeRates
+): WindowStats {
+  const inWindow: Array<{ booking: MetricsBooking; currency: string | null }> = []
+  for (const property of properties) {
+    for (const booking of property.bookings) {
+      if (!isCancelled(booking) && startsWithin(booking, window)) {
+        inWindow.push({ booking, currency: property.currency })
+      }
+    }
+  }
 
-  const priced = inWindow.filter((booking) => booking.totalAmount != null)
+  const priced = inWindow.filter((b) => b.booking.totalAmount != null)
+
+  const revenueCents = priced.reduce((sum, item) => {
+    let amount = item.booking.totalAmount ?? 0
+    if (targetCurrency && rates && item.currency && item.currency !== targetCurrency) {
+      amount = convertAmount(amount, item.currency, targetCurrency, rates)
+    }
+    return sum + amount
+  }, 0)
 
   return {
     bookings: inWindow.length,
     pricedBookings: priced.length,
-    revenueCents: priced.reduce((sum, booking) => sum + (booking.totalAmount ?? 0), 0),
+    revenueCents,
   }
 }
 
@@ -154,16 +180,19 @@ export function occupancyForWindow(properties: MetricsProperty[], window: MonthW
 export function monthlySeries(
   properties: MetricsProperty[],
   reference: Date,
-  count = 6
+  count = 6,
+  targetCurrency?: string,
+  rates?: ExchangeRates,
+  locale: Locale = "en"
 ): { revenue: ChartPoint[]; occupancy: ChartPoint[] } {
   const windows = Array.from({ length: count }, (_, index) =>
-    monthWindow(reference, index - (count - 1))
+    monthWindow(reference, index - (count - 1), locale)
   )
 
   return {
     revenue: windows.map((window) => ({
       month: window.label,
-      value: statsForWindow(properties, window).revenueCents,
+      value: statsForWindow(properties, window, targetCurrency, rates).revenueCents,
     })),
     occupancy: windows.map((window) => ({
       month: window.label,
@@ -172,25 +201,19 @@ export function monthlySeries(
   }
 }
 
-/**
- * Percentage change between two periods, to one decimal place. Returns
- * `undefined` when there is no baseline to compare against — "+100%" against a
- * previous period of zero would say nothing true.
- */
-export function percentChange(previous: number, current: number): number | undefined {
-  if (previous === 0) return undefined
-  return Math.round(((current - previous) / previous) * 1000) / 10
-}
-
 /** e.g. "Sep 16 – Sep 20", with years added when the stay crosses one. */
-export function formatDateRange(start: Date | string, end: Date | string): string {
+export function formatDateRange(
+  start: Date | string,
+  end: Date | string,
+  locale: Locale = "en"
+): string {
   const from = new Date(start)
   const to = new Date(end)
 
-  const short = (date: Date) =>
-    date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+  const tag = locale === "sr" ? "sr-Latn-RS" : "en-US"
+  const short = (date: Date) => date.toLocaleDateString(tag, { month: "short", day: "numeric" })
   const withYear = (date: Date) =>
-    date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    date.toLocaleDateString(tag, { month: "short", day: "numeric", year: "numeric" })
 
   const sameYear = from.getFullYear() === to.getFullYear()
   return sameYear ? `${short(from)} – ${short(to)}` : `${withYear(from)} – ${withYear(to)}`

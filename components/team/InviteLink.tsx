@@ -30,7 +30,7 @@ export function InviteLink({ url }: InviteLinkProps) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <code className="min-w-0 flex-1 truncate rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 font-mono text-xs text-slate-300">
+      <code className="min-w-0 flex-1 truncate rounded-xl border border-border bg-muted px-3 py-2 font-mono text-xs text-muted-foreground">
         {url}
       </code>
       <Button type="button" variant="glass" size="sm" onClick={copy} aria-live="polite">

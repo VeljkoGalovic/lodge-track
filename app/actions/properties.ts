@@ -4,14 +4,21 @@ import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
 import { type ActionState, canManage, currentMembership, field } from "@/lib/authorization"
 import { getOrgFeatures } from "@/lib/subscriptions"
+import { isSupportedCurrency } from "@/lib/currency"
 
 /** Fields shared by create and edit, so the two cannot drift apart. */
 function readProperty(formData: FormData) {
   const name = field(formData, "name")
   const address = field(formData, "address")
   const icalUrl = field(formData, "icalUrl")
+  const currencyRaw = field(formData, "currency")
 
-  return { name, address, icalUrl: icalUrl || null }
+  let currency = null
+  if (currencyRaw && currencyRaw !== "INHERIT" && isSupportedCurrency(currencyRaw)) {
+    currency = currencyRaw
+  }
+
+  return { name, address, icalUrl: icalUrl || null, currency }
 }
 
 function validate(name: string, address: string): string | null {
@@ -32,7 +39,7 @@ export async function createProperty(
     return { error: "You do not have permission to add properties." }
   }
 
-  const { name, address, icalUrl } = readProperty(formData)
+  const { name, address, icalUrl, currency } = readProperty(formData)
   const problem = validate(name, address)
   if (problem) return { error: problem }
 
@@ -52,7 +59,7 @@ export async function createProperty(
   }
 
   const property = await prisma.property.create({
-    data: { name, address, icalUrl, orgId: membership.organization.id },
+    data: { name, address, icalUrl, currency, orgId: membership.organization.id },
   })
 
   revalidatePath("/dashboard")
@@ -71,7 +78,7 @@ export async function updateProperty(
   }
 
   const id = field(formData, "id")
-  const { name, address, icalUrl } = readProperty(formData)
+  const { name, address, icalUrl, currency } = readProperty(formData)
   const problem = validate(name, address)
   if (problem) return { error: problem }
 
@@ -82,7 +89,7 @@ export async function updateProperty(
    */
   const { count } = await prisma.property.updateMany({
     where: { id, orgId: membership.organization.id },
-    data: { name, address, icalUrl },
+    data: { name, address, icalUrl, currency },
   })
   if (count === 0) return { error: "That property no longer exists." }
 

@@ -55,11 +55,11 @@ export function TwoFactorPanel({ enabled, issuer, accountName }: TwoFactorPanelP
   if (enabled) {
     return (
       <div className="space-y-4">
-        <div className="flex items-start gap-3 rounded-xl border border-[#36BFAE]/25 bg-[#36BFAE]/10 px-4 py-3">
-          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#36BFAE]" />
+        <div className="flex items-start gap-3 rounded-xl border border-primary/25 bg-primary/10 px-4 py-3">
+          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
           <div>
-            <p className="font-medium text-[#36BFAE]">Two-factor authentication is on</p>
-            <p className="text-sm text-slate-300">
+            <p className="font-medium text-primary">Two-factor authentication is on</p>
+            <p className="text-sm text-muted-foreground">
               Signing in requires a code from your authenticator app.
             </p>
           </div>
@@ -68,7 +68,7 @@ export function TwoFactorPanel({ enabled, issuer, accountName }: TwoFactorPanelP
         <form action={disableAction} className="space-y-3">
           <FormMessage error={disableState.error} success={disableState.success} />
           <div className="space-y-2">
-            <label htmlFor="disablePassword" className="text-sm font-medium text-slate-300">
+            <label htmlFor="disablePassword" className="text-sm font-medium text-muted-foreground">
               Confirm your password to turn it off
             </label>
             <Input
@@ -92,7 +92,7 @@ export function TwoFactorPanel({ enabled, issuer, accountName }: TwoFactorPanelP
     return (
       <div className="space-y-4">
         <FormMessage error={startError} />
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-subtle-foreground">
           Adds a second step to sign-in using an authenticator app such as Google Authenticator,
           1Password or Authy. If you lose the device, an owner of this organization can reset the
           factor for you.
@@ -115,21 +115,21 @@ export function TwoFactorPanel({ enabled, issuer, accountName }: TwoFactorPanelP
         </div>
 
         <div className="min-w-0 space-y-3">
-          <p className="text-sm text-slate-300">
+          <p className="text-sm text-muted-foreground">
             Scan this with your authenticator app. If it cannot scan, enter the key by hand:
           </p>
-          <code className="block break-all rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 font-mono text-xs text-slate-300">
+          <code className="block break-all rounded-xl border border-border bg-muted px-3 py-2 font-mono text-xs text-muted-foreground">
             {setup.secret}
           </code>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-subtle-foreground">
             {issuer} account: {accountName}
           </p>
         </div>
       </div>
 
-      <form action={confirmAction} className="space-y-3 border-t border-white/[0.06] pt-5">
+      <form action={confirmAction} className="space-y-3 border-t border-border pt-5">
         <div className="space-y-2">
-          <label htmlFor="code" className="text-sm font-medium text-slate-300">
+          <label htmlFor="code" className="text-sm font-medium text-muted-foreground">
             Enter the six-digit code it shows
           </label>
           <Input

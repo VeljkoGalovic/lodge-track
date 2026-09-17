@@ -38,6 +38,21 @@ enum BookingStatus {
   CANCELLED
 }
 
+/**
+ * What an expense was for. A closed enum rather than free text so the expense
+ * list can group and total by category without the totals fragmenting across
+ * "utilities", "Utilities" and "utility".
+ */
+enum ExpenseCategory {
+  MAINTENANCE
+  UTILITIES
+  SUPPLIES
+  CLEANING
+  TAXES
+  INSURANCE
+  OTHER
+}
+
 model Organization {
   id        String   @id @default(cuid())
   name      String
@@ -53,8 +68,25 @@ model Organization {
   // Multi-tenancy relations
   users        User[]
   properties   Property[]
+  units        PropertyUnit[]
+  expenses     Expense[]
   subscription Subscription?
   invitations  Invitation[]
+}
+
+/**
+ * The member's interface theme.
+ *
+ * `SYSTEM` is a real third state, not a synonym for one of the others: it means
+ * "follow the operating system", which is a preference the browser has to be
+ * asked about at render time. Storing it lets a member choose a theme on a phone
+ * set to light and have it stay light, while a second member on the same
+ * database keeps following their own system.
+ */
+enum ThemePreference {
+  SYSTEM
+  LIGHT
+  DARK
 }
 
 model User {
@@ -63,6 +95,19 @@ model User {
   email        String        @unique
   passwordHash String?
   role         Role          @default(OWNER)
+
+  /**
+   * Interface language (ISO 639-1). Stored per member rather than per
+   * organization: two people in one organization can read different languages,
+   * and nothing about this app's data is language-specific.
+   *
+   * Deliberately a plain String, not an enum. The set of languages is a product
+   * decision that changes far more often than the set of booking statuses, and an
+   * enum would make each new language a database migration. The accepted values
+   * live in lib/i18n/locales.ts, which is the only thing that reads this field.
+   */
+  locale       String        @default("en")
+  theme        ThemePreference @default(SYSTEM)
 
   /**
    * TOTP second factor. The secret is encrypted at rest (AES-256-GCM, key
@@ -160,20 +205,78 @@ model Property {
   name      String
   address   String
   icalUrl   String?
-  
+  currency  String?   // Overrides Organization.currency for this property
+
   // Property belongs to Organization now, not individual User
   orgId     String
   org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
   bookings  Booking[]
+  units     PropertyUnit[]
+  expenses  Expense[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+}
+
+/**
+ * A bookable sub-unit of a property — a room, a bed, a cabin, a pitch.
+ *
+ * A property with no units is booked whole, which is exactly how every booking
+ * behaved before this model existed: `Booking.unitId` is null and the stay claims
+ * the entire property. Adding units is therefore opt-in per property and needs no
+ * change to the bookings already on it.
+ *
+ * A property with units is booked per unit: two stays in *different* units of the
+ * same property do not conflict, which is the whole point of dividing it up. See
+ * lib/availability.ts for the conflict rule.
+ *
+ * `orgId` is denormalised from the owning property so expense and availability
+ * reads can be scoped by tenant without a join. It is never accepted from a
+ * request — only ever written from a property row that was itself fetched by
+ * `orgId`, so the two cannot disagree.
+ */
+model PropertyUnit {
+  id         String   @id @default(cuid())
+  name       String
+  /** Free-text kind for grouping in the UI: "Room", "Bed", "Cabin". */
+  kind       String?
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  orgId        String
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  bookings   Booking[]
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  /// Two units of one property cannot share a name — "Room 1" twice would make
+  /// the booking form's unit picker ambiguous.
+  @@unique([propertyId, name])
+  @@index([orgId])
 }
 
 model Booking {
   id         String   @id @default(cuid())
   propertyId String
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  /**
+   * The sub-unit this stay occupies, or null for the whole property.
+   *
+   * Null is the pre-existing behaviour and stays the default: a property nobody
+   * has divided up has exactly one bookable thing, itself.
+   *
+   * `SetNull` rather than `Restrict` so deleting a property cannot trip over the
+   * unit its own bookings point at — those bookings are being cascade-deleted in
+   * the same statement. Deleting a unit *on its own* is refused in the action
+   * layer while bookings reference it, so this never silently widens a booking
+   * into the whole property behind the user's back.
+   */
+  unitId     String?
+  unit       PropertyUnit? @relation(fields: [unitId], references: [id], onDelete: SetNull)
 
   guestName  String
   startDate  DateTime
@@ -188,4 +291,54 @@ model Booking {
   */
   totalAmount Int?
   createdAt  DateTime @default(now())
+
+  /// Availability scans filter one property to an overlapping date window.
+  @@index([propertyId, startDate, endDate])
+  @@index([unitId])
+}
+
+/**
+ * A cost incurred against a property — maintenance, utilities, supplies.
+ *
+ * `amount` is minor units in the organization's own currency, the same convention
+ * `Booking.totalAmount` uses, so both render through lib/currency.ts and neither
+ * can drift into being read as a different currency than the other.
+ *
+ * The receipt is stored as a private storage key, not a public URL. Receipts name
+ * suppliers and prices and sometimes carry card fragments; a file under `public/`
+ * would be readable by anyone who can guess or be shown the path, with no session
+ * and no tenant check. `receiptPath` names a file outside the served tree that
+ * only /api/receipts/[id] will hand back, after confirming the caller belongs to
+ * this organization. See lib/storage.ts.
+ */
+model Expense {
+  id          String          @id @default(cuid())
+  amount      Int
+  category    ExpenseCategory @default(OTHER)
+  date        DateTime
+  description String
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  /** Denormalised from the property, written only from a row already scoped by orgId. */
+  orgId        String
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  receiptPath String?
+  /** The uploader's own filename, kept for the download prompt and never used as a path. */
+  receiptName String?
+  /** Verified from the file's own bytes on upload, not from the browser's claim. */
+  receiptType String?
+  receiptSize Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId, date])
+  @@index([propertyId, date])
+  /// Serves the storage-cap check, which sums every receipt in one organization
+  /// before accepting an upload. Leading `orgId` scopes it; `receiptSize` makes
+  /// it an index-only scan, so the check costs no heap reads.
+  @@index([orgId, receiptSize])
 }

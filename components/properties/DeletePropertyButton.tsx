@@ -8,6 +8,8 @@ import { useActionRedirect } from "@/lib/use-action-redirect"
 import { Button } from "@/components/ui/Button"
 import { FormMessage } from "@/components/dashboard/FormMessage"
 import { SubmitButton } from "@/components/dashboard/SubmitButton"
+import { useI18n } from "@/components/i18n/LocaleProvider"
+import { BOOKING_COUNT_FORMS, format, plural } from "@/lib/i18n/dictionaries"
 import {
   Dialog,
   DialogContent,
@@ -30,6 +32,7 @@ export function DeletePropertyButton({
   propertyName,
   bookingCount,
 }: DeletePropertyButtonProps) {
+  const { locale, t } = useI18n()
   const [state, formAction] = useActionState(deleteProperty, EMPTY_ACTION_STATE)
   useActionRedirect(state)
 
@@ -38,17 +41,20 @@ export function DeletePropertyButton({
       <DialogTrigger asChild>
         <Button variant="destructive">
           <Trash2 className="mr-2 h-4 w-4" />
-          Delete
+          {t.common.delete}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-white">Delete {propertyName}?</DialogTitle>
+          <DialogTitle className="text-foreground">
+            {format(t.confirm.deletePropertyTitle, { name: propertyName })}
+          </DialogTitle>
           <DialogDescription>
-            This cannot be undone.
             {bookingCount > 0
-              ? ` Its ${bookingCount} booking${bookingCount === 1 ? "" : "s"} will be deleted with it.`
-              : " It has no bookings."}
+              ? format(t.confirm.deletePropertyWithBookings, {
+                  bookings: plural(bookingCount, BOOKING_COUNT_FORMS[locale], locale),
+                })
+              : t.confirm.deletePropertyNoBookings}
           </DialogDescription>
         </DialogHeader>
 
@@ -57,8 +63,8 @@ export function DeletePropertyButton({
         <form action={formAction}>
           <input type="hidden" name="id" value={propertyId} />
           <DialogFooter className="gap-2">
-            <SubmitButton variant="destructive" pendingLabel="Deleting...">
-              Delete property
+            <SubmitButton variant="destructive" pendingLabel={t.common.deleting}>
+              {t.confirm.deleteProperty}
             </SubmitButton>
           </DialogFooter>
         </form>

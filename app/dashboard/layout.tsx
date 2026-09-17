@@ -2,6 +2,8 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { getOrgFeatures } from "@/lib/subscriptions"
 import { buildActivity } from "@/lib/activity"
+import { currentLocale } from "@/lib/i18n/server"
+import { currentThemePreference } from "@/lib/theme-server"
 import { redirect } from "next/navigation"
 import { DashboardShell } from "@/components/dashboard/DashboardShell"
 
@@ -67,6 +69,17 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
 
   const attentionCount = buildActivity(bookings, preferences, new Date()).length
 
+  /**
+   * Both preferences are read here and handed to the shell as its starting
+   * state. The cookie is authoritative — it is what `BootScript` already painted
+   * the page with — and the user row is the fallback for a member signing in on
+   * a device that has never seen either cookie. The row is what the setters in
+   * app/actions/preferences.ts write, so the two only disagree for one request
+   * after a write on another device.
+   */
+  const locale = await currentLocale(user.locale)
+  const theme = await currentThemePreference(user.theme)
+
   return (
     <DashboardShell
       orgName={org.name}
@@ -74,6 +87,8 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
       userName={user.name || undefined}
       userEmail={user.email}
       attentionCount={attentionCount}
+      locale={locale}
+      theme={theme}
     >
       {children}
     </DashboardShell>

@@ -33,6 +33,10 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# uploaded expense receipts — tenant data, written at runtime by lib/storage.ts.
+# Override the location with RECEIPT_STORAGE_DIR; if you do, ignore that instead.
+.data/
+
 # vercel
 .vercel
 

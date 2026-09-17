@@ -9,10 +9,13 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/Button"
 import { BookingStatusBadge } from "@/components/dashboard/BookingStatusBadge"
 
+import { useI18n } from "@/components/i18n/LocaleProvider"
+
 export interface RecentProperty {
   id: string
   name: string
   bookingCount: number
+
   /** True when a booking currently covers this property. */
   occupied: boolean
 }
@@ -39,23 +42,24 @@ type RecentActivityTableProps =
   | (BaseProps & { type: "bookings"; items: RecentBooking[] })
 
 export function RecentActivityTable(props: RecentActivityTableProps) {
+  const { t } = useI18n()
   const { emptyMessage, viewAllHref, viewAllLabel } = props
   const isProperties = props.type === "properties"
   const Icon = isProperties ? Building2 : Calendar
-  const title = isProperties ? "Recent Properties" : "Recent Bookings"
+  const title = isProperties ? t.pages.dashboard.recent.recentProperties : t.pages.dashboard.recent.recentBookings
 
   if (props.items.length === 0) {
     return (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Icon className="h-5 w-5 text-[#36BFAE]" />
+            <Icon className="h-5 w-5 text-primary" />
             {title}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="py-10 text-center">
-            <p className="text-sm text-slate-400">{emptyMessage || `No ${props.type} found`}</p>
+            <p className="text-sm text-subtle-foreground">{emptyMessage || (isProperties ? t.pages.dashboard.recent.noPropertiesYet : t.pages.dashboard.recent.noBookingsYet)}</p>
             <Button variant="glass" size="sm" href={viewAllHref} className="mt-4">
               {viewAllLabel}
             </Button>
@@ -69,7 +73,7 @@ export function RecentActivityTable(props: RecentActivityTableProps) {
     <Card className="overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <CardTitle className="flex items-center gap-2">
-          <Icon className="h-5 w-5 text-[#36BFAE]" />
+          <Icon className="h-5 w-5 text-primary" />
           {title}
         </CardTitle>
         <Button variant="ghost" size="sm" href={viewAllHref}>
@@ -81,17 +85,17 @@ export function RecentActivityTable(props: RecentActivityTableProps) {
           <TableHeader>
             {isProperties ? (
               <TableRow>
-                <TableHead>Property</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Bookings</TableHead>
+                <TableHead>{t.pages.dashboard.recent.property}</TableHead>
+                <TableHead>{t.pages.dashboard.recent.status}</TableHead>
+                <TableHead className="text-right">{t.pages.dashboard.recent.bookings}</TableHead>
               </TableRow>
             ) : (
               <TableRow>
-                <TableHead>Guest</TableHead>
-                <TableHead>Property</TableHead>
-                <TableHead>Dates</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
+                <TableHead>{t.pages.dashboard.recent.guest}</TableHead>
+                <TableHead>{t.pages.dashboard.recent.property}</TableHead>
+                <TableHead>{t.pages.dashboard.recent.dates}</TableHead>
+                <TableHead>{t.pages.dashboard.recent.status}</TableHead>
+                <TableHead className="text-right">{t.pages.dashboard.recent.amount}</TableHead>
               </TableRow>
             )}
           </TableHeader>
@@ -99,22 +103,22 @@ export function RecentActivityTable(props: RecentActivityTableProps) {
             {isProperties
               ? (props.items as RecentProperty[]).map((item) => (
                   <TableRow key={item.id}>
-                    <TableCell className="font-medium text-white">{item.name}</TableCell>
+                    <TableCell className="font-medium text-foreground">{item.name}</TableCell>
                     <TableCell>
                       {item.occupied ? (
-                        <Badge variant="success">Occupied</Badge>
+                        <Badge variant="success">{t.pages.dashboard.recent.occupied}</Badge>
                       ) : (
-                        <Badge variant="secondary">Available</Badge>
+                        <Badge variant="secondary">{t.pages.dashboard.recent.available}</Badge>
                       )}
                     </TableCell>
-                    <TableCell className="text-right text-slate-300">{item.bookingCount}</TableCell>
+                    <TableCell className="text-right text-muted-foreground">{item.bookingCount}</TableCell>
                   </TableRow>
                 ))
               : (props.items as RecentBooking[]).map((item) => (
                   <TableRow key={item.id}>
-                    <TableCell className="font-medium text-white">{item.guestName}</TableCell>
+                    <TableCell className="font-medium text-foreground">{item.guestName}</TableCell>
                     <TableCell>{item.propertyName}</TableCell>
-                    <TableCell className="whitespace-nowrap text-sm text-slate-400">
+                    <TableCell className="whitespace-nowrap text-sm text-subtle-foreground">
                       {item.dates}
                     </TableCell>
                     <TableCell>

@@ -19,7 +19,7 @@ export function FormMessage({ error, success }: FormMessageProps) {
     return (
       <div
         role="alert"
-        className="flex items-start gap-2 rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-400"
+        className="flex items-start gap-2 rounded-xl border border-destructive/25 bg-destructive/10 px-4 py-3 text-sm text-destructive"
       >
         <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
         <span>{error}</span>
@@ -31,7 +31,7 @@ export function FormMessage({ error, success }: FormMessageProps) {
     return (
       <div
         role="status"
-        className="flex items-start gap-2 rounded-xl border border-[#36BFAE]/25 bg-[#36BFAE]/10 px-4 py-3 text-sm text-[#36BFAE]"
+        className="flex items-start gap-2 rounded-xl border border-primary/25 bg-primary/10 px-4 py-3 text-sm text-primary"
       >
         <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
         <span>{success}</span>

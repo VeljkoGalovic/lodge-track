@@ -25,7 +25,7 @@ export function OrganizationForm({ name, currency, canEdit }: OrganizationFormPr
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
-          <label htmlFor="orgName" className="text-sm font-medium text-slate-300">
+          <label htmlFor="orgName" className="text-sm font-medium text-muted-foreground">
             Organization name
           </label>
           <Input
@@ -38,7 +38,7 @@ export function OrganizationForm({ name, currency, canEdit }: OrganizationFormPr
           />
         </div>
         <div className="space-y-2">
-          <label htmlFor="currency" className="text-sm font-medium text-slate-300">
+          <label htmlFor="currency" className="text-sm font-medium text-muted-foreground">
             Currency
           </label>
           <Select id="currency" name="currency" defaultValue={currency} disabled={!canEdit}>
@@ -48,7 +48,7 @@ export function OrganizationForm({ name, currency, canEdit }: OrganizationFormPr
               </option>
             ))}
           </Select>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-subtle-foreground">
             Booking rates are stored as whole minor units and displayed in this currency.
           </p>
         </div>
@@ -57,7 +57,7 @@ export function OrganizationForm({ name, currency, canEdit }: OrganizationFormPr
       {canEdit ? (
         <SubmitButton pendingLabel="Saving...">Save changes</SubmitButton>
       ) : (
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-subtle-foreground">
           Only an owner can change the organization&apos;s name or currency.
         </p>
       )}

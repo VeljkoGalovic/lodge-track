@@ -16,12 +16,12 @@ export function PageHeader({ eyebrow, title, description, action }: PageHeaderPr
       <div className="space-y-2">
         {eyebrow && (
           <span className="eyebrow-pill">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#36BFAE]" aria-hidden="true" />
+            <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" />
             {eyebrow}
           </span>
         )}
-        <h1 className="text-3xl font-bold tracking-tight text-white md:text-4xl">{title}</h1>
-        {description && <p className="max-w-2xl text-slate-400">{description}</p>}
+        <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">{title}</h1>
+        {description && <p className="max-w-2xl text-subtle-foreground">{description}</p>}
       </div>
       {action && <div className="flex shrink-0 flex-wrap items-center gap-3">{action}</div>}
     </div>

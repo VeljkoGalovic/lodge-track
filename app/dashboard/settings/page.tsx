@@ -1,6 +1,6 @@
 import { requireMembership, isOwner } from "@/lib/authorization"
 import { prisma } from "@/lib/prisma"
-import { getOrgFeatures } from "@/lib/subscriptions"
+import { formatBytes, getOrgFeatures } from "@/lib/subscriptions"
 import { buildActivityCounts } from "@/lib/activity"
 import { PageHeader } from "@/components/dashboard/PageHeader"
 import { ProfileForm } from "@/components/settings/ProfileForm"
@@ -10,10 +10,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/Button"
 import { Badge } from "@/components/ui/badge"
 import { getTierBadgeColor, getTierLabel } from "@/lib/subscriptions"
-import { User, Building2, Bell, Shield, KeyRound, Mail, ArrowUpRight } from "lucide-react"
+import { ThemeSwitcher } from "@/components/theme/ThemeSwitcher"
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher"
+import { receiptBytesUsed } from "@/lib/receipt-quota"
+import { currentLocale } from "@/lib/i18n/server"
+import { getDictionary } from "@/lib/i18n/dictionaries"
+import { User, Building2, Bell, Palette, Shield, KeyRound, Mail, ArrowUpRight } from "lucide-react"
 
 export default async function SettingsPage() {
   const { user, organization, subscription } = await requireMembership()
+  // Read directly rather than through the client context: this is a server
+  // component, and the card below labels the two controls in the member's own
+  // language on the first paint rather than after hydration.
+  const t = getDictionary(await currentLocale(user.locale))
 
   const features = getOrgFeatures(
     subscription?.tier ?? "STARTER",
@@ -42,18 +51,21 @@ export default async function SettingsPage() {
   // whether an override actually changed anything.
   const planDefaultApiAccess = getOrgFeatures(features.tier).hasApiAccess
 
+  // Scoped by orgId, like every other figure on this page.
+  const receiptBytes = await receiptBytesUsed(organization.id)
+
   return (
     <div className="max-w-3xl space-y-6">
       <PageHeader
-        eyebrow="Account"
-        title="Settings"
-        description="Manage your account and organization settings."
+        eyebrow={t.pages.eyebrows.account}
+        title={t.pages.settings.title}
+        description={t.pages.settings.description}
       />
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5 text-[#36BFAE]" />
+            <User className="h-5 w-5 text-primary" />
             Profile
           </CardTitle>
           <CardDescription>Update your personal information</CardDescription>
@@ -66,7 +78,31 @@ export default async function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-[#36BFAE]" />
+            <Palette className="h-5 w-5 text-primary" />
+            Appearance &amp; language
+          </CardTitle>
+          <CardDescription>
+            Both apply to your account only — other members of {organization.name} keep their own.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">{t.theme.label}</p>
+            <ThemeSwitcher />
+            <p className="text-xs text-subtle-foreground">{t.theme.description}</p>
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">{t.language.label}</p>
+            <LanguageSwitcher />
+            <p className="text-xs text-subtle-foreground">{t.language.description}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5 text-primary" />
             Organization
           </CardTitle>
           <CardDescription>Manage your organization details</CardDescription>
@@ -83,7 +119,7 @@ export default async function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5 text-[#36BFAE]" />
+            <Bell className="h-5 w-5 text-primary" />
             Notifications
           </CardTitle>
           <CardDescription>Choose what appears in your activity feed</CardDescription>
@@ -98,8 +134,8 @@ export default async function SettingsPage() {
             counts={counts}
           />
 
-          <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-sm text-slate-400">
-            <span className="flex items-center gap-2 font-medium text-slate-300">
+          <div className="rounded-xl border border-border bg-muted px-4 py-3 text-sm text-subtle-foreground">
+            <span className="flex items-center gap-2 font-medium text-muted-foreground">
               <Mail className="h-4 w-4" />
               Email and push delivery
             </span>
@@ -114,16 +150,16 @@ export default async function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-[#36BFAE]" />
+            <Shield className="h-5 w-5 text-primary" />
             Security
           </CardTitle>
           <CardDescription>Manage your password and sign-in protection</CardDescription>
         </CardHeader>
-        <CardContent className="divide-y divide-white/[0.06]">
+        <CardContent className="divide-y divide-border">
           <div className="flex flex-wrap items-center justify-between gap-3 pb-4">
             <div>
-              <p className="font-medium text-white">Change password</p>
-              <p className="text-sm text-slate-400">Update your account password</p>
+              <p className="font-medium text-foreground">Change password</p>
+              <p className="text-sm text-subtle-foreground">Update your account password</p>
             </div>
             <Button variant="outline" size="sm" href="/dashboard/settings/password">
               Change
@@ -131,8 +167,8 @@ export default async function SettingsPage() {
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3 pt-4">
             <div>
-              <p className="font-medium text-white">Two-factor authentication</p>
-              <p className="text-sm text-slate-400">
+              <p className="font-medium text-foreground">Two-factor authentication</p>
+              <p className="text-sm text-subtle-foreground">
                 {user.twoFactorEnabled
                   ? "On — a code is required at sign-in"
                   : "Add an extra layer of security"}
@@ -148,7 +184,7 @@ export default async function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <KeyRound className="h-5 w-5 text-[#36BFAE]" />
+            <KeyRound className="h-5 w-5 text-primary" />
             Plan &amp; access
           </CardTitle>
           <CardDescription>What your subscription currently entitles this organization to</CardDescription>
@@ -175,16 +211,22 @@ export default async function SettingsPage() {
               ["Advanced analytics", features.hasAdvancedAnalytics ? "Included" : "Not included"],
               ["Team roles", features.hasTeamRoles ? "Included" : "Not included"],
               ["API access", features.hasApiAccess ? "Enabled" : "Not included"],
+              [
+                "Receipt storage",
+                features.maxStorageBytes === Infinity
+                  ? `${formatBytes(receiptBytes)} used — unlimited`
+                  : `${formatBytes(receiptBytes)} of ${formatBytes(features.maxStorageBytes)}`,
+              ],
             ].map(([label, value]) => (
               <li key={label} className="flex items-center justify-between gap-4">
-                <span className="text-slate-400">{label}</span>
-                <span className="text-slate-200">{value}</span>
+                <span className="text-subtle-foreground">{label}</span>
+                <span className="text-muted-foreground">{value}</span>
               </li>
             ))}
           </ul>
 
           {subscription?.hasApiAccessOverride != null ? (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-subtle-foreground">
               API access is {subscription.hasApiAccessOverride ? "granted" : "withheld"} by an
               override on this subscription
               {features.hasApiAccess === planDefaultApiAccess

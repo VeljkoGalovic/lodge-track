@@ -6,17 +6,20 @@ import { PropertyForm } from "@/components/properties/PropertyForm"
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft } from "lucide-react"
+import { currentLocale } from "@/lib/i18n/server"
+import { format, getDictionary } from "@/lib/i18n/dictionaries"
 
 export default async function NewPropertyPage() {
   const { user, organization, subscription } = await requireMembership()
+  const t = getDictionary(await currentLocale(user.locale))
 
   if (!canManage(user.role)) {
     return (
       <div className="max-w-2xl space-y-6">
-        <PageHeader eyebrow="Portfolio" title="Add a property" />
+        <PageHeader eyebrow={t.pages.eyebrows.portfolio} title={t.pages.properties.newTitle} />
         <Card>
           <CardHeader>
-            <CardTitle>Not permitted</CardTitle>
+            <CardTitle>{t.pages.notPermitted}</CardTitle>
             <CardDescription>
               Your role is view-only. Ask an owner or manager to add properties.
             </CardDescription>
@@ -45,9 +48,13 @@ export default async function NewPropertyPage() {
   return (
     <div className="max-w-2xl space-y-6">
       <PageHeader
-        eyebrow="Portfolio"
-        title="Add a property"
-        description={`This will be the ${used + 1} of ${features.maxProperties === Infinity ? "unlimited" : features.maxProperties} properties on your plan.`}
+        eyebrow={t.pages.eyebrows.portfolio}
+        title={t.pages.properties.newTitle}
+        description={format(t.pages.properties.newDescription, {
+          position: used + 1,
+          total:
+            features.maxProperties === Infinity ? t.common.unlimited : features.maxProperties,
+        })}
         action={
           <Button variant="ghost" href="/dashboard/properties">
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -57,9 +64,9 @@ export default async function NewPropertyPage() {
       />
 
       {atLimit ? (
-        <Card className="border-amber-400/25 bg-amber-400/[0.04]">
+        <Card className="border-warning/25 bg-warning/[0.04]">
           <CardHeader>
-            <CardTitle className="text-amber-300">Property limit reached</CardTitle>
+            <CardTitle className="text-warning">Property limit reached</CardTitle>
             <CardDescription>
               Your plan allows {features.maxProperties} propert
               {features.maxProperties === 1 ? "y" : "ies"}. Upgrade to add more.

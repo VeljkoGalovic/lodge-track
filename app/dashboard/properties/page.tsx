@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/Button"
 import { Badge } from "@/components/ui/badge"
 import { PageHeader } from "@/components/dashboard/PageHeader"
 import { Building2, Plus } from "lucide-react"
+import { currentLocale } from "@/lib/i18n/server"
+import { getDictionary } from "@/lib/i18n/dictionaries"
 
 export default async function PropertiesPage() {
   const session = await auth()
@@ -35,6 +37,10 @@ export default async function PropertiesPage() {
     redirect("/onboarding")
   }
 
+  // The locale lives on the member row, so it is only readable once that row is
+  // in hand. The dashboard layout resolves the same value for the shell.
+  const t = getDictionary(await currentLocale(user.locale))
+
   const org = user.organization
   const subscription = org.subscription
 
@@ -49,13 +55,13 @@ export default async function PropertiesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Portfolio"
-        title="Properties"
-        description="Manage your property portfolio."
+        eyebrow={t.pages.eyebrows.portfolio}
+        title={t.pages.properties.title}
+        description={t.pages.properties.description}
         action={
           <Button href="/dashboard/properties/new">
             <Plus className="mr-2 h-4 w-4" />
-            Add Property
+            {t.pages.properties.addButton}
           </Button>
         }
       />
@@ -70,16 +76,16 @@ export default async function PropertiesPage() {
         <CardContent>
           {properties.length === 0 ? (
             <div className="py-12 text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.04]">
-                <Building2 className="h-6 w-6 text-[#36BFAE]" />
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-muted">
+                <Building2 className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="mt-4 text-lg font-medium text-white">No properties yet</h3>
-              <p className="mt-2 text-sm text-slate-400">
+              <h3 className="mt-4 text-lg font-medium text-foreground">No properties yet</h3>
+              <p className="mt-2 text-sm text-subtle-foreground">
                 Get started by adding your first property
               </p>
               <Button href="/dashboard/properties/new" className="mt-6">
                 <Plus className="mr-2 h-4 w-4" />
-                Add Property
+                {t.pages.properties.addButton}
               </Button>
             </div>
           ) : (
@@ -96,17 +102,17 @@ export default async function PropertiesPage() {
                 return (
                   <div
                     key={property.id}
-                    className="relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-white/5 p-5 backdrop-blur-xl transition-all duration-300 hover:border-white/[0.15] hover:bg-white/[0.07]"
+                    className="relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card p-5 backdrop-blur-xl transition-all duration-300 hover:border-border hover:bg-accent"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <h3 className="truncate font-semibold text-white">{property.name}</h3>
-                        <p className="mt-1 line-clamp-2 text-sm text-slate-400">
+                        <h3 className="truncate font-semibold text-foreground">{property.name}</h3>
+                        <p className="mt-1 line-clamp-2 text-sm text-subtle-foreground">
                           {property.address}
                         </p>
                       </div>
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.04]">
-                        <Building2 className="h-5 w-5 text-[#36BFAE]" />
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-muted">
+                        <Building2 className="h-5 w-5 text-primary" />
                       </div>
                     </div>
 
@@ -121,7 +127,7 @@ export default async function PropertiesPage() {
                       </Badge>
                     </div>
 
-                    <div className="mt-5 flex gap-2 border-t border-white/[0.06] pt-4">
+                    <div className="mt-5 flex gap-2 border-t border-border pt-4">
                       <Button
                         variant="outline"
                         size="sm"

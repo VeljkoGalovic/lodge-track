@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { FormMessage } from "@/components/dashboard/FormMessage"
 import { SubmitButton } from "@/components/dashboard/SubmitButton"
+import { useI18n } from "@/components/i18n/LocaleProvider"
 
 interface InviteFormProps {
   /** Only an owner may invite another owner, so the option is withheld otherwise. */
@@ -14,6 +15,7 @@ interface InviteFormProps {
 }
 
 export function InviteForm({ canInviteOwner }: InviteFormProps) {
+  const { t } = useI18n()
   const [state, formAction] = useActionState(inviteMember, EMPTY_ACTION_STATE)
 
   return (
@@ -22,8 +24,8 @@ export function InviteForm({ canInviteOwner }: InviteFormProps) {
 
       <div className="grid gap-5 sm:grid-cols-[2fr_1fr]">
         <div className="space-y-2">
-          <label htmlFor="email" className="text-sm font-medium text-slate-300">
-            Email address
+          <label htmlFor="email" className="text-sm font-medium text-muted-foreground">
+            {t.team.inviteEmail}
           </label>
           <Input
             id="email"
@@ -35,22 +37,22 @@ export function InviteForm({ canInviteOwner }: InviteFormProps) {
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="role" className="text-sm font-medium text-slate-300">
-            Role
+          <label htmlFor="role" className="text-sm font-medium text-muted-foreground">
+            {t.roles.label}
           </label>
           <Select id="role" name="role" defaultValue="MANAGER">
-            <option value="MANAGER">Manager</option>
-            <option value="MAINTENANCE">Maintenance</option>
-            {canInviteOwner ? <option value="OWNER">Owner</option> : null}
+            <option value="MANAGER">{t.roles.labels.MANAGER}</option>
+            <option value="MAINTENANCE">{t.roles.labels.MAINTENANCE}</option>
+            {canInviteOwner ? <option value="OWNER">{t.roles.labels.OWNER}</option> : null}
           </Select>
         </div>
       </div>
 
-      <p className="text-xs text-slate-500">
-        Managers can add and edit properties and bookings. Maintenance has read-only access.
+      <p className="text-xs text-subtle-foreground">
+        {t.team.inviteHint}
       </p>
 
-      <SubmitButton pendingLabel="Creating link...">Create invitation link</SubmitButton>
+      <SubmitButton pendingLabel={t.team.creatingLink}>{t.team.createInviteLink}</SubmitButton>
     </form>
   )
 }

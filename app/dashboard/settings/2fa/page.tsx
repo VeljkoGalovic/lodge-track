@@ -5,33 +5,36 @@ import { PageHeader } from "@/components/dashboard/PageHeader"
 import { TwoFactorPanel } from "@/components/settings/TwoFactorPanel"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Shield } from "lucide-react"
+import { currentLocale } from "@/lib/i18n/server"
+import { getDictionary } from "@/lib/i18n/dictionaries"
 
 /** The label an authenticator app shows next to the account. */
 const ISSUER = "LodgeTrack"
 
 export default async function TwoFactorPage() {
   const { user } = await requireMembership()
+  const t = getDictionary(await currentLocale(user.locale))
 
   return (
     <div className="max-w-xl space-y-6">
       <Link
         href="/dashboard/settings"
-        className="inline-flex items-center gap-1 text-sm text-slate-400 transition-colors hover:text-white"
+        className="inline-flex items-center gap-1 text-sm text-subtle-foreground transition-colors hover:text-foreground"
       >
         <ChevronLeft className="h-4 w-4" />
         Settings
       </Link>
 
       <PageHeader
-        eyebrow="Security"
-        title="Two-factor authentication"
-        description="A one-time code from your authenticator app, on top of your password."
+        eyebrow={t.pages.eyebrows.security}
+        title={t.pages.settings.twoFactor}
+        description={t.pages.settings.twoFactorDescription}
       />
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-[#36BFAE]" />
+            <Shield className="h-5 w-5 text-primary" />
             Authenticator app
           </CardTitle>
           <CardDescription>

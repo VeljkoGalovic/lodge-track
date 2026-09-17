@@ -32,25 +32,25 @@ export function MetricCard({
   return (
     <div
       className={clsx(
-        "relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/5 p-6 backdrop-blur-xl transition-all duration-300 hover:border-white/[0.15] hover:bg-white/[0.07]",
+        "relative overflow-hidden rounded-2xl border border-border bg-card p-6 backdrop-blur-xl transition-all duration-300 hover:border-border hover:bg-accent",
         className
       )}
     >
       <div className="flex items-start justify-between gap-4">
-        <p className="text-sm font-medium text-slate-400">{title}</p>
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.04]">
+        <p className="text-sm font-medium text-subtle-foreground">{title}</p>
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-muted">
           {icon}
         </div>
       </div>
 
-      <p className="mt-4 text-2xl font-bold tracking-tight text-white md:text-3xl">{value}</p>
-      {subtitle && <p className="mt-1 text-xs text-slate-400">{subtitle}</p>}
+      <p className="mt-4 text-2xl font-bold tracking-tight text-foreground md:text-3xl">{value}</p>
+      {subtitle && <p className="mt-1 text-xs text-subtle-foreground">{subtitle}</p>}
 
       {progress && (
         <div className="mt-5 space-y-2">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-slate-400">{progress.label}</span>
-            <span className="font-medium text-slate-300">
+            <span className="text-subtle-foreground">{progress.label}</span>
+            <span className="font-medium text-muted-foreground">
               {progress.current} / {progress.max === Infinity ? "∞" : progress.max}
             </span>
           </div>
@@ -59,7 +59,7 @@ export function MetricCard({
             className="h-2"
           />
           {isAtLimit && (
-            <div className="flex items-center gap-2 text-xs text-amber-400">
+            <div className="flex items-center gap-2 text-xs text-warning">
               <AlertCircle className="h-3 w-3" />
               <span>Property limit reached</span>
             </div>
@@ -69,17 +69,17 @@ export function MetricCard({
 
       {trend && (
         <div className="mt-5 flex items-center gap-2 text-sm">
-          <TrendingUp className={clsx("h-4 w-4", trend.value >= 0 ? "text-[#36BFAE]" : "text-red-400")} />
-          <span className={clsx("font-medium", trend.value >= 0 ? "text-[#36BFAE]" : "text-red-400")}>
+          <TrendingUp className={clsx("h-4 w-4", trend.value >= 0 ? "text-primary" : "text-destructive")} />
+          <span className={clsx("font-medium", trend.value >= 0 ? "text-primary" : "text-destructive")}>
             {trend.value >= 0 ? "+" : ""}
             {trend.value}%
           </span>
-          <span className="text-slate-400">{trend.label}</span>
+          <span className="text-subtle-foreground">{trend.label}</span>
         </div>
       )}
 
       {action && isAtLimit && (
-        <div className="mt-5 border-t border-white/[0.06] pt-5">
+        <div className="mt-5 border-t border-border pt-5">
           <Button variant="outline" size="sm" href={action.href} className="w-full">
             <ArrowUpRight className="mr-2 h-4 w-4" />
             {action.label}

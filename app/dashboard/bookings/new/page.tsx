@@ -1,23 +1,27 @@
 import { requireMembership, canManage } from "@/lib/authorization"
 import { prisma } from "@/lib/prisma"
+import { unitBusyIntervals, unitsForOrganization } from "@/lib/units"
 import { PageHeader } from "@/components/dashboard/PageHeader"
 import { BookingForm } from "@/components/bookings/BookingForm"
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft } from "lucide-react"
+import { currentLocale } from "@/lib/i18n/server"
+import { getDictionary } from "@/lib/i18n/dictionaries"
 
 export default async function NewBookingPage() {
   const { user, organization } = await requireMembership()
+  const t = getDictionary(await currentLocale(user.locale))
 
   if (!canManage(user.role)) {
     return (
       <div className="max-w-2xl space-y-6">
-        <PageHeader eyebrow="Operations" title="New booking" />
+        <PageHeader eyebrow={t.pages.eyebrows.operations} title={t.pages.bookings.newTitle} />
         <Card>
           <CardHeader>
-            <CardTitle>Not permitted</CardTitle>
+            <CardTitle>{t.pages.notPermitted}</CardTitle>
             <CardDescription>
-              Your role is view-only. Ask an owner or manager to add bookings.
+              {t.pages.bookings.viewOnly}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -31,18 +35,22 @@ export default async function NewBookingPage() {
     )
   }
 
-  const properties = await prisma.property.findMany({
-    where: { orgId: organization.id },
-    orderBy: { name: "asc" },
-    select: { id: true, name: true },
-  })
+  const [properties, units, busy] = await Promise.all([
+    prisma.property.findMany({
+      where: { orgId: organization.id },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+    unitsForOrganization(organization.id),
+    unitBusyIntervals(organization.id),
+  ])
 
   return (
     <div className="max-w-2xl space-y-6">
       <PageHeader
-        eyebrow="Operations"
-        title="New booking"
-        description={`Dates and a rate go on the record you own — nothing is estimated.`}
+        eyebrow={t.pages.eyebrows.operations}
+        title={t.pages.bookings.newTitle}
+        description={t.pages.bookings.newDescription}
         action={
           <Button variant="ghost" href="/dashboard/bookings">
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -61,7 +69,12 @@ export default async function NewBookingPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <BookingForm properties={properties} currency={organization.currency} />
+          <BookingForm
+            properties={properties}
+            units={units}
+            busy={busy}
+            currency={organization.currency}
+          />
         </CardContent>
       </Card>
     </div>

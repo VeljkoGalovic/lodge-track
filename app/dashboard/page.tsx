@@ -17,7 +17,10 @@ import {
   statsForWindow,
 } from "@/lib/dashboard-metrics"
 import { formatAmount, formatCurrency } from "@/lib/currency"
+import { getExchangeRates } from "@/lib/exchange-rates"
 import { Building2, Calendar, DollarSign, Home } from "lucide-react"
+import { currentLocale } from "@/lib/i18n/server"
+import { format, getDictionary } from "@/lib/i18n/dictionaries"
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -47,6 +50,12 @@ export default async function DashboardPage() {
     redirect("/onboarding")
   }
 
+  // The locale is a property of the member, so it is only readable once the
+  // user row above is in hand — the dashboard layout resolves the same value
+  // for the shell, and this page needs it for its own header.
+  const locale = await currentLocale(user.locale)
+  const t = getDictionary(locale)
+
   const org = user.organization
   const subscription = org.subscription
 
@@ -58,10 +67,11 @@ export default async function DashboardPage() {
 
   const properties = org.properties
   const bookings = properties.flatMap((property) =>
-    property.bookings.map((booking) => ({ ...booking, propertyName: property.name }))
+    property.bookings.map((booking) => ({ ...booking, propertyName: property.name, propertyCurrency: property.currency }))
   )
 
   const now = new Date()
+  const rates = await getExchangeRates()
 
   // Calculate metrics
   const totalProperties = properties.length
@@ -73,8 +83,8 @@ export default async function DashboardPage() {
   const thisMonth = monthWindow(now)
   const lastMonth = monthWindow(now, -1)
 
-  const monthStats = statsForWindow(properties, thisMonth)
-  const previousMonthStats = statsForWindow(properties, lastMonth)
+  const monthStats = statsForWindow(properties, thisMonth, org.currency, rates)
+  const previousMonthStats = statsForWindow(properties, lastMonth, org.currency, rates)
 
   const occupancyRate = occupancyAt(properties, now)
   const previousOccupancyRate = occupancyAt(properties, shiftMonths(now, -1))
@@ -87,10 +97,10 @@ export default async function DashboardPage() {
   // a partial sum as if it were the whole month.
   const revenueSubtitle =
     monthStats.bookings === 0
-      ? "No bookings this month"
+      ? t.pages.dashboard.metrics.noBookingsThisMonth
       : monthStats.pricedBookings === monthStats.bookings
-        ? `From ${monthStats.bookings} booking${monthStats.bookings === 1 ? "" : "s"}`
-        : `${monthStats.pricedBookings} of ${monthStats.bookings} bookings priced`
+        ? format(t.pages.dashboard.metrics.fromBookingsCount, { count: monthStats.bookings })
+        : format(t.pages.dashboard.metrics.pricedOfCount, { priced: monthStats.pricedBookings, count: monthStats.bookings })
 
   // Recent properties (newest first)
   const recentProperties = [...properties]
@@ -116,13 +126,13 @@ export default async function DashboardPage() {
       id: booking.id,
       guestName: booking.guestName,
       propertyName: booking.propertyName,
-      dates: formatDateRange(booking.startDate, booking.endDate),
+      dates: formatDateRange(booking.startDate, booking.endDate, locale),
       status: booking.status,
-      amount: formatAmount(booking.totalAmount, org.currency),
+      amount: formatAmount(booking.totalAmount, booking.propertyCurrency || org.currency),
     }))
 
   const analyticsData = features.hasAdvancedAnalytics
-    ? monthlySeries(properties, now, 6)
+    ? monthlySeries(properties, now, 6, org.currency, rates, locale)
     : undefined
 
   const firstName = user.name?.trim().split(/\s+/)[0]
@@ -130,50 +140,54 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Overview"
-        title={firstName ? `Welcome back, ${firstName}` : "Welcome back"}
-        description={`Here's what's happening across ${org.name} today.`}
+        eyebrow={t.pages.eyebrows.overview}
+        title={
+          firstName
+            ? format(t.pages.dashboard.welcomeBackName, { name: firstName })
+            : t.pages.dashboard.welcomeBack
+        }
+        description={format(t.pages.dashboard.happening, { org: org.name })}
         action={
           <Button variant="glass" href="/dashboard/properties">
-            Manage properties
+            {t.pages.dashboard.manageProperties}
           </Button>
         }
       />
 
       <MetricsGrid metrics={[
         {
-          title: "Total Properties",
+          title: t.pages.dashboard.metrics.totalProperties,
           value: totalProperties,
-          subtitle: `${maxProperties === Infinity ? "Unlimited" : `${maxProperties} property limit`}`,
+          subtitle: `${maxProperties === Infinity ? t.pages.dashboard.metrics.unlimited : format(t.pages.dashboard.metrics.propertyLimit, { max: maxProperties })}`,
           icon: <Building2 className="h-5 w-5 text-[#36BFAE]" />,
           progress: {
             current: totalProperties,
             max: maxProperties,
-            label: "Properties used"
+            label: t.pages.dashboard.metrics.propertiesUsed
           },
           isAtLimit: isAtPropertyLimit,
-          action: isAtPropertyLimit ? { label: "Upgrade Plan", href: "/dashboard/billing" } : undefined,
+          action: isAtPropertyLimit ? { label: t.pages.dashboard.metrics.upgradePlan, href: "/dashboard/billing" } : undefined,
         },
         {
-          title: "Active Bookings",
+          title: t.pages.dashboard.metrics.activeBookings,
           value: monthStats.bookings,
-          subtitle: "Stays starting this month",
+          subtitle: t.pages.dashboard.metrics.staysStartingThisMonth,
           icon: <Calendar className="h-5 w-5 text-[#BA87FF]" />,
-          trend: bookingsTrend === undefined ? undefined : { value: bookingsTrend, label: "vs last month" },
+          trend: bookingsTrend === undefined ? undefined : { value: bookingsTrend, label: t.pages.dashboard.metrics.vsLastMonth },
         },
         {
-          title: "Total Revenue",
+          title: t.pages.dashboard.metrics.totalRevenue,
           value: monthStats.pricedBookings > 0 ? formatCurrency(monthStats.revenueCents, org.currency) : "—",
           subtitle: revenueSubtitle,
           icon: <DollarSign className="h-5 w-5 text-[#36BFAE]" />,
-          trend: revenueTrend === undefined ? undefined : { value: revenueTrend, label: "vs last month" },
+          trend: revenueTrend === undefined ? undefined : { value: revenueTrend, label: t.pages.dashboard.metrics.vsLastMonth },
         },
         {
-          title: "Occupancy Rate",
+          title: t.pages.dashboard.metrics.occupancyRate,
           value: `${occupancyRate}%`,
-          subtitle: "Properties occupied today",
+          subtitle: t.pages.dashboard.metrics.propertiesOccupiedToday,
           icon: <Home className="h-5 w-5 text-[#BA87FF]" />,
-          trend: occupancyTrend === undefined ? undefined : { value: occupancyTrend, label: "vs last month" },
+          trend: occupancyTrend === undefined ? undefined : { value: occupancyTrend, label: t.pages.dashboard.metrics.vsLastMonth },
         },
       ]} />
 
@@ -190,15 +204,15 @@ export default async function DashboardPage() {
           type="properties"
           items={recentProperties}
           viewAllHref="/dashboard/properties"
-          viewAllLabel="View all"
-          emptyMessage="No properties yet. Add your first property to get started."
+          viewAllLabel={t.pages.dashboard.recent.viewAll}
+          emptyMessage={t.pages.dashboard.recent.noPropertiesYet}
         />
         <RecentActivityTable
           type="bookings"
           items={recentBookings}
           viewAllHref="/dashboard/bookings"
-          viewAllLabel="View all"
-          emptyMessage="No bookings yet. Bookings will appear here when guests reserve your properties."
+          viewAllLabel={t.pages.dashboard.recent.viewAll}
+          emptyMessage={t.pages.dashboard.recent.noBookingsYet}
         />
       </div>
     </div>

@@ -8,6 +8,8 @@ import { useActionRedirect } from "@/lib/use-action-redirect"
 import { Button } from "@/components/ui/Button"
 import { FormMessage } from "@/components/dashboard/FormMessage"
 import { SubmitButton } from "@/components/dashboard/SubmitButton"
+import { useI18n } from "@/components/i18n/LocaleProvider"
+import { format } from "@/lib/i18n/dictionaries"
 import {
   Dialog,
   DialogContent,
@@ -25,6 +27,7 @@ interface BookingActionsProps {
 
 /** Edit link plus a delete confirmation, for the booking detail header. */
 export function BookingActions({ bookingId, guestName }: BookingActionsProps) {
+  const { t } = useI18n()
   const [state, formAction] = useActionState(deleteBooking, EMPTY_ACTION_STATE)
   useActionRedirect(state)
 
@@ -32,22 +35,21 @@ export function BookingActions({ bookingId, guestName }: BookingActionsProps) {
     <>
       <Button variant="outline" href={`/dashboard/bookings/${bookingId}/edit`}>
         <Pencil className="mr-2 h-4 w-4" />
-        Edit
+        {t.common.edit}
       </Button>
 
       <Dialog>
         <DialogTrigger asChild>
           <Button variant="destructive">
             <Trash2 className="mr-2 h-4 w-4" />
-            Delete
+            {t.common.delete}
           </Button>
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-white">Delete this booking?</DialogTitle>
+            <DialogTitle className="text-foreground">{t.confirm.deleteBookingTitle}</DialogTitle>
             <DialogDescription>
-              The booking for {guestName} will be permanently removed and will no longer count
-              towards revenue or occupancy. This cannot be undone.
+              {format(t.confirm.deleteBookingBody, { guest: guestName })}
             </DialogDescription>
           </DialogHeader>
 
@@ -56,8 +58,8 @@ export function BookingActions({ bookingId, guestName }: BookingActionsProps) {
           <form action={formAction}>
             <input type="hidden" name="id" value={bookingId} />
             <DialogFooter className="gap-2">
-              <SubmitButton variant="destructive" pendingLabel="Deleting...">
-                Delete booking
+              <SubmitButton variant="destructive" pendingLabel={t.common.deleting}>
+                {t.confirm.deleteBooking}
               </SubmitButton>
             </DialogFooter>
           </form>

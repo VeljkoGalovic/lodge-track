@@ -15,7 +15,7 @@ export function PasswordForm() {
       <FormMessage error={state.error} success={state.success} />
 
       <div className="space-y-2">
-        <label htmlFor="currentPassword" className="text-sm font-medium text-slate-300">
+        <label htmlFor="currentPassword" className="text-sm font-medium text-muted-foreground">
           Current password
         </label>
         <Input
@@ -29,7 +29,7 @@ export function PasswordForm() {
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
-          <label htmlFor="newPassword" className="text-sm font-medium text-slate-300">
+          <label htmlFor="newPassword" className="text-sm font-medium text-muted-foreground">
             New password
           </label>
           <Input
@@ -42,7 +42,7 @@ export function PasswordForm() {
           />
         </div>
         <div className="space-y-2">
-          <label htmlFor="confirmPassword" className="text-sm font-medium text-slate-300">
+          <label htmlFor="confirmPassword" className="text-sm font-medium text-muted-foreground">
             Confirm new password
           </label>
           <Input
@@ -56,7 +56,7 @@ export function PasswordForm() {
         </div>
       </div>
 
-      <p className="text-xs text-slate-500">At least 8 characters.</p>
+      <p className="text-xs text-subtle-foreground">At least 8 characters.</p>
 
       <SubmitButton pendingLabel="Updating...">Change password</SubmitButton>
     </form>

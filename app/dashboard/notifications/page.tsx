@@ -10,6 +10,8 @@ import {
 } from "@/lib/activity"
 import { PageHeader } from "@/components/dashboard/PageHeader"
 import { Card, CardContent } from "@/components/ui/card"
+import { currentLocale } from "@/lib/i18n/server"
+import { getDictionary } from "@/lib/i18n/dictionaries"
 import { Button } from "@/components/ui/Button"
 
 const KIND_ICONS: Record<ActivityKind, typeof CalendarCheck> = {
@@ -29,6 +31,7 @@ const KIND_ORDER: ActivityKind[] = ["CHECK_IN_DUE", "STAY_ENDING", "MISSING_RATE
 
 export default async function NotificationsPage() {
   const { user, organization } = await requireMembership()
+  const t = getDictionary(await currentLocale(user.locale))
 
   const bookings = await prisma.booking.findMany({
     where: { property: { orgId: organization.id } },
@@ -55,16 +58,16 @@ export default async function NotificationsPage() {
   return (
     <div className="max-w-3xl space-y-6">
       <PageHeader
-        eyebrow="Account"
-        title="Notifications"
-        description="Derived live from your bookings — nothing is stored or marked as read."
+        eyebrow={t.pages.eyebrows.account}
+        title={t.pages.notifications.title}
+        description={t.pages.notifications.description}
       />
 
       {items.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <p className="font-medium text-white">Nothing needs your attention</p>
-            <p className="mx-auto mt-1 max-w-md text-sm text-slate-400">
+            <p className="font-medium text-foreground">Nothing needs your attention</p>
+            <p className="mx-auto mt-1 max-w-md text-sm text-subtle-foreground">
               {hasMutedKind
                 ? "Some kinds are switched off in your preferences, so anything they would have shown is hidden."
                 : "Check-ins due, stays ending and unrecorded rates appear here as they come up."}
@@ -82,11 +85,11 @@ export default async function NotificationsPage() {
 
           return (
             <section key={kind} className="space-y-3">
-              <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400">
-                <Icon className="h-4 w-4 text-[#36BFAE]" />
+              <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-subtle-foreground">
+                <Icon className="h-4 w-4 text-primary" />
                 {ACTIVITY_LABELS[kind]}
                 {group.length > 0 ? (
-                  <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-xs tabular-nums text-slate-300">
+                  <span className="rounded-full bg-accent px-2 py-0.5 text-xs tabular-nums text-muted-foreground">
                     {group.length}
                   </span>
                 ) : null}
@@ -94,11 +97,11 @@ export default async function NotificationsPage() {
 
               {!enabled ? (
                 <Card>
-                  <CardContent className="py-4 text-sm text-slate-500">
+                  <CardContent className="py-4 text-sm text-subtle-foreground">
                     Switched off in your{" "}
                     <Link
                       href="/dashboard/settings"
-                      className="text-[#36BFAE] underline-offset-4 hover:underline"
+                      className="text-primary underline-offset-4 hover:underline"
                     >
                       notification preferences
                     </Link>
@@ -107,7 +110,7 @@ export default async function NotificationsPage() {
                 </Card>
               ) : group.length === 0 ? (
                 <Card>
-                  <CardContent className="py-4 text-sm text-slate-500">{KIND_EMPTY[kind]}</CardContent>
+                  <CardContent className="py-4 text-sm text-subtle-foreground">{KIND_EMPTY[kind]}</CardContent>
                 </Card>
               ) : (
                 <div className="space-y-2">
@@ -115,13 +118,13 @@ export default async function NotificationsPage() {
                     <Link
                       key={item.id}
                       href={item.href}
-                      className="flex items-start justify-between gap-4 rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 py-3 transition-colors hover:border-white/[0.14] hover:bg-white/[0.05]"
+                      className="flex items-start justify-between gap-4 rounded-xl border border-border bg-muted px-4 py-3 transition-colors hover:bg-accent"
                     >
                       <span className="min-w-0">
-                        <span className="block font-medium text-white">{item.title}</span>
-                        <span className="block text-sm text-slate-400">{item.description}</span>
+                        <span className="block font-medium text-foreground">{item.title}</span>
+                        <span className="block text-sm text-subtle-foreground">{item.description}</span>
                       </span>
-                      <ArrowUpRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
+                      <ArrowUpRight className="mt-0.5 h-4 w-4 shrink-0 text-subtle-foreground" />
                     </Link>
                   ))}
                 </div>

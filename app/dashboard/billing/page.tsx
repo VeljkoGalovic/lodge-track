@@ -1,7 +1,7 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
-import { getOrgFeatures, getTierBadgeColor } from "@/lib/subscriptions"
 import { billingStatus } from "@/lib/billing"
+import { receiptBytesUsed } from "@/lib/receipt-quota"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/Button"
@@ -9,6 +9,9 @@ import { Badge } from "@/components/ui/badge"
 import { PageHeader } from "@/components/dashboard/PageHeader"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { CreditCard, Check, Lock, AlertTriangle, ArrowUpRight } from "lucide-react"
+import { currentLocale } from "@/lib/i18n/server"
+import { getDictionary } from "@/lib/i18n/dictionaries"
+import { getOrgFeatures, getTierBadgeColor, formatBytes } from "@/lib/subscriptions"
 import type { Tier } from "@/lib/subscriptions"
 
 interface TierCopy {
@@ -43,6 +46,9 @@ function tierFeatures(tier: Tier): string[] {
     features.maxProperties === Infinity
       ? "Unlimited properties"
       : `Up to ${features.maxProperties} properties`,
+    features.maxStorageBytes === Infinity
+      ? "Unlimited receipt storage"
+      : `Up to ${formatBytes(features.maxStorageBytes)} receipt storage`,
     ...BASE_FEATURES,
     features.hasAdvancedAnalytics ? "Advanced financial analytics" : "No advanced analytics",
     features.hasTeamRoles ? "Role-based permissions" : "No role-based permissions",
@@ -58,6 +64,13 @@ const COMPARISON_ROWS: Array<{ feature: string; value: (tier: Tier) => string | 
       return maxProperties === Infinity ? "Unlimited" : String(maxProperties)
     },
   },
+  {
+    feature: "Receipt storage",
+    value: (tier) => {
+      const { maxStorageBytes } = getOrgFeatures(tier)
+      return maxStorageBytes === Infinity ? "Unlimited" : formatBytes(maxStorageBytes)
+    },
+  },
   { feature: "Booking management", value: () => true },
   { feature: "Availability calendar", value: () => true },
   { feature: "Activity feed", value: () => true },
@@ -68,17 +81,17 @@ const COMPARISON_ROWS: Array<{ feature: string; value: (tier: Tier) => string | 
 
 function ComparisonCell({ value }: { value: string | boolean }) {
   if (typeof value === "string") {
-    return <span className="text-slate-300">{value}</span>
+    return <span className="text-muted-foreground">{value}</span>
   }
 
   return value ? (
     <>
-      <Check className="mx-auto h-4 w-4 text-[#36BFAE]" />
+      <Check className="mx-auto h-4 w-4 text-primary" />
       <span className="sr-only">Included</span>
     </>
   ) : (
     <>
-      <Lock className="mx-auto h-4 w-4 text-slate-600" />
+      <Lock className="mx-auto h-4 w-4 text-subtle-foreground" />
       <span className="sr-only">Not included</span>
     </>
   )
@@ -121,11 +134,16 @@ export default async function BillingPage({
     redirect("/onboarding")
   }
 
+  // The locale lives on the member row, so it is only readable once that row is
+  // in hand. The dashboard layout resolves the same value for the shell.
+  const t = getDictionary(await currentLocale(user.locale))
+
   const params = await searchParams
 
   const org = user.organization
   const subscription = org.subscription
   const currentTier: Tier = subscription?.tier ?? "STARTER"
+  const usedBytes = await receiptBytesUsed(org.id)
 
   const features = getOrgFeatures(
     currentTier,
@@ -140,32 +158,32 @@ export default async function BillingPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Account"
-        title="Billing & Subscription"
-        description="Manage your plan and billing details."
+        eyebrow={t.pages.eyebrows.account}
+        title={t.pages.billing.title}
+        description={t.pages.billing.description}
       />
 
       {params.error && CHECKOUT_ERRORS[params.error] ? (
-        <div className="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+        <div className="flex items-start gap-3 rounded-xl border border-warning/20 bg-warning/10 px-4 py-3 text-sm text-warning">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <p>{CHECKOUT_ERRORS[params.error]}</p>
         </div>
       ) : null}
 
       {params.checkout === "complete" ? (
-        <div className="rounded-xl border border-[#36BFAE]/25 bg-[#36BFAE]/10 px-4 py-3 text-sm text-slate-300">
+        <div className="rounded-xl border border-primary/25 bg-primary/10 px-4 py-3 text-sm text-muted-foreground">
           Checkout finished. Your plan updates as soon as Lemon Squeezy confirms the payment — reload
           this page in a moment if it still shows the old one.
         </div>
       ) : null}
 
       {/* Current Plan Card */}
-      <Card className="border-[#36BFAE]/25">
+      <Card className="border-primary/25">
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5 text-[#36BFAE]" />
+                <CreditCard className="h-5 w-5 text-primary" />
                 Current Plan
               </CardTitle>
               <CardDescription>Your current subscription tier</CardDescription>
@@ -176,7 +194,7 @@ export default async function BillingPage({
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {[
               {
                 label: "Plan price",
@@ -191,14 +209,20 @@ export default async function BillingPage({
                   features.maxProperties === Infinity ? "∞" : features.maxProperties
                 }`,
               },
+              {
+                label: "Receipt storage",
+                value: `${formatBytes(usedBytes)} / ${
+                  features.maxStorageBytes === Infinity ? "∞" : formatBytes(features.maxStorageBytes)
+                }`,
+              },
               { label: "Status", value: statusLabel },
             ].map((item) => (
               <div
                 key={item.label}
-                className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4"
+                className="rounded-2xl border border-border bg-muted p-4"
               >
-                <p className="text-sm text-slate-400">{item.label}</p>
-                <p className="mt-1 text-2xl font-bold capitalize tracking-tight text-white">
+                <p className="text-sm text-subtle-foreground">{item.label}</p>
+                <p className="mt-1 text-2xl font-bold capitalize tracking-tight text-foreground">
                   {item.value}
                 </p>
               </div>
@@ -206,13 +230,13 @@ export default async function BillingPage({
           </div>
 
           {subscription?.billingSubscriptionId ? (
-            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
-              <p className="text-sm text-slate-400">Lemon Squeezy subscription</p>
-              <p className="mt-1 font-mono text-sm text-slate-300">
+            <div className="rounded-2xl border border-border bg-muted p-4">
+              <p className="text-sm text-subtle-foreground">Lemon Squeezy subscription</p>
+              <p className="mt-1 font-mono text-sm text-muted-foreground">
                 {subscription.billingSubscriptionId}
               </p>
               {subscription.currentPeriodEnd ? (
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-subtle-foreground">
                   Current period ends{" "}
                   {subscription.currentPeriodEnd.toLocaleDateString("en-US", {
                     day: "numeric",
@@ -226,7 +250,7 @@ export default async function BillingPage({
           ) : null}
 
           {subscription?.isLifetimeFree ? (
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-subtle-foreground">
               This organization is marked lifetime free — no payment is taken, and plan changes are
               not needed.
             </p>
@@ -236,7 +260,7 @@ export default async function BillingPage({
               link is only offered when a checkout is configured at all, since
               without credentials there is no customer portal to point at. */}
           {subscription?.billingSubscriptionId && provider.canCheckout ? (
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-subtle-foreground">
               To change your card, download an invoice, or cancel, use the customer portal link in
               the receipt email Lemon Squeezy sent when you subscribed.
             </p>
@@ -246,7 +270,7 @@ export default async function BillingPage({
 
       {/* Plan Comparison */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold tracking-tight text-white">Choose Your Plan</h2>
+        <h2 className="text-xl font-semibold tracking-tight text-foreground">Choose Your Plan</h2>
         <div className="grid gap-4 md:grid-cols-3">
           {TIER_ORDER.map((tier) => {
             const copy = TIER_COPY[tier]
@@ -262,7 +286,7 @@ export default async function BillingPage({
                 key={tier}
                 className={
                   copy.popular
-                    ? "relative flex flex-col overflow-visible border-[#BA87FF]/50 bg-white/[0.08] ring-1 ring-[#BA87FF]/30"
+                    ? "relative flex flex-col overflow-visible border-brand-purple/50 bg-accent ring-1 ring-[#BA87FF]/30"
                     : "relative flex flex-col"
                 }
               >
@@ -270,10 +294,10 @@ export default async function BillingPage({
                   <>
                     <div
                       aria-hidden="true"
-                      className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[#BA87FF]/20 blur-[80px]"
+                      className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-brand-purple/20 blur-[80px]"
                     />
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <Badge className="border-transparent bg-[#BA87FF] text-[#07090E]">
+                      <Badge className="border-transparent bg-brand-purple text-[#07090E]">
                         Most Popular
                       </Badge>
                     </div>
@@ -282,13 +306,13 @@ export default async function BillingPage({
                 <CardHeader>
                   <div className="text-center">
                     <div className="mb-2 flex items-baseline justify-center gap-1">
-                      <span className="text-4xl font-bold tracking-tight text-white">
+                      <span className="text-4xl font-bold tracking-tight text-foreground">
                         ${copy.price}
                       </span>
-                      <span className="text-slate-400">/month</span>
+                      <span className="text-subtle-foreground">/month</span>
                     </div>
-                    <h3 className="text-xl font-semibold text-white">{copy.name}</h3>
-                    <p className="mt-1 text-sm text-slate-400">{copy.tagline}</p>
+                    <h3 className="text-xl font-semibold text-foreground">{copy.name}</h3>
+                    <p className="mt-1 text-sm text-subtle-foreground">{copy.tagline}</p>
                     {isCurrent && (
                       <Badge variant="secondary" className="mt-3">
                         Current Plan
@@ -305,14 +329,14 @@ export default async function BillingPage({
                           key={feature}
                           className={
                             excluded
-                              ? "flex items-start gap-2 text-sm text-slate-500"
-                              : "flex items-start gap-2 text-sm text-slate-300"
+                              ? "flex items-start gap-2 text-sm text-subtle-foreground"
+                              : "flex items-start gap-2 text-sm text-muted-foreground"
                           }
                         >
                           {excluded ? (
                             <Lock className="mt-0.5 h-4 w-4 shrink-0" />
                           ) : (
-                            <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#36BFAE]" />
+                            <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                           )}
                           <span>{feature}</span>
                         </li>
@@ -356,7 +380,7 @@ export default async function BillingPage({
           })}
         </div>
 
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-subtle-foreground">
           Amounts shown are indicative. The price charged is the one configured on the variant in
           your Lemon Squeezy store, and is displayed on the checkout page before you pay.
         </p>
@@ -383,7 +407,7 @@ export default async function BillingPage({
             <TableBody>
               {COMPARISON_ROWS.map((row) => (
                 <TableRow key={row.feature}>
-                  <TableCell className="font-medium text-white">{row.feature}</TableCell>
+                  <TableCell className="font-medium text-foreground">{row.feature}</TableCell>
                   {TIER_ORDER.map((tier) => (
                     <TableCell key={tier} className="text-center">
                       <ComparisonCell value={row.value(tier)} />
@@ -404,10 +428,10 @@ export default async function BillingPage({
         </CardHeader>
         <CardContent>
           <div className="py-8 text-center">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.04]">
-              <CreditCard className="h-6 w-6 text-[#36BFAE]" />
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-muted">
+              <CreditCard className="h-6 w-6 text-primary" />
             </div>
-            <p className="mx-auto mt-4 max-w-md text-sm text-slate-400">
+            <p className="mx-auto mt-4 max-w-md text-sm text-subtle-foreground">
               Invoices are not read back from the provider, so none are listed here. Each payment
               sends a receipt with a customer portal link, and that is where invoices live.
             </p>
@@ -416,9 +440,9 @@ export default async function BillingPage({
       </Card>
 
       {!provider.canCheckout ? (
-        <Card className="border-amber-500/20">
+        <Card className="border-warning/20">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-300">
+            <CardTitle className="flex items-center gap-2 text-warning">
               <AlertTriangle className="h-5 w-5" />
               Billing is not configured on this deployment
             </CardTitle>
@@ -427,12 +451,12 @@ export default async function BillingPage({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <ul className="space-y-1 font-mono text-xs text-slate-400">
+            <ul className="space-y-1 font-mono text-xs text-subtle-foreground">
               {provider.missing.map((name) => (
                 <li key={name}>{name}</li>
               ))}
             </ul>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-subtle-foreground">
               Webhook deliveries are {provider.canReceiveWebhooks ? "verifiable" : "not verifiable"} —
               {" "}
               {provider.canReceiveWebhooks

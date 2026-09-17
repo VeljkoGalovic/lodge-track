@@ -1,5 +1,39 @@
 @import "tailwindcss";
 
+/*
+  Class-based dark mode.
+
+  Tailwind v4 defaults the `dark:` variant to `prefers-color-scheme`, which cannot
+  express "the user chose light on a machine set to dark". Registering the variant
+  against a class instead lets the theme be an explicit choice, and scoping it to
+  `:where(.dark, .dark *)` keeps specificity at zero so it never outranks a utility
+  the component wrote deliberately.
+
+  The variable layer below is what actually does the theming; `dark:` is available
+  for the handful of places a token cannot reach (an image swap, a shadow).
+*/
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+  ───────────────────────────────────────────────────────────────────────────
+  Theming model
+
+  Every surface reads semantic tokens (`bg-card`, `text-muted-foreground`), and
+  the token *values* are swapped per theme. Two consequences worth knowing:
+
+  1. The dark values are the CSS equivalents of the literal classes the app used
+     before theming existed — `bg-white/5` became `rgba(255,255,255,0.05)`, not
+     `#0c0f16`. They are alpha-composited on purpose: the dashboard's cards are
+     translucent panels over the ambient orbs, and an opaque fill would silently
+     flatten that design.
+
+  2. Light is the `:root` default and dark is the override. That is the opposite
+     of this app's history, but it is the right way round: `:root` is the
+     baseline every page gets, and the no-JS / pre-hydration paint should be the
+     one that does not need a class to be correct.
+  ───────────────────────────────────────────────────────────────────────────
+*/
+
 @theme {
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 
@@ -8,7 +42,7 @@
   --color-brand-dark: #07090e; /* Deep rich dark background */
 
   /* ─────────────────────────────────────────────────────────────────────
-     Semantic surface tokens
+     Semantic surface tokens — LIGHT values.
 
      The dashboard's UI primitives are written against these names
      (the shadcn convention: bg-card, text-muted-foreground, border-input…).
@@ -19,42 +53,68 @@
      ───────────────────────────────────────────────────────────────────── */
 
   /* Surfaces */
-  --color-background: #07090e;
-  --color-foreground: #e2e8f0; /* slate-200 */
+  --color-background: #f6f7f9;
+  --color-foreground: #0f172a;
 
-  --color-card: #0c0f16;
-  --color-card-foreground: #e2e8f0;
-  --color-popover: #0c0f16;
-  --color-popover-foreground: #e2e8f0;
+  --color-card: #ffffff;
+  --color-card-foreground: #0f172a;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0f172a;
 
-  /* Interaction */
-  --color-primary: #36bfae;
-  --color-primary-foreground: #07090e;
-  --color-secondary: #ffffff14; /* white/8 */
-  --color-secondary-foreground: #e2e8f0;
-  --color-muted: #ffffff0f; /* white/6 */
-  --color-muted-foreground: #94a3b8; /* slate-400 */
-  --color-accent: #ffffff14;
-  --color-accent-foreground: #ffffff;
-  --color-destructive: #ef4444;
+  /* Interaction.
+     `--color-primary` is a darker teal than the brand's #36BFAE on purpose:
+     the brand colour on white is roughly 2.2:1, which fails WCAG AA for text
+     by a wide margin. The hue is unchanged; only the lightness moves. */
+  --color-primary: #0e8f80;
+  --color-primary-foreground: #ffffff;
+  /* A solid fill cannot express hover as an alpha step — over a light page a
+     translucent teal reads *lighter*, which is the opposite of a press. Each
+     solid colour therefore carries its own darker hover value. */
+  --color-primary-hover: #0b7a6c;
+  --color-secondary: #0f172a0f;
+  --color-secondary-foreground: #0f172a;
+  --color-muted: #0f172a08;
+  /* Labels and body copy — was slate-300/slate-200. */
+  --color-muted-foreground: #334155;
+  /* Detail text, metadata, hints — was slate-400, and slate-500/600 beside it.
+     Those three literal steps are collapsed into this one: a fourth near-identical
+     grey would be a name nobody could choose between, and the collapsed value is
+     the brightest of the three, so dark-mode hint text gets slightly more legible
+     rather than slightly less. */
+  --color-subtle-foreground: #475569;
+  --color-accent: #0f172a0a;
+  --color-accent-foreground: #0f172a;
+  --color-destructive: #dc2626;
+  --color-destructive-hover: #b91c1c;
   --color-destructive-foreground: #ffffff;
+  /* Status colours. The literal Tailwind palette the app used (red-400,
+     amber-300, emerald-400) is tuned for a dark background and fails contrast
+     on white, so light takes the darker end of each ramp. */
+  --color-success: #047857;
+  --color-warning: #b45309;
+
+  /* Raised translucent controls — secondary buttons, the file input's button,
+     icon buttons. A white wash over a white card would be invisible, so light
+     uses an ink wash of equivalent strength instead of the same colour. */
+  --color-raised: #0f172a0a;
+  --color-raised-hover: #0f172a14;
 
   /* Lines & focus */
-  --color-border: #ffffff1a; /* white/10 */
-  --color-input: #ffffff1a;
-  --color-ring: #36bfae;
+  --color-border: #0f172a14;
+  --color-input: #0f172a1a;
+  --color-ring: #0e8f80;
 
   /* Sidebar */
-  --color-sidebar: #0a0d13;
-  --color-sidebar-foreground: #cbd5e1; /* slate-300 */
-  --color-sidebar-border: #ffffff0f;
-  --color-sidebar-accent: #ffffff0f;
-  --color-sidebar-accent-foreground: #ffffff;
-  --color-sidebar-primary: #36bfae;
-  --color-sidebar-primary-foreground: #07090e;
-  --color-sidebar-secondary: #ffffff14;
-  --color-sidebar-secondary-foreground: #e2e8f0;
-  --color-sidebar-ring: #36bfae;
+  --color-sidebar: #ffffff;
+  --color-sidebar-foreground: #334155;
+  --color-sidebar-border: #0f172a0f;
+  --color-sidebar-accent: #0f172a0a;
+  --color-sidebar-accent-foreground: #0f172a;
+  --color-sidebar-primary: #0e8f80;
+  --color-sidebar-primary-foreground: #ffffff;
+  --color-sidebar-secondary: #0f172a0f;
+  --color-sidebar-secondary-foreground: #0f172a;
+  --color-sidebar-ring: #0e8f80;
 
   --animate-pulse-slow: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   --animate-float: float 6s ease-in-out infinite;
@@ -78,6 +138,60 @@
   }
 }
 
+/*
+  DARK values.
+
+  Declared after `@theme` so they win over the `:root` block it emits — both
+  selectors are specificity (0,1,0), so source order decides, and a plain rule
+  always comes after the generated theme layer.
+
+  Each value is the literal the app used before it was themed, which is what
+  makes the dark dashboard look identical to the one that shipped.
+*/
+.dark {
+  --color-background: #07090e;
+  /* `text-white` was the app's heading and body colour, so the dark foreground
+     really is white rather than the slate-200 the token used to hold. */
+  --color-foreground: #ffffff;
+  --color-card: rgba(255, 255, 255, 0.05);
+  --color-card-foreground: #ffffff;
+  --color-popover: rgba(12, 15, 22, 0.95);
+  --color-popover-foreground: #e2e8f0;
+
+  --color-primary: #36bfae;
+  --color-primary-foreground: #07090e;
+  --color-primary-hover: #2aa899;
+  --color-secondary: rgba(255, 255, 255, 0.08);
+  --color-secondary-foreground: #e2e8f0;
+  --color-muted: rgba(255, 255, 255, 0.03);
+  --color-muted-foreground: #cbd5e1;
+  --color-subtle-foreground: #94a3b8;
+  --color-accent: rgba(255, 255, 255, 0.06);
+  --color-accent-foreground: #ffffff;
+  --color-destructive: #ef4444;
+  --color-destructive-hover: #dc2626;
+  --color-destructive-foreground: #ffffff;
+  --color-success: #34d399;
+  --color-warning: #fcd34d;
+  --color-raised: rgba(255, 255, 255, 0.1);
+  --color-raised-hover: rgba(255, 255, 255, 0.15);
+
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-input: rgba(255, 255, 255, 0.1);
+  --color-ring: #36bfae;
+
+  --color-sidebar: rgba(10, 13, 19, 0.8);
+  --color-sidebar-foreground: #cbd5e1;
+  --color-sidebar-border: rgba(255, 255, 255, 0.06);
+  --color-sidebar-accent: rgba(255, 255, 255, 0.06);
+  --color-sidebar-accent-foreground: #ffffff;
+  --color-sidebar-primary: #36bfae;
+  --color-sidebar-primary-foreground: #07090e;
+  --color-sidebar-secondary: rgba(255, 255, 255, 0.08);
+  --color-sidebar-secondary-foreground: #e2e8f0;
+  --color-sidebar-ring: #36bfae;
+}
+
 /* Declared here rather than in @theme so the variable is always emitted to
    the stylesheet — the sidebar's rail geometry reads it in calc() expressions. */
 :root {
@@ -87,12 +201,17 @@
 /* Custom base styles */
 @layer base {
   body {
-    @apply bg-[#07090E] text-slate-200 overflow-x-hidden;
+    @apply bg-background text-foreground overflow-x-hidden;
   }
 }
 
 /* Utilities for glassmorphism and specific glows */
 @layer utilities {
+  /*
+    The marketing surface's glass treatment. Landing-only, and deliberately
+    still hardcoded: the marketing pages are a fixed dark brand experience and
+    are wrapped in a `.dark` scope so they ignore the member's theme choice.
+  */
   .glass-card {
     @apply bg-white/5 border border-white/[0.08] backdrop-blur-xl shadow-2xl rounded-3xl p-8 hover:bg-white/[0.08] hover:border-white/[0.15] transition-all duration-300;
   }
@@ -104,7 +223,7 @@
   /* Page-header eyebrow — the landing page's section pill, reused on the
      dashboard so page headers and section headers read identically. */
   .eyebrow-pill {
-    @apply inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-300 backdrop-blur-md;
+    @apply inline-flex w-fit items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur-md;
   }
 
   /* Ambient background orbs. Purely decorative: they sit behind content and
@@ -121,9 +240,11 @@
     @apply text-transparent bg-clip-text bg-gradient-to-r from-[#BA87FF] to-[#d6b7ff];
   }
 
-  /* Brand text */
+  /* Brand text. Teal follows the theme so primary-coloured text stays legible
+     in light mode; purple is a marketing accent the landing page uses inside its
+     own `.dark` scope, so it stays the literal brand hue. */
   .text-brand-teal {
-    @apply text-[#36BFAE];
+    @apply text-primary;
   }
   .text-brand-purple {
     @apply text-[#BA87FF];

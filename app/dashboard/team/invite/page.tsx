@@ -7,19 +7,24 @@ import { InviteRow } from "@/components/team/InviteRow"
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, Mail } from "lucide-react"
+import { currentLocale } from "@/lib/i18n/server"
+import { getDictionary } from "@/lib/i18n/dictionaries"
 
 export default async function InviteMemberPage() {
   const { user, organization } = await requireMembership()
+  // Only used to format the expiry dates below in the reader's own language.
+  const locale = await currentLocale(user.locale)
+  const t = getDictionary(locale)
 
   if (!canManage(user.role)) {
     return (
       <div className="max-w-3xl space-y-6">
-        <PageHeader eyebrow="People" title="Invite a member" />
+        <PageHeader eyebrow={t.pages.eyebrows.people} title={t.pages.team.inviteTitle} />
         <Card>
           <CardHeader>
-            <CardTitle>Not permitted</CardTitle>
+            <CardTitle>{t.pages.notPermitted}</CardTitle>
             <CardDescription>
-              Your role is view-only. Ask an owner or manager to invite people.
+              {t.pages.team.inviteViewOnly}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -49,9 +54,9 @@ export default async function InviteMemberPage() {
   return (
     <div className="max-w-3xl space-y-6">
       <PageHeader
-        eyebrow="People"
-        title="Invite a member"
-        description="Creates a one-time link that lets someone join your organization."
+        eyebrow={t.pages.eyebrows.people}
+        title={t.pages.team.inviteTitle}
+        description={t.pages.team.inviteDescription}
         action={
           <Button variant="ghost" href="/dashboard/team">
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -77,7 +82,7 @@ export default async function InviteMemberPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5 text-[#36BFAE]" />
-            Pending invitations
+            {t.pages.team.pendingInvitations}
           </CardTitle>
           <CardDescription>
             {invitations.length === 0
@@ -94,7 +99,7 @@ export default async function InviteMemberPage() {
                 email: invitation.email,
                 role: invitation.role,
                 url: `${origin}/invite/${invitation.token}`,
-                expiresAt: invitation.expiresAt.toLocaleDateString("en-US", {
+                expiresAt: invitation.expiresAt.toLocaleDateString(locale, {
                   month: "short",
                   day: "numeric",
                   year: "numeric",
