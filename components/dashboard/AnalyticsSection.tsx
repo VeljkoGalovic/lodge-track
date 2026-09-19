@@ -130,23 +130,38 @@ function ChartPanel({
           {all.map((point) => {
             const isProjected = projected?.includes(point) ?? false
             return (
-              <div key={point.month} className="flex flex-1 flex-col items-center">
-                <div
-                  title={`${point.month}: ${formatFor(point)}`}
-                  className={clsx(
-                    "w-full rounded-t transition-all duration-500",
-                    isProjected
-                      ? // Outlined, not filled: the projection is a sketch of
-                        // the future, drawn in the accent but not committed.
-                        "border-2 border-dashed bg-transparent"
-                      : accent === "teal"
-                        ? "bg-gradient-to-t from-primary to-primary/40"
-                        : "bg-gradient-to-t from-brand-purple to-brand-purple/40",
-                    isProjected && accent === "teal" ? "border-primary/70" : undefined,
-                    isProjected && accent === "purple" ? "border-brand-purple/70" : undefined
-                  )}
-                  style={{ height: `${scale > 0 ? Math.max(4, (point.value / scale) * 100) : 0}%` }}
-                />
+              /**
+               * `self-stretch` overrides the row's `items-end` so the column
+               * spans the full chart height. Without it the column is
+               * content-sized, and the bar's percentage height below has no
+               * definite parent to resolve against — every bar collapses to
+               * 0px, leaving month labels and the trend line on a blank chart.
+               */
+              <div key={point.month} className="flex flex-1 flex-col items-center self-stretch">
+                {/*
+                 * The bar area, not the label-sized column, is what the bar's
+                 * `height: N%` measures against. As a growing flex item inside
+                 * the stretched column it has a definite height, so the
+                 * percentage finally lands.
+                 */}
+                <div className="flex w-full flex-1 items-end">
+                  <div
+                    title={`${point.month}: ${formatFor(point)}`}
+                    className={clsx(
+                      "w-full rounded-t transition-all duration-500",
+                      isProjected
+                        ? // Outlined, not filled: the projection is a sketch of
+                          // the future, drawn in the accent but not committed.
+                          "border-2 border-dashed bg-transparent"
+                        : accent === "teal"
+                          ? "bg-gradient-to-t from-primary to-primary/40"
+                          : "bg-gradient-to-t from-brand-purple to-brand-purple/40",
+                      isProjected && accent === "teal" ? "border-primary/70" : undefined,
+                      isProjected && accent === "purple" ? "border-brand-purple/70" : undefined
+                    )}
+                    style={{ height: `${scale > 0 ? Math.max(4, (point.value / scale) * 100) : 0}%` }}
+                  />
+                </div>
                 <span className={clsx("mt-2 text-xs", isProjected && "text-subtle-foreground/70")}>
                   {point.month}
                 </span>
