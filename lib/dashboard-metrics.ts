@@ -176,6 +176,46 @@ export function occupancyForWindow(properties: MetricsProperty[], window: MonthW
   return Math.round((bookedNights / (properties.length * days)) * 100)
 }
 
+export interface MetricsExpense {
+  /** When the cost was incurred — the bucketing date, not the row's createdAt. */
+  date: Date
+  /** Cents. */
+  amount: number
+  /** The property's currency, for conversion into the organization's. */
+  currency: string | null
+}
+
+/**
+ * Expenses per month over the same trailing window the booking series uses,
+ * bucketed by the expense's own date. A receipt logged today for a repair made
+ * in August lands in August — the charts follow transaction dates, not when a
+ * row was created.
+ */
+export function expenseSeries(
+  expenses: MetricsExpense[],
+  reference: Date,
+  count = 6,
+  targetCurrency?: string,
+  rates?: ExchangeRates,
+  locale: Locale = "en"
+): ChartPoint[] {
+  return Array.from({ length: count }, (_, index) => {
+    const window = monthWindow(reference, index - (count - 1), locale)
+    const value = expenses.reduce((sum, expense) => {
+      const date = new Date(expense.date)
+      if (date >= window.start && date < window.end) {
+        let amount = expense.amount
+        if (targetCurrency && rates && expense.currency && expense.currency !== targetCurrency) {
+          amount = convertAmount(amount, expense.currency, targetCurrency, rates)
+        }
+        return sum + amount
+      }
+      return sum
+    }, 0)
+    return { month: window.label, value }
+  })
+}
+
 /** Trailing `count` months of revenue (cents) and occupancy (percent). */
 export function monthlySeries(
   properties: MetricsProperty[],

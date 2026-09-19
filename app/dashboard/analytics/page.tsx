@@ -6,13 +6,30 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { Button } from "@/components/ui/Button"
 import { AnalyticsSection } from "@/components/dashboard/AnalyticsSection"
 import { PageHeader } from "@/components/dashboard/PageHeader"
-import { monthlySeries } from "@/lib/dashboard-metrics"
+import { ForecastCard } from "@/components/dashboard/AnalyticsSection"
+import { monthlySeries, expenseSeries } from "@/lib/dashboard-metrics"
+import { projectSeries } from "@/lib/metrics-display"
 import { Lock, DollarSign, Home, TrendingUp, ArrowUpRight } from "lucide-react"
 import { currentLocale } from "@/lib/i18n/server"
 import { getDictionary } from "@/lib/i18n/dictionaries"
 import { getExchangeRates } from "@/lib/exchange-rates"
 
-export default async function AnalyticsPage() {
+const RANGE_MONTHS = { "3": 3, "6": 6, "12": 12 } as const
+type RangeKey = keyof typeof RANGE_MONTHS
+
+function parseRange(value: string | undefined): RangeKey {
+  return value === "3" || value === "12" ? value : "6"
+}
+
+export default async function AnalyticsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ range?: string; forecast?: string }>
+}) {
+  const params = await searchParams
+  const range = parseRange(params.range)
+  const showForecast = params.forecast === "on"
+
   const session = await auth()
 
   if (!session?.user?.email) {
@@ -27,7 +44,8 @@ export default async function AnalyticsPage() {
           subscription: true,
           properties: {
             include: {
-              bookings: true
+              bookings: true,
+              expenses: true
             }
           }
         }
@@ -120,6 +138,21 @@ export default async function AnalyticsPage() {
   }
 
   const rates = await getExchangeRates()
+  const series = monthlySeries(org.properties, new Date(), RANGE_MONTHS[range], org.currency, rates, locale)
+  const expenses = expenseSeries(
+    org.properties.flatMap((property) =>
+      property.expenses.map((expense) => ({
+        date: expense.date,
+        amount: expense.amount,
+        currency: property.currency,
+      }))
+    ),
+    new Date(),
+    RANGE_MONTHS[range],
+    org.currency,
+    rates,
+    locale
+  )
 
   return (
     <div className="space-y-6">
@@ -127,25 +160,37 @@ export default async function AnalyticsPage() {
         eyebrow={t.pages.eyebrows.insights}
         title={t.pages.analytics.title}
         description={t.pages.analytics.description}
+        action={
+          /**
+           * The forecast toggle lives here, in the page header — not in a
+           * global settings toggle. The search param drives the server render,
+           * so the projected bars arrive already drawn (or already gone).
+           */
+          <Button
+            href={showForecast ? `/dashboard/analytics?range=${range}` : `/dashboard/analytics?range=${range}&forecast=on`}
+            variant={showForecast ? "glass" : "outline"}
+          >
+            <TrendingUp className="mr-2 h-4 w-4" />
+            {showForecast ? t.pages.analytics.forecastHide : t.pages.analytics.forecastShow}
+          </Button>
+        }
       />
 
       <AnalyticsSection
         hasAccess
         currency={org.currency}
-        data={monthlySeries(org.properties, new Date(), 6, org.currency, rates, locale)}
+        range={range}
+        data={{ ...series, expenses }}
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-brand-purple" />
-            {t.pages.analytics.forecasting}
-          </CardTitle>
-          <CardDescription>
-            {t.pages.analytics.forecastingHelp}
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <ForecastCard
+        showForecast={showForecast}
+        currency={org.currency}
+        revenue={series.revenue}
+        revenueProjection={showForecast ? projectSeries(series.revenue) : undefined}
+        occupancy={series.occupancy}
+        occupancyProjection={showForecast ? projectSeries(series.occupancy) : undefined}
+      />
     </div>
   )
 }

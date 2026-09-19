@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button"
 import {
   formatDateRange,
   monthlySeries,
+  expenseSeries,
   monthWindow,
   occupancyAt,
   percentChange,
@@ -22,7 +23,21 @@ import { Building2, Calendar, DollarSign, Home } from "lucide-react"
 import { currentLocale } from "@/lib/i18n/server"
 import { format, getDictionary } from "@/lib/i18n/dictionaries"
 
-export default async function DashboardPage() {
+const RANGE_MONTHS = { "3": 3, "6": 6, "12": 12 } as const
+type RangeKey = keyof typeof RANGE_MONTHS
+
+function parseRange(value: string | undefined): RangeKey {
+  return value === "3" || value === "12" ? value : "6"
+}
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ range?: string }>
+}) {
+  const params = await searchParams
+  const range = parseRange(params.range)
+
   const session = await auth()
 
   if (!session?.user?.email) {
@@ -39,6 +54,7 @@ export default async function DashboardPage() {
           properties: {
             include: {
               bookings: true,
+              expenses: true,
               _count: { select: { units: true } },
             }
           }
@@ -79,8 +95,11 @@ export default async function DashboardPage() {
   const maxProperties = features.maxProperties
   const isAtPropertyLimit = totalProperties >= maxProperties && maxProperties !== Infinity
 
-  // Bookings and revenue for the current month, against the same counts for the
-  // month before so the trends are measured rather than assumed.
+  // Bookings and revenue for the latest month of the chosen window, against the
+  // month before it, so the trends are measured rather than assumed. The
+  // timeframe is a search param, so switching it re-renders this page in place —
+  // no navigation, and bookmarks preserve the view.
+  const windowMonths = RANGE_MONTHS[range]
   const thisMonth = monthWindow(now)
   const lastMonth = monthWindow(now, -1)
 
@@ -148,7 +167,23 @@ export default async function DashboardPage() {
     }))
 
   const analyticsData = features.hasAdvancedAnalytics
-    ? monthlySeries(properties, now, 6, org.currency, rates, locale)
+    ? {
+        ...monthlySeries(properties, now, windowMonths, org.currency, rates, locale),
+        expenses: expenseSeries(
+          properties.flatMap((property) =>
+            property.expenses.map((expense) => ({
+              date: expense.date,
+              amount: expense.amount,
+              currency: property.currency,
+            }))
+          ),
+          now,
+          windowMonths,
+          org.currency,
+          rates,
+          locale
+        ),
+      }
     : undefined
 
   const firstName = user.name?.trim().split(/\s+/)[0]
@@ -211,6 +246,8 @@ export default async function DashboardPage() {
       <AnalyticsSection
         hasAccess={features.hasAdvancedAnalytics}
         currency={org.currency}
+        range={range}
+        rangeBasePath="/dashboard"
         data={analyticsData}
       />
 
