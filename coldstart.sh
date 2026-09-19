@@ -1,4 +1,4 @@
 #!/bin/bash
-docker compose up -d
+docker start lodge-postgres
 npx prisma db push
 npm run dev
