@@ -39,7 +39,7 @@ export default async function NewBookingPage() {
     prisma.property.findMany({
       where: { orgId: organization.id },
       orderBy: { name: "asc" },
-      select: { id: true, name: true },
+      select: { id: true, name: true, allowSharedBookings: true },
     }),
     unitsForOrganization(organization.id),
     unitBusyIntervals(organization.id),

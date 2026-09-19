@@ -20,14 +20,20 @@ beforeEach(() => {
 })
 afterEach(cleanup)
 
-it.each([null, { name: "Bed 2" }])("renders booking details with nullable unit %j", async unit => {
+it.each([
+  [null, "Whole property"],
+  [{ name: "Bed 2" }, "Bed 2"],
+  [{ name: "Bed 2", type: "SHARED_BED", bedIds: ["b1", "b2"] }, "2 bed(s) \u00b7 Bed 2"],
+])("renders booking details with unit %j", async (unit, expectedSlot) => {
+  const record = unit as { name: string; type?: string; bedIds?: string[] } | null
   mocks.findFirst.mockResolvedValue({ id: "stay", guestName: "Test Guest", status: "PENDING", source: "Direct", totalAmount: null, unit,
+    type: record?.type ?? "WHOLE_UNIT", bedIds: record?.bedIds ?? [],
     startDate: new Date(2026, 8, 1), endDate: new Date(2026, 8, 5), createdAt: new Date(2026, 8, 1),
     property: { id: "home", name: "Test House", address: "Test street", currency: null } })
   render(await BookingPage({ params: Promise.resolve({ id: "stay" }) }))
   expect(screen.getByText("Test Guest")).toBeInTheDocument()
   expect(screen.getByText(getDictionary("en").pages.bookings.notRecorded)).toBeInTheDocument()
-  expect(screen.getByText(`Unit: ${unit?.name ?? "Whole property"}`)).toBeInTheDocument()
+  expect(screen.getByText(`Unit: ${expectedSlot}`)).toBeInTheDocument()
   expect(screen.getByRole("combobox")).toBeInTheDocument()
   cleanup()
   mocks.membership.mockResolvedValue({ user: { role: "MAINTENANCE", locale: "en" }, organization: { id: "org", currency: "USD" } })

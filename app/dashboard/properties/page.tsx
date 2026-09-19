@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/Button"
 import { Badge } from "@/components/ui/badge"
 import { PageHeader } from "@/components/dashboard/PageHeader"
+import { BedCapacity } from "@/components/dashboard/BedCapacity"
 import { Building2, Plus } from "lucide-react"
 import { currentLocale } from "@/lib/i18n/server"
 import { BOOKING_COUNT_FORMS, format, getDictionary, plural } from "@/lib/i18n/dictionaries"
@@ -25,7 +26,8 @@ export default async function PropertiesPage() {
           subscription: true,
           properties: {
             include: {
-              bookings: true
+              bookings: true,
+              _count: { select: { units: true } },
             }
           }
         }
@@ -92,13 +94,24 @@ export default async function PropertiesPage() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {properties.map((property) => {
-                const occupied = property.bookings.some(
+                const shared = property.allowSharedBookings
+                const tonight = property.bookings.filter(
                   (booking) =>
                     booking.status !== "CANCELLED" &&
                     new Date(booking.startDate) <= now &&
                     new Date(booking.endDate) >= now
                 )
+                const occupied = tonight.length > 0
                 const bookingCount = property.bookings.length
+                /** Capacity read, e.g. "2 of 5 beds occupied", for shared properties. */
+                const bedsOccupied = tonight.reduce(
+                  (sum, booking) =>
+                    sum +
+                    (booking.type === "SHARED_BED"
+                      ? booking.bedIds.length
+                      : property._count.units || 1),
+                  0
+                )
 
                 return (
                   <div
@@ -118,7 +131,9 @@ export default async function PropertiesPage() {
                     </div>
 
                     <div className="mt-4 flex flex-wrap items-center gap-2">
-                      {occupied ? (
+                      {shared && property._count.units > 0 ? (
+                        <BedCapacity occupied={bedsOccupied} total={property._count.units} showCount />
+                      ) : occupied ? (
                         <Badge variant="success">{t.pages.dashboard.recent.occupied}</Badge>
                       ) : (
                         <Badge variant="secondary">{t.pages.dashboard.recent.available}</Badge>

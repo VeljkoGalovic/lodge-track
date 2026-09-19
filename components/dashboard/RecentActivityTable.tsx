@@ -6,6 +6,7 @@ import { Building2, Calendar, TrendingUp } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { BedCapacity } from "@/components/dashboard/BedCapacity"
 import { Button } from "@/components/ui/Button"
 import { BookingStatusBadge } from "@/components/dashboard/BookingStatusBadge"
 
@@ -18,6 +19,13 @@ export interface RecentProperty {
 
   /** True when a booking currently covers this property. */
   occupied: boolean
+  /**
+   * Beds occupied tonight, present only on a shared-bookings property with
+   * units — then the status cell reads "2 of 5 beds occupied" instead of a
+   * plain occupied/available badge.
+   */
+  bedsOccupied?: number | null
+  bedsTotal?: number
 }
 
 export interface RecentBooking {
@@ -105,7 +113,9 @@ export function RecentActivityTable(props: RecentActivityTableProps) {
                   <TableRow key={item.id}>
                     <TableCell className="font-medium text-foreground">{item.name}</TableCell>
                     <TableCell>
-                      {item.occupied ? (
+                      {item.bedsOccupied != null && (item.bedsTotal ?? 0) > 0 ? (
+                        <BedCapacity occupied={item.bedsOccupied} total={item.bedsTotal!} showCount />
+                      ) : item.occupied ? (
                         <Badge variant="success">{t.pages.dashboard.recent.occupied}</Badge>
                       ) : (
                         <Badge variant="secondary">{t.pages.dashboard.recent.available}</Badge>

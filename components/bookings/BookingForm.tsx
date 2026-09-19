@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { FormMessage } from "@/components/dashboard/FormMessage"
 import { SubmitButton } from "@/components/dashboard/SubmitButton"
+import { BedCapacity } from "@/components/dashboard/BedCapacity"
 import { useI18n } from "@/components/i18n/LocaleProvider"
 import { format, NIGHT_FORMS, plural } from "@/lib/i18n/dictionaries"
 
@@ -19,7 +20,7 @@ import { format, NIGHT_FORMS, plural } from "@/lib/i18n/dictionaries"
 const SOURCE_SUGGESTIONS = ["Direct", "Airbnb", "Booking.com", "Expedia", "VRBO", "Phone"]
 
 interface BookingFormProps {
-  properties: { id: string; name: string }[]
+  properties: { id: string; name: string; allowSharedBookings: boolean }[]
   /**
    * Every unit in the organization, each naming its own property. Passed flat
    * rather than nested under the properties so the form can filter to the chosen
@@ -28,8 +29,8 @@ interface BookingFormProps {
   units: { id: string; propertyId: string; name: string; kind: string | null }[]
   /**
    * Every stay that occupies something, for the whole organization, reduced to
-   * which unit and when. Date-only so the picker below can answer "which units
-   * are free on these dates" without asking the server on each keystroke.
+   * what it claims and when. Date-only so the picker below can answer "which
+   * beds are free on these dates" without asking the server on each keystroke.
    */
   busy: BusyInterval[]
   /** ISO 4217 code, used to label and pre-fill the rate field. */
@@ -37,7 +38,9 @@ interface BookingFormProps {
   booking?: {
     id: string
     propertyId: string
+    type: "WHOLE_UNIT" | "SHARED_BED"
     unitId: string | null
+    bedIds: string[]
     guestName: string
     startDate: Date
     endDate: Date
@@ -46,6 +49,9 @@ interface BookingFormProps {
     totalAmount: number | null
   }
 }
+
+/** How the form claims the property, mapped onto the server action's contract. */
+type BookingMode = "whole" | "beds" | "unit"
 
 /** A `Date` as the `YYYY-MM-DD` a date input expects, in local time. */
 function toDateInput(date: Date): string {
@@ -71,12 +77,27 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
     booking?.totalAmount != null ? toMajorUnits(booking.totalAmount, currency) : ""
   )
   /**
-   * Changing the property explicitly resets the controlled unit selection. A
+   * Changing the property explicitly resets the controlled selections. A bed or
    * unit chosen for one property is never carried over to another property.
    */
   const [propertyId, setPropertyId] = useState(booking?.propertyId ?? properties[0]?.id ?? "")
 
+  const property = properties.find((entry) => entry.id === propertyId)
+  /**
+   * Only a property that opted into shared bookings shows the mode choice and
+   * the bed picker. Everyone else — including every property that existed
+   * before the flag — sees exactly the form they saw before: whole-property or
+   * one unit, nothing else.
+   */
+  const isShared = property?.allowSharedBookings ?? false
+
+  const [mode, setMode] = useState<BookingMode>(
+    booking?.type === "SHARED_BED" ? "beds" : isShared ? "whole" : "unit"
+  )
   const [unitId, setUnitId] = useState(booking?.unitId ?? "")
+  const [selectedBeds, setSelectedBeds] = useState<string[]>(
+    booking?.type === "SHARED_BED" ? booking.bedIds : []
+  )
   const [status, setStatus] = useState<BookingStatus>(booking?.status ?? "PENDING")
 
   const unitsHere = useMemo(
@@ -89,9 +110,12 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
       (24 * 60 * 60 * 1000)
   )
 
+  const startDate = new Date(`${start}T00:00:00`)
+  const endDate = new Date(`${end}T00:00:00`)
+
   /**
-   * Which units this property could take the stay in, recomputed as the dates
-   * change.
+   * Which bed slots this property could take the stay in, recomputed as the
+   * dates change.
    *
    * Uses the same range and slot rules as the server's conflict check,
    * run in the browser so the answer arrives while the host is still
@@ -100,7 +124,7 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
    * is handed down instead of being looked up per date range.
    *
    * Null until both dates are set and the range is sane: a stay with an open end
-   * has no availability, and reporting every unit as free for one would be worse
+   * has no availability, and reporting every bed as free for one would be worse
    * than reporting nothing.
    */
   const availability = useMemo(() => {
@@ -118,21 +142,52 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
   )
 
   const freeCount = availability?.filter((entry) => entry.available).length ?? 0
-  /** Every unit taken because a whole-property stay covers the range. */
+  /** Every slot taken because a whole-property stay covers the range. */
   const wholePropertyBlocked =
     availability !== null && freeCount === 0 && availability.every((e) => e.blockedByWholeProperty)
 
   const wholeUnavailable = nights > 0 && busy.some(interval =>
-    interval.propertyId === propertyId && rangesOverlap(new Date(`${start}T00:00:00`), new Date(`${end}T00:00:00`), interval.startDate, interval.endDate)
+    interval.propertyId === propertyId && rangesOverlap(startDate, endDate, interval.startDate, interval.endDate)
   )
-  const selectionUnavailable = status !== "CANCELLED" && nights > 0 && busy.some(interval =>
-    interval.propertyId === propertyId && claimsSameSlot({ unitId: unitId || null }, interval) &&
-    rangesOverlap(new Date(`${start}T00:00:00`), new Date(`${end}T00:00:00`), interval.startDate, interval.endDate)
-  )
+  /**
+   * The claim the form will actually submit, checked against the same rules the
+   * server applies. `unit` mode is the pre-shared form: one named unit or the
+   * whole property. `whole` mode is the exclusive claim — any overlapping stay
+   * on the property collides with it. `beds` mode collides only when a chosen
+   * bed is itself taken.
+   */
+  const selectionUnavailable =
+    status !== "CANCELLED" && nights > 0 &&
+    (mode === "beds"
+      ? selectedBeds.some((bed) => statusByUnitId.get(bed)?.available === false)
+      : mode === "whole"
+        ? wholeUnavailable
+        : busy.some(interval =>
+            interval.propertyId === propertyId && claimsSameSlot({ type: "WHOLE_UNIT", unitId: unitId || null, bedIds: [] }, interval) &&
+            rangesOverlap(startDate, endDate, interval.startDate, interval.endDate)
+          ))
+
+  const bedsSubmitBlocked = mode === "beds" && selectedBeds.length === 0
+
+  /** Property changes reset every claim selection, whatever mode follows. */
+  function onPropertyChange(nextId: string) {
+    setPropertyId(nextId)
+    setUnitId("")
+    setSelectedBeds([])
+    const nextShared = properties.find((entry) => entry.id === nextId)?.allowSharedBookings ?? false
+    setMode(nextShared ? "whole" : "unit")
+  }
+
+  function toggleBed(bedId: string) {
+    setSelectedBeds((current) =>
+      current.includes(bedId) ? current.filter((id) => id !== bedId) : [...current, bedId]
+    )
+  }
 
   return (
     <form action={formAction} className="space-y-5">
       {booking && <input type="hidden" name="id" value={booking.id} />}
+      {isShared ? <input type="hidden" name="bookingMode" value={mode} /> : null}
 
       <FormMessage error={state.error} success={state.success} />
 
@@ -150,7 +205,7 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
           id="propertyId"
           name="propertyId"
           value={propertyId}
-          onChange={(event) => { setPropertyId(event.target.value); setUnitId("") }}
+          onChange={(event) => onPropertyChange(event.target.value)}
           required
         >
           {properties.map((property) => (
@@ -196,7 +251,109 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
         </p>
       ) : null}
 
-      {unitsHere.length > 0 ? (
+      {isShared && unitsHere.length > 0 ? (
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium text-muted-foreground">{t.forms.bookingMode}</legend>
+
+          {/* The mode radios carry `bookingMode`; nothing else posts a claim. */}
+          <div className="grid gap-2 sm:grid-cols-2">
+            <label
+              className={cn(
+                "flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition-colors",
+                mode === "whole" ? "border-primary/40 bg-primary/[0.06]" : "border-border bg-muted"
+              )}
+            >
+              <input
+                type="radio"
+                name="bookingModeChoice"
+                value="whole"
+                checked={mode === "whole"}
+                onChange={() => setMode("whole")}
+                className="mt-1 h-4 w-4 accent-[color:var(--primary)]"
+              />
+              <span>
+                <span className="block text-sm font-medium text-foreground">{t.forms.modeWholeProperty}</span>
+                <span className="mt-1 block text-xs text-subtle-foreground">{t.availability.modeExclusiveHelp}</span>
+              </span>
+            </label>
+            <label
+              className={cn(
+                "flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition-colors",
+                mode === "beds" ? "border-primary/40 bg-primary/[0.06]" : "border-border bg-muted"
+              )}
+            >
+              <input
+                type="radio"
+                name="bookingModeChoice"
+                value="beds"
+                checked={mode === "beds"}
+                onChange={() => setMode("beds")}
+                className="mt-1 h-4 w-4 accent-[color:var(--primary)]"
+              />
+              <span>
+                <span className="block text-sm font-medium text-foreground">{t.forms.modeBeds}</span>
+                <span className="mt-1 block text-xs text-subtle-foreground">{t.availability.modeSharedHelp}</span>
+              </span>
+            </label>
+          </div>
+
+          {mode === "beds" ? (
+            <div className="space-y-2 rounded-2xl border border-border bg-muted p-4">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-medium text-muted-foreground">{t.forms.beds}</span>
+                {availability ? (
+                  <BedCapacity occupied={availability.length - freeCount} total={availability.length} showCount />
+                ) : null}
+              </div>
+
+              {availability ? (
+                <div className="grid gap-1.5 sm:grid-cols-2">
+                  {availability.map((entry) => {
+                    const taken = !entry.available
+                    const checked = selectedBeds.includes(entry.unit.id)
+                    return (
+                      <label
+                        key={entry.unit.id}
+                        className={cn(
+                          "flex items-center gap-2 rounded-xl border px-3 py-2 text-sm",
+                          checked
+                            ? "border-primary/40 bg-primary/[0.08] text-foreground"
+                            : "border-border bg-card text-muted-foreground",
+                          taken && !checked && "opacity-50"
+                        )}
+                      >
+                        <input
+                          type="checkbox"
+                          name="bedIds"
+                          value={entry.unit.id}
+                          checked={checked}
+                          onChange={() => toggleBed(entry.unit.id)}
+                          /* A bed another guest holds cannot be newly claimed. */
+                          disabled={taken && !checked}
+                          className="h-4 w-4 accent-[color:var(--primary)]"
+                        />
+                        {entry.unit.name}
+                        {taken ? (
+                          <span className="ml-auto text-xs text-subtle-foreground">{t.availability.occupied}</span>
+                        ) : null}
+                      </label>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="text-xs text-subtle-foreground">{t.forms.chooseDates}</p>
+              )}
+
+              {wholePropertyBlocked ? (
+                <p className="text-xs text-subtle-foreground">{t.availability.allBedsBlocked}</p>
+              ) : null}
+            </div>
+          ) : null}
+        </fieldset>
+      ) : null}
+
+      {/* The pre-shared form: a plain unit picker, or nothing when the property has no units. */}
+      {!isShared && unitsHere.length > 0 ? (
         <div className="space-y-2">
           <div className="flex items-baseline justify-between gap-3">
             <label htmlFor="unitId" className="text-sm font-medium text-muted-foreground">
@@ -339,7 +496,10 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
             {t.availability.occupied}
           </p>
         )}
-        <SubmitButton pendingLabel={t.common.saving} disabled={!propertyId || !(nights > 0) || selectionUnavailable}>
+        <SubmitButton
+          pendingLabel={t.common.saving}
+          disabled={!propertyId || !(nights > 0) || selectionUnavailable || bedsSubmitBlocked}
+        >
           {booking ? t.forms.saveChanges : t.forms.addBooking}
         </SubmitButton>
       </div>

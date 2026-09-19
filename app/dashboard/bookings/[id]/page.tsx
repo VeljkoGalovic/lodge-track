@@ -127,7 +127,13 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
           <div>
             <p className="font-medium text-foreground">{booking.property.name}</p>
             <p className="text-sm text-subtle-foreground">{booking.property.address}</p>
-            <p className="mt-1 text-sm text-subtle-foreground">{t.forms.unit}: {booking.unit?.name ?? t.forms.unitWholeProperty}</p>
+            <p className="mt-1 text-sm text-subtle-foreground">
+              {t.forms.unit}:{" "}
+              {booking.type === "SHARED_BED"
+                ? format(t.forms.bedsCount, { count: booking.bedIds.length }) +
+                  (booking.unit?.name ? ` · ${booking.unit.name}` : "")
+                : booking.unit?.name ?? t.forms.unitWholeProperty}
+            </p>
           </div>
           <Button
             variant="outline"

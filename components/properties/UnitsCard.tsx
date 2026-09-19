@@ -40,6 +40,12 @@ interface UnitsCardProps {
   units: Unit[]
   /** View-only roles see the list, not the controls. */
   canEdit: boolean
+  /**
+   * True on a shared-bookings property, where the units are bed slots: the card
+   * presents them as sub-units / inventory and offers no add-form, since
+   * capacity is set by the bed count on the property form.
+   */
+  sharedInventory?: boolean
 }
 
 /**
@@ -165,7 +171,7 @@ function UnitRow({ unit, canEdit }: { unit: Unit; canEdit: boolean }) {
   )
 }
 
-export function UnitsCard({ propertyId, units, canEdit }: UnitsCardProps) {
+export function UnitsCard({ propertyId, units, canEdit, sharedInventory }: UnitsCardProps) {
   const { locale, t } = useI18n()
   const [state, formAction] = useActionState(createUnit, EMPTY_ACTION_STATE)
   useActionRedirect(state)
@@ -175,12 +181,14 @@ export function UnitsCard({ propertyId, units, canEdit }: UnitsCardProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <DoorOpen className="h-5 w-5 text-primary" />
-          {t.units.title}
+          {sharedInventory ? t.units.inventoryTitle : t.units.title}
         </CardTitle>
         <CardDescription>
           {units.length === 0
             ? t.units.empty
-            : plural(units.length, UNIT_COUNT_FORMS[locale], locale)}
+            : sharedInventory
+              ? t.units.inventoryHelp
+              : plural(units.length, UNIT_COUNT_FORMS[locale], locale)}
         </CardDescription>
       </CardHeader>
 
@@ -193,7 +201,7 @@ export function UnitsCard({ propertyId, units, canEdit }: UnitsCardProps) {
           </div>
         ) : null}
 
-        {canEdit ? (
+        {canEdit && !sharedInventory ? (
           <form
             action={formAction}
             className="space-y-3 rounded-2xl border border-border bg-muted p-4"

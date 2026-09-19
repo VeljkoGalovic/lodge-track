@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/Button"
 import { Badge } from "@/components/ui/badge"
 import { BookingStatusBadge } from "@/components/dashboard/BookingStatusBadge"
+import { BedCapacity } from "@/components/dashboard/BedCapacity"
 import { DeletePropertyButton } from "@/components/properties/DeletePropertyButton"
 import { UnitsCard } from "@/components/properties/UnitsCard"
 import { formatAmount, formatCurrency } from "@/lib/currency"
@@ -74,14 +75,37 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
   const canEdit = canManage(user.role)
 
   /**
+   * On a shared-bookings property the units are bed slots, so the headline
+   * number is capacity: how many beds a stay covering `now` claims. Counted from
+   * the bookings already in hand rather than a second query.
+   */
+  const staysTonight = bookings.filter(
+    (booking) =>
+      booking.status !== "CANCELLED" &&
+      new Date(booking.startDate) <= now &&
+      new Date(booking.endDate) >= now
+  )
+  const bedsOccupiedTonight = staysTonight.reduce(
+    (sum, booking) =>
+      sum +
+      (booking.type === "SHARED_BED"
+        ? booking.bedIds.length
+        : /* exclusive claim takes the whole capacity */ property.units.length || 1),
+    0
+  )
+
+  /**
    * Counted from the bookings already in hand rather than a second query: this
    * page has to load them anyway, and the number that matters — what stops a unit
-   * being removed — is exactly "non-cancelled stays pointing at it".
+   * being removed — is exactly "non-cancelled stays pointing at it", by `unitId`
+   * or inside a shared stay's `bedIds`.
    */
   const units = property.units.map((unit) => ({
     ...unit,
     activeBookings: bookings.filter(
-      (booking) => booking.unitId === unit.id && booking.status !== "CANCELLED"
+      (booking) =>
+        booking.status !== "CANCELLED" &&
+        (booking.unitId === unit.id || booking.bedIds.includes(unit.id))
     ).length,
   }))
 
@@ -119,7 +143,20 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: t.forms.status, value: occupied ? t.pages.dashboard.recent.occupied : t.pages.dashboard.recent.available },
+          property.allowSharedBookings && property.units.length > 0
+            ? {
+                label: t.units.capacityLabel,
+                value: (
+                  <span className="flex flex-col items-start gap-2">
+                    <span className="tabular-nums">{bedsOccupiedTonight}/{property.units.length}</span>
+                    <BedCapacity occupied={bedsOccupiedTonight} total={property.units.length} />
+                  </span>
+                ),
+              }
+            : {
+                label: t.forms.status,
+                value: occupied ? t.pages.dashboard.recent.occupied : t.pages.dashboard.recent.available,
+              },
           { label: t.pages.bookings.title, value: String(bookings.length) },
           { label: t.pages.properties.revenueThisMonth, value: formatCurrency(thisMonth.revenueCents, displayCurrency) },
           { label: t.pages.properties.lifetimeRevenue, value: priced.length === 0 ? "—" : formatCurrency(lifetimeRevenue, displayCurrency) },
@@ -180,7 +217,12 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
         </CardContent>
       </Card>
 
-      <UnitsCard propertyId={property.id} units={units} canEdit={canEdit} />
+      <UnitsCard
+        propertyId={property.id}
+        units={units}
+        canEdit={canEdit}
+        sharedInventory={property.allowSharedBookings}
+      />
 
       <Card>
         <CardHeader>

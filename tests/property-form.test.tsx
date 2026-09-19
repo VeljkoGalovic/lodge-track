@@ -10,15 +10,28 @@ vi.mock("@/lib/use-action-redirect", () => ({ useActionRedirect: vi.fn() }))
 vi.mock("@/components/i18n/LocaleProvider", () => ({ useI18n: () => ({ locale: "en", t: getDictionary("en") }) }))
 afterEach(cleanup)
 
-it("defaults to one bed and includes the chosen count in the form", () => {
+it("hides the bed count and posts no shared flag for a traditional property", () => {
   const { container } = render(<PropertyForm />)
+  expect(screen.queryByLabelText("Bed count")).not.toBeInTheDocument()
+  expect(new FormData(container.querySelector("form")!).get("allowSharedBookings")).toBeNull()
+  expect(container.querySelector("form")!.hasAttribute("novalidate")).toBe(false)
+})
+
+it("reveals the bed count when shared bookings are ticked and posts the count", () => {
+  const { container } = render(<PropertyForm />)
+  fireEvent.click(screen.getByLabelText("Shared / bed-level bookings"))
   const input = screen.getByLabelText("Bed count")
   expect(input).toHaveValue(1)
   fireEvent.change(input, { target: { value: "5" } })
-  expect(new FormData(container.querySelector("form")!).get("bedCount")).toBe("5")
+  const data = new FormData(container.querySelector("form")!)
+  expect(data.get("bedCount")).toBe("5")
+  expect(data.get("allowSharedBookings")).toBe("on")
 })
 
-it("prefills the existing unit count on edit", () => {
-  render(<PropertyForm property={{ id: "home", name: "Test", address: "Test street", icalUrl: null, currency: null, bedCount: 7 }} />)
+it("prefills an opted-in property's existing state on edit", () => {
+  const { container } = render(
+    <PropertyForm property={{ id: "home", name: "Test", address: "Test street", icalUrl: null, currency: null, allowSharedBookings: true, bedCount: 7 }} />
+  )
   expect(screen.getByLabelText("Bed count")).toHaveValue(7)
+  expect(new FormData(container.querySelector("form")!).get("allowSharedBookings")).toBe("on")
 })

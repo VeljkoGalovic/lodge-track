@@ -70,6 +70,7 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
               address: property.address,
               icalUrl: property.icalUrl,
               currency: property.currency,
+              allowSharedBookings: property.allowSharedBookings,
               bedCount: property._count.units,
             }}
           />

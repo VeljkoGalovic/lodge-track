@@ -2,7 +2,10 @@ import { prisma } from "@/lib/prisma"
 import type { BusyInterval } from "@/lib/availability"
 
 /**
- * Every unit in the organization, flat, each naming its own property.
+ * Every unit in the organization, flat, each naming its own property, with the
+ * property's shared-booking flag so one payload can drive both the booking
+ * form's conditional UI and the property pickers that must not offer bed slots
+ * as standalone choices.
  *
  * Flat rather than nested so the booking form can filter to whichever property
  * is currently selected in the browser. Deliberately *not* a `"use server"`
@@ -15,7 +18,13 @@ export async function unitsForOrganization(orgId: string) {
   return prisma.propertyUnit.findMany({
     where: { orgId },
     orderBy: [{ name: "asc" }],
-    select: { id: true, propertyId: true, name: true, kind: true },
+    select: {
+      id: true,
+      propertyId: true,
+      name: true,
+      kind: true,
+      property: { select: { allowSharedBookings: true } },
+    },
   })
 }
 
@@ -46,6 +55,6 @@ export async function unitBusyIntervals(
       status: { not: "CANCELLED" },
       id: excludeBookingId ? { not: excludeBookingId } : undefined,
     },
-    select: { propertyId: true, unitId: true, startDate: true, endDate: true },
+    select: { propertyId: true, type: true, unitId: true, bedIds: true, startDate: true, endDate: true },
   })
 }

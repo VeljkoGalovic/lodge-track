@@ -148,6 +148,15 @@ export const en = {
     unitName: "New unit name",
     unitKind: "Kind",
     unitKindPlaceholder: "Double room, cabin, bunk",
+    sharedBookings: "Shared / bed-level bookings",
+    sharedBookingsHelp:
+      "Hostel and coliving mode. Guests can book individual beds while the rest of the beds stay sellable. Leave off for whole-unit rentals — the bed picker and capacity controls stay hidden.",
+    bookingMode: "Booking mode",
+    modeWholeProperty: "Whole property (exclusive)",
+    modeBeds: "Individual bed(s)",
+    beds: "Beds",
+    bedsCount: "{count} bed(s)",
+    noBedsChosen: "Choose at least one bed.",
     name: "Name",
     addresses: "Address",
     bedCount: "Bed count",
@@ -181,6 +190,11 @@ export const en = {
     title: "Units",
     help: "A unit is one bookable part of a property — a room, a cabin, a bed. A property with none is booked whole.",
     empty: "No units — every booking takes the whole property. Add one to let stays overlap.",
+    inventoryTitle: "Sub-units / inventory",
+    inventoryHelp:
+      "The beds this property's shared bookings draw from. The bed count on the property form sets capacity; remove a bed here only when no live stay claims it.",
+    capacityOf: "{occupied} of {total} beds occupied",
+    capacityLabel: "Beds occupied today",
     noKind: "No kind given",
     noneActive: "no active bookings",
     rename: "Rename",
@@ -672,7 +686,13 @@ export const en = {
     occupied: "Booked",
     wholePropertyBlocked: "Whole property is booked",
     showsFree: "{count} of {total} units free",
+    showsBedsFree: "{count} of {total} beds free",
     legend: "Availability",
+    modeExclusiveHelp:
+      "An exclusive stay takes every bed out for these dates — no shared booking can overlap it.",
+    modeSharedHelp:
+      "Each chosen bed is held for these dates. The remaining beds stay open to other guests until none are left.",
+    allBedsBlocked: "Every bed is booked for these dates",
   },
 }
 
@@ -807,6 +827,15 @@ const sr: Dictionary = {
     unitName: "Naziv nove jedinice",
     unitKind: "Vrsta",
     unitKindPlaceholder: "Dvokrevetna soba, koliba, ležaj",
+    sharedBookings: "Deljene rezervacije po ležaju",
+    sharedBookingsHelp:
+      "Režim za hostele i koliving. Gosti mogu rezervisati pojedinačne ležajeve dok ostali ostaju slobodni. Isključite za izdavanje celih jedinica — birač ležaja i kontrole kapaciteta ostaju skriveni.",
+    bookingMode: "Režim rezervacije",
+    modeWholeProperty: "Ceo objekat (ekskluzivno)",
+    modeBeds: "Pojedinačni ležajevi",
+    beds: "Ležajevi",
+    bedsCount: "{count} ležaj(eva)",
+    noBedsChosen: "Izaberite bar jedan ležaj.",
     name: "Naziv",
     addresses: "Adresa",
     bedCount: "Broj ležajeva",
@@ -840,6 +869,11 @@ const sr: Dictionary = {
     title: "Jedinice",
     help: "Jedinica je jedan deo objekta koji se može rezervisati — soba, koliba, ležaj. Objekat bez jedinica rezerviše se u celosti.",
     empty: "Nema jedinica — svaka rezervacija zauzima ceo objekat. Dodajte jedinicu da se boravci mogu preklapati.",
+    inventoryTitle: "Pod-jedinice / inventar",
+    inventoryHelp:
+      "Ležajevi iz kojih se crpe deljena rezervacija ovog objekta. Broj ležajeva na formi objekta određuje kapacitet; uklonite ležaj samo kada ga nijedan aktivan boravak ne drži.",
+    capacityOf: "{occupied} od {total} ležajeva zauzeto",
+    capacityLabel: "Zauzeti ležajevi danas",
     noKind: "Vrsta nije navedena",
     noneActive: "nema aktivnih rezervacija",
     rename: "Preimenuj",
@@ -1332,7 +1366,13 @@ const sr: Dictionary = {
     occupied: "Zauzeto",
     wholePropertyBlocked: "Ceo objekat je rezervisan",
     showsFree: "{count} od {total} jedinica slobodno",
+    showsBedsFree: "{count} od {total} ležajeva slobodno",
     legend: "Zauzetost",
+    modeExclusiveHelp:
+      "Ekskluzivan boravak zauzima sve ležajeve za ove datume — nijedna deljena rezervacija ne može da se preklapa sa njim.",
+    modeSharedHelp:
+      "Svaki izabrani ležaj se drži za ove datume. Preostali ležajevi ostaju otvoreni za druge goste dok ih sve ne nestane.",
+    allBedsBlocked: "Svi ležajevi su rezervisani za ove datume",
   },
 }
 

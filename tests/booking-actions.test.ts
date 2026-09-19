@@ -21,7 +21,7 @@ import { deleteUnit } from "@/app/actions/units"
 import { serializable } from "@/lib/transaction"
 
 const db = mocks.db
-const stay = { id: "stay", propertyId: "home", unitId: "bed-1", guestName: "Test guest", startDate: new Date(2026, 8, 1), endDate: new Date(2026, 8, 5), status: "CONFIRMED", unit: { name: "Bed 1" } }
+const stay = { id: "stay", propertyId: "home", type: "SHARED_BED", unitId: "bed-1", bedIds: ["bed-1"], guestName: "Test guest", startDate: new Date(2026, 8, 1), endDate: new Date(2026, 8, 5), status: "CONFIRMED", unit: { name: "Bed 1" } }
 function form(extra: Record<string, string> = {}) {
   const result = new FormData()
   for (const [key, value] of Object.entries({ id: "stay", propertyId: "home", unitId: "bed-1", guestName: "Test guest", startDate: "2026-09-01", endDate: "2026-09-05", status: "CONFIRMED", totalAmount: "1.005", orgId: "forged-org", ...extra })) result.set(key, value)
@@ -32,7 +32,7 @@ beforeEach(() => {
   mocks.auth.mockResolvedValue({ user: { email: "local@example.test" } })
   db.user.findUnique.mockResolvedValue({ id: "member", role: "MANAGER", organization: { id: "org-a", currency: "USD", subscription: null } })
   db.$transaction.mockImplementation(work => work(db))
-  db.property.findFirst.mockResolvedValue({ id: "home" })
+  db.property.findFirst.mockResolvedValue({ id: "home", allowSharedBookings: true })
   db.propertyUnit.findFirst.mockResolvedValue({ id: "bed-1", propertyId: "home", name: "Bed 1" })
   db.booking.findFirst.mockResolvedValue(stay)
   db.booking.findMany.mockResolvedValue([])
@@ -63,7 +63,7 @@ describe("booking authorization and atomic action boundaries", () => {
   })
   it("uses membership tenant, not submitted orgId, for property/unit validation", async () => {
     expect((await createBooking({}, form())).success).toBeTruthy()
-    expect(db.property.findFirst).toHaveBeenCalledWith({ where: { id: "home", orgId: "org-a" }, select: { id: true } })
+    expect(db.property.findFirst).toHaveBeenCalledWith({ where: { id: "home", orgId: "org-a" }, select: { id: true, allowSharedBookings: true } })
     expect(db.propertyUnit.findFirst).toHaveBeenCalledWith({ where: { id: "bed-1", propertyId: "home", orgId: "org-a" }, select: { id: true } })
     expect(db.booking.findMany.mock.calls[0][0].where.property).toEqual({ orgId: "org-a" })
     expect(db.booking.create.mock.calls[0][0].data).toMatchObject({ unitId: "bed-1", totalAmount: 101 })
@@ -96,11 +96,66 @@ describe("booking authorization and atomic action boundaries", () => {
     expect((await createBooking({}, form({ unitId }))).error).toMatch(/not free/)
     expect(db.booking.create).not.toHaveBeenCalled()
   })
+  it("creates a whole-unit booking with empty bedIds when no mode is posted", async () => {
+    expect((await createBooking({}, form())).success).toBeTruthy()
+    expect(db.booking.create.mock.calls[0][0].data).toMatchObject({ type: "WHOLE_UNIT", unitId: "bed-1", bedIds: [] })
+  })
   it("allows a different bed while the first three of five are occupied", async () => {
     db.propertyUnit.findFirst.mockResolvedValue({ id: "bed-4" })
     db.booking.findMany.mockResolvedValue([1, 2, 3].map(i => ({ ...stay, id: `stay-${i}`, unitId: `bed-${i}` })))
     expect((await createBooking({}, form({ unitId: "bed-4" }))).success).toBeTruthy()
     expect(db.booking.create.mock.calls[0][0].data.unitId).toBe("bed-4")
+  })
+  it("books several free beds in one shared transaction", async () => {
+    db.propertyUnit.findMany.mockResolvedValue([{ id: "bed-1" }, { id: "bed-2" }])
+    const data = new FormData()
+    for (const [key, value] of Object.entries({ propertyId: "home", guestName: "Test guest", startDate: "2026-09-01", endDate: "2026-09-05", status: "CONFIRMED", bookingMode: "beds" })) data.set(key, value)
+    data.append("bedIds", "bed-1")
+    data.append("bedIds", "bed-2")
+    expect((await createBooking({}, data)).success).toBeTruthy()
+    expect(db.booking.create.mock.calls.at(-1)?.[0].data).toMatchObject({
+      type: "SHARED_BED",
+      bedIds: ["bed-1", "bed-2"],
+    })
+  })
+  it("refuses shared-bed mode when the property has not opted in", async () => {
+    db.property.findFirst.mockResolvedValue({ id: "home", allowSharedBookings: false })
+    const data = new FormData()
+    for (const [key, value] of Object.entries({ propertyId: "home", guestName: "Test guest", startDate: "2026-09-01", endDate: "2026-09-05", status: "CONFIRMED", bookingMode: "beds" })) data.set(key, value)
+    data.append("bedIds", "bed-1")
+    expect((await createBooking({}, data)).error).toMatch(/does not accept individual bed/)
+    expect(db.booking.create).not.toHaveBeenCalled()
+  })
+  it("rejects a shared stay claiming a bed from another property", async () => {
+    db.propertyUnit.findMany.mockResolvedValue([{ id: "bed-1" }])
+    const data = new FormData()
+    for (const [key, value] of Object.entries({ propertyId: "home", guestName: "Test guest", startDate: "2026-09-01", endDate: "2026-09-05", status: "CONFIRMED", bookingMode: "beds" })) data.set(key, value)
+    data.append("bedIds", "bed-1")
+    data.append("bedIds", "foreign-bed")
+    expect((await createBooking({}, data)).error).toMatch(/belong to this property/)
+    expect(db.booking.create).not.toHaveBeenCalled()
+  })
+  it("refuses a shared stay when every chosen bed is already held", async () => {
+    db.propertyUnit.findMany.mockResolvedValue([{ id: "bed-1" }])
+    db.booking.findMany.mockResolvedValue([{ ...stay, type: "SHARED_BED", bedIds: ["bed-1"], unitId: "bed-1" }])
+    const data = new FormData()
+    for (const [key, value] of Object.entries({ propertyId: "home", guestName: "Test guest", startDate: "2026-09-01", endDate: "2026-09-05", status: "CONFIRMED", bookingMode: "beds" })) data.set(key, value)
+    data.append("bedIds", "bed-1")
+    expect((await createBooking({}, data)).error).toMatch(/not free/)
+    expect(db.booking.create).not.toHaveBeenCalled()
+  })
+  it("stores the first chosen bed as unitId for shared stays", async () => {
+    db.propertyUnit.findMany.mockResolvedValue([{ id: "bed-7" }, { id: "bed-3" }])
+    const data = new FormData()
+    for (const [key, value] of Object.entries({ propertyId: "home", guestName: "Test guest", startDate: "2026-09-01", endDate: "2026-09-05", status: "CONFIRMED", bookingMode: "beds" })) data.set(key, value)
+    data.append("bedIds", "bed-7")
+    data.append("bedIds", "bed-3")
+    expect((await createBooking({}, data)).success).toBeTruthy()
+    expect(db.booking.create.mock.calls.at(-1)?.[0].data).toMatchObject({
+      type: "SHARED_BED",
+      unitId: "bed-7",
+      bedIds: ["bed-7", "bed-3"],
+    })
   })
   it("a cancelled create does not claim capacity", async () => {
     expect((await createBooking({}, form({ status: "CANCELLED" }))).success).toBeTruthy()
@@ -135,7 +190,7 @@ describe("booking authorization and atomic action boundaries", () => {
 
 describe("property bed count", () => {
   function propertyForm(extra: Record<string, string> = {}) {
-    return form({ id: "home", name: "Motel", address: "12 Lake Road", bedCount: "4", ...extra })
+    return form({ id: "home", name: "Motel", address: "12 Lake Road", allowSharedBookings: "on", bedCount: "4", ...extra })
   }
 
   it("creates the property and its beds in one transaction", async () => {
@@ -146,7 +201,7 @@ describe("property bed count", () => {
     // mock passes `db` itself as `tx`, so the work's calls land on the same
     // recorded mocks — one transaction, property and beds together.
     expect(db.$transaction).toHaveBeenCalledOnce()
-    expect(db.property.create.mock.calls[0][0].data).toMatchObject({ orgId: "org-a", name: "Motel" })
+    expect(db.property.create.mock.calls[0][0].data).toMatchObject({ orgId: "org-a", name: "Motel", allowSharedBookings: true })
     expect(db.propertyUnit.createMany).toHaveBeenCalledWith({
       data: [
         { name: "Bed 1", kind: "Bed", propertyId: "new-home", orgId: "org-a" },
@@ -154,6 +209,11 @@ describe("property bed count", () => {
         { name: "Bed 3", kind: "Bed", propertyId: "new-home", orgId: "org-a" },
       ],
     })
+  })
+  it("a traditional property without the toggle creates no beds", async () => {
+    await createProperty({}, propertyForm({ allowSharedBookings: "", bedCount: "3" }))
+    expect(db.property.create.mock.calls.at(-1)?.[0].data).toMatchObject({ allowSharedBookings: false })
+    expect(db.propertyUnit.createMany).not.toHaveBeenCalled()
   })
   it("creates one bookable bed when the count is one", async () => {
     await createProperty({}, propertyForm({ bedCount: "1" }))
@@ -208,6 +268,12 @@ describe("property bed count", () => {
     data.set("address", "12 Lake Road")
     expect((await updateProperty({}, data)).success).toBeTruthy()
     expect(db.propertyUnit.findMany).not.toHaveBeenCalled()
+    expect(db.propertyUnit.createMany).not.toHaveBeenCalled()
+  })
+  it("turning the flag off persists and stops bed creation", async () => {
+    db.propertyUnit.findMany.mockResolvedValue([{ name: "Bed 1" }])
+    expect((await updateProperty({}, propertyForm({ allowSharedBookings: "" }))).success).toBeTruthy()
+    expect(db.property.updateMany.mock.calls.at(-1)?.[0].data).toMatchObject({ allowSharedBookings: false })
     expect(db.propertyUnit.createMany).not.toHaveBeenCalled()
   })
   it("reports name collisions as a friendly error and keeps the save failed-safe", async () => {

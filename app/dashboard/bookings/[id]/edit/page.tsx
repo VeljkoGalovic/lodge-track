@@ -44,7 +44,7 @@ export default async function EditBookingPage({ params }: { params: Promise<{ id
     prisma.property.findMany({
       where: { orgId: organization.id },
       orderBy: { name: "asc" },
-      select: { id: true, name: true },
+      select: { id: true, name: true, allowSharedBookings: true },
     }),
     unitsForOrganization(organization.id),
     /*
@@ -85,7 +85,9 @@ export default async function EditBookingPage({ params }: { params: Promise<{ id
             booking={{
               id: booking.id,
               propertyId: booking.propertyId,
+              type: booking.type,
               unitId: booking.unitId,
+              bedIds: booking.bedIds,
               guestName: booking.guestName,
               startDate: booking.startDate,
               endDate: booking.endDate,

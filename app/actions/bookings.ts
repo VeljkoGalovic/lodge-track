@@ -1,7 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { BookingStatus, type Prisma } from "@prisma/client"
+import { BookingStatus, BookingType, type Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { serializable } from "@/lib/transaction"
 import {
@@ -16,13 +16,26 @@ import { describeConflict, findConflicts, type SlotClaim } from "@/lib/availabil
 
 const STATUSES = Object.values(BookingStatus)
 const MAX_STAY_NIGHTS = 365 * 2
+/** Upper bound on the beds one shared stay may claim, matching the property cap. */
+const MAX_BEDS_PER_BOOKING = 200
 
 function readBooking(formData: FormData) {
+  /**
+   * How the stay claims the property. `whole`/`unitId` are the legacy fields the
+   * unit picker posts; `bedIds` arrives as a multi-select when the property has
+   * shared bookings on and the host chose "Individual bed(s)".
+   */
+  const bookingMode = field(formData, "bookingMode") || "unit"
   return {
+    bookingMode,
     propertyId: field(formData, "propertyId"),
     // An empty string is the "whole property" choice, which is what a property
     // with no units can ever offer.
     unitId: field(formData, "unitId"),
+    bedIds: formData
+      .getAll("bedIds")
+      .filter((entry): entry is string => typeof entry === "string" && entry.trim() !== "")
+      .map((entry) => entry.trim()),
     guestName: field(formData, "guestName"),
     startDate: dateField(formData, "startDate"),
     endDate: dateField(formData, "endDate"),
@@ -32,6 +45,8 @@ function readBooking(formData: FormData) {
 }
 
 type BookingInput = ReturnType<typeof readBooking>
+/** `BookingInput` plus the tenant, added only after the session is resolved. */
+type OwnedBookingInput = BookingInput & { orgId: string }
 
 /**
  * Validates everything except ownership of the property, which needs a database
@@ -60,37 +75,88 @@ function validate(input: BookingInput): string | null {
  * Confirms the property exists *and* belongs to this organization. Without the
  * `orgId` term a request could file a booking against another tenant's property
  * simply by guessing its id, since ids are the only thing the form carries.
+ * Returns the row (not a boolean) so the caller can branch on
+ * `allowSharedBookings` — the flag that decides what a submitted claim may look
+ * like — without a second query.
  */
-async function propertyIsOurs(tx: Prisma.TransactionClient, propertyId: string, orgId: string): Promise<boolean> {
-  const property = await tx.property.findFirst({
+async function ourProperty(
+  tx: Prisma.TransactionClient,
+  propertyId: string,
+  orgId: string
+): Promise<{ id: string; allowSharedBookings: boolean } | null> {
+  return tx.property.findFirst({
     where: { id: propertyId, orgId },
-    select: { id: true },
+    select: { id: true, allowSharedBookings: true },
   })
-  return property !== null
+}
+
+/** The resolved claim a booking row will store. */
+interface ResolvedClaim {
+  type: BookingType
+  unitId: string | null
+  bedIds: string[]
+}
+
+type ClaimProblem =
+  | "unit-not-ours"
+  | "shared-off"
+  | "no-beds"
+  | "too-many-beds"
+  | "duplicate-beds"
+  | "bed-not-ours"
+
+const CLAIM_MESSAGES: Record<ClaimProblem, string> = {
+  "unit-not-ours": "Choose a unit that belongs to this property.",
+  "shared-off": "This property does not accept individual bed bookings.",
+  "no-beds": "Choose at least one bed.",
+  "too-many-beds": `A stay can hold at most ${MAX_BEDS_PER_BOOKING} beds.`,
+  "duplicate-beds": "Each bed can only be chosen once.",
+  "bed-not-ours": "Choose beds that belong to this property.",
 }
 
 /**
- * Resolves the submitted unit against the chosen property.
+ * Resolves the submitted claim — a legacy unit pick, an exclusive whole-property
+ * stay, or a shared-bed selection — against the chosen property.
  *
- * Scoped by `orgId` *and* `propertyId` together, so a unit id from a different
- * property — or a different tenant — matches nothing rather than being attached
- * to this booking. Returns a discriminated result so "no unit chosen" (null, a
- * legitimate whole-property booking) cannot be confused with "that unit is not
- * yours" (`ok: false`), which is the mistake that would let a forged id through.
+ * Everything is scoped by `orgId` *and* `propertyId` together, so ids from a
+ * different property — or a different tenant — match nothing rather than being
+ * attached to this booking. The discriminated result keeps "nothing claimed"
+ * (a legitimate whole-property booking) from being confused with "that id is
+ * not yours", which is the mistake that would let a forged id through.
  */
-async function resolveUnit(
+async function resolveClaim(
   tx: Prisma.TransactionClient,
-  rawUnitId: string,
-  propertyId: string,
-  orgId: string
-): Promise<{ ok: true; unitId: string | null } | { ok: false }> {
-  if (!rawUnitId) return { ok: true, unitId: null }
+  input: OwnedBookingInput,
+  property: { id: string; allowSharedBookings: boolean }
+): Promise<{ ok: true; claim: ResolvedClaim } | { ok: false; problem: ClaimProblem }> {
+  const orgId = input.orgId
+
+  // Shared-bed mode is only reachable on a property that opted in.
+  if (input.bookingMode === "beds") {
+    if (!property.allowSharedBookings) return { ok: false, problem: "shared-off" }
+    if (input.bedIds.length === 0) return { ok: false, problem: "no-beds" }
+    if (input.bedIds.length > MAX_BEDS_PER_BOOKING) return { ok: false, problem: "too-many-beds" }
+    if (new Set(input.bedIds).size !== input.bedIds.length) {
+      return { ok: false, problem: "duplicate-beds" }
+    }
+
+    const beds = await tx.propertyUnit.findMany({
+      where: { id: { in: input.bedIds }, propertyId: property.id, orgId },
+      select: { id: true },
+    })
+    if (beds.length !== input.bedIds.length) return { ok: false, problem: "bed-not-ours" }
+
+    return { ok: true, claim: { type: "SHARED_BED", unitId: input.bedIds[0], bedIds: input.bedIds } }
+  }
+
+  if (!input.unitId) return { ok: true, claim: { type: "WHOLE_UNIT", unitId: null, bedIds: [] } }
 
   const unit = await tx.propertyUnit.findFirst({
-    where: { id: rawUnitId, propertyId, orgId },
+    where: { id: input.unitId, propertyId: property.id, orgId },
     select: { id: true },
   })
-  return unit ? { ok: true, unitId: unit.id } : { ok: false }
+  if (!unit) return { ok: false, problem: "unit-not-ours" }
+  return { ok: true, claim: { type: "WHOLE_UNIT", unitId: unit.id, bedIds: [] } }
 }
 
 /**
@@ -106,7 +172,14 @@ async function resolveUnit(
 async function findBookingConflicts(
   tx: Prisma.TransactionClient,
   orgId: string,
-  candidate: { propertyId: string; unitId: string | null; startDate: Date; endDate: Date },
+  candidate: {
+    propertyId: string
+    type: BookingType
+    unitId: string | null
+    bedIds: string[]
+    startDate: Date
+    endDate: Date
+  },
   ignoreId?: string
 ): Promise<(SlotClaim & { unitName: string | null })[]> {
   const overlapping = await tx.booking.findMany({
@@ -122,7 +195,9 @@ async function findBookingConflicts(
     select: {
       id: true,
       propertyId: true,
+      type: true,
       unitId: true,
+      bedIds: true,
       startDate: true,
       endDate: true,
       status: true,
@@ -165,16 +240,15 @@ export async function createBooking(
   if (!amount.ok) return { error: "The rate must be a number, or left empty." }
 
   const result = await serializable(async (tx): Promise<ActionState> => {
-    if (!(await propertyIsOurs(tx, input.propertyId, membership.organization.id))) {
-      return { error: "Choose a property in your organization." }
-    }
+    const property = await ourProperty(tx, input.propertyId, membership.organization.id)
+    if (!property) return { error: "Choose a property in your organization." }
 
-    const unit = await resolveUnit(tx, input.unitId, input.propertyId, membership.organization.id)
-    if (!unit.ok) return { error: "Choose a unit that belongs to this property." }
+    const claim = await resolveClaim(tx, { ...input, orgId: membership.organization.id }, property)
+    if (!claim.ok) return { error: CLAIM_MESSAGES[claim.problem] }
 
     const conflicts = input.status === "CANCELLED" ? [] : await findBookingConflicts(tx, membership.organization.id, {
       propertyId: input.propertyId,
-      unitId: unit.unitId,
+      ...claim.claim,
       startDate: input.startDate!,
       endDate: input.endDate!,
   })
@@ -185,7 +259,7 @@ export async function createBooking(
   const booking = await tx.booking.create({
     data: {
       propertyId: input.propertyId,
-      unitId: unit.unitId,
+      ...claim.claim,
       guestName: input.guestName,
       startDate: input.startDate!,
       endDate: input.endDate!,
@@ -226,12 +300,11 @@ export async function updateBooking(
   })
 
   if (!previous) return { error: "That booking no longer exists." }
-  if (!(await propertyIsOurs(tx, input.propertyId, membership.organization.id))) {
-    return { error: "Choose a property in your organization." }
-  }
+  const property = await ourProperty(tx, input.propertyId, membership.organization.id)
+  if (!property) return { error: "Choose a property in your organization." }
 
-  const unit = await resolveUnit(tx, input.unitId, input.propertyId, membership.organization.id)
-  if (!unit.ok) return { error: "Choose a unit that belongs to this property." }
+  const claim = await resolveClaim(tx, { ...input, orgId: membership.organization.id }, property)
+  if (!claim.ok) return { error: CLAIM_MESSAGES[claim.problem] }
 
   /*
    * The booking being edited is excluded from its own conflict check — otherwise
@@ -243,7 +316,7 @@ export async function updateBooking(
     membership.organization.id,
     {
       propertyId: input.propertyId,
-      unitId: unit.unitId,
+      ...claim.claim,
       startDate: input.startDate!,
       endDate: input.endDate!,
     },
@@ -257,7 +330,7 @@ export async function updateBooking(
     where: { id, property: { orgId: membership.organization.id } },
     data: {
       propertyId: input.propertyId,
-      unitId: unit.unitId,
+      ...claim.claim,
       guestName: input.guestName,
       startDate: input.startDate!,
       endDate: input.endDate!,
@@ -324,7 +397,9 @@ export async function setBookingStatus(
       where: { id, property: { orgId: membership.organization.id } },
       select: {
         propertyId: true,
+        type: true,
         unitId: true,
+        bedIds: true,
         startDate: true,
         endDate: true,
       },
@@ -332,10 +407,10 @@ export async function setBookingStatus(
   if (!booking) return { error: "That booking no longer exists." }
 
   /*
-   * Reviving a cancelled booking re-takes its slot, which may have been sold in
-   * the meantime. Checked here for the same reason create and edit check: the
-   * conflict rule is only worth having if every path that puts a stay back on the
-   * calendar goes through it.
+   * Reviving a cancelled booking re-takes its slot — its beds, for a shared-bed
+   * stay — which may have been sold in the meantime. Checked here for the same
+   * reason create and edit check: the conflict rule is only worth having if every
+   * path that puts a stay back on the calendar goes through it.
    */
   if (status !== "CANCELLED") {
     const conflicts = await findBookingConflicts(
@@ -343,7 +418,9 @@ export async function setBookingStatus(
       membership.organization.id,
       {
         propertyId: booking.propertyId,
+        type: booking.type,
         unitId: booking.unitId,
+        bedIds: booking.bedIds,
         startDate: booking.startDate,
         endDate: booking.endDate,
       },

@@ -39,6 +39,19 @@ enum BookingStatus {
 }
 
 /**
+ * What a stay claims.
+ *
+ * WHOLE_UNIT is the pre-existing behaviour: one row owns the property (or, on a
+ * property with units and shared bookings off, one named unit). SHARED_BED only
+ * exists on a property with `allowSharedBookings` and claims the specific beds
+ * listed in `bedIds`, leaving the rest of the capacity open to other guests.
+ */
+enum BookingType {
+  WHOLE_UNIT
+  SHARED_BED
+}
+
+/**
  * What an expense was for. A closed enum rather than free text so the expense
  * list can group and total by category without the totals fragmenting across
  * "utilities", "Utilities" and "utility".
@@ -207,6 +220,18 @@ model Property {
   icalUrl   String?
   currency  String?   // Overrides Organization.currency for this property
 
+  /**
+   * Opt-in switch for coliving/hostel-style capacity booking.
+   *
+   * Off (the default) the app behaves exactly as before: whole-unit
+   * reservations only, and the bed-level picker never appears in the UI. On,
+   * the property's units become bed *slots* — they are no longer offered as
+   * standalone bookable choices; the booking form instead offers an exclusive
+   * whole-property stay or a multi-bed shared stay validated against total
+   * capacity.
+   */
+  allowSharedBookings Boolean @default(false)
+
   // Property belongs to Organization now, not individual User
   orgId     String
   org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
@@ -274,9 +299,39 @@ model Booking {
    * the same statement. Deleting a unit *on its own* is refused in the action
    * layer while bookings reference it, so this never silently widens a booking
    * into the whole property behind the user's back.
+   *
+   * On a shared-bookings property this names the *first* bed of a SHARED_BED
+   * stay, kept in sync with `bedIds` for backwards-compatible joins and reads;
+   * a WHOLE_UNIT stay leaves it null — exclusivity is carried by `type`, not by
+   * which rows happen to point somewhere.
    */
   unitId     String?
   unit       PropertyUnit? @relation(fields: [unitId], references: [id], onDelete: SetNull)
+
+  /**
+   * What this stay claims — see the `BookingType` enum.
+   *
+   * A whole-property/exclusive stay takes every bed slot out at once; a
+   * SHARED_BED stay takes exactly the beds in `bedIds`. Defaults to WHOLE_UNIT,
+   * which is every booking that existed before shared bookings did.
+   */
+  type       BookingType @default(WHOLE_UNIT)
+
+  /**
+   * The specific bed slots a SHARED_BED stay holds.
+   *
+   * A scalar Postgres array rather than a join table: the list is only ever
+   * read whole, its length is the bed count of the stay, and the ids are
+   * `PropertyUnit` ids denormalised here so an availability scan is one query
+   * instead of a join. Always empty for WHOLE_UNIT stays.
+   *
+   * Capacity is validated transactionally at write time (the count of claimed
+   * beds must fit the property's free slots), so no uniqueness constraint can
+   * express the rule — two SHARED_BED stays may each hold "bed-2" only while a
+   * whole-property stay does not also cover those dates, which is exactly the
+   * case the check exists for.
+   */
+  bedIds     String[] @default([])
 
   guestName  String
   startDate  DateTime
@@ -296,6 +351,15 @@ model Booking {
   @@index([propertyId, startDate, endDate])
   @@index([unitId])
 }
+
+/*
+ * Migration note for shared bookings.
+ *
+ * Nothing is backfilled: every existing row keeps `WHOLE_UNIT` with empty
+ * `bedIds` and every existing property keeps `allowSharedBookings = false`, so
+ * the pre-refactor meaning of every row is unchanged. A property that opts in
+ * later already lists its capacity as "Bed N" units (the bed-count feature), so
+ * turning the flag on reinterprets those rows as slots with no data migration.
 
 /**
  * A cost incurred against a property — maintenance, utilities, supplies.

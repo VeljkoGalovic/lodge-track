@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState } from "react"
+import { useActionState, useState } from "react"
 import { createProperty, updateProperty } from "@/app/actions/properties"
 import { EMPTY_ACTION_STATE } from "@/lib/action-state"
 import { useActionRedirect } from "@/lib/use-action-redirect"
@@ -19,6 +19,7 @@ interface PropertyFormProps {
     address: string
     icalUrl: string | null
     currency: string | null
+    allowSharedBookings: boolean
     /** Current number of units, prefilling the bed-count field on edit. */
     bedCount?: number
   }
@@ -30,6 +31,15 @@ export function PropertyForm({ property }: PropertyFormProps) {
   const action = property ? updateProperty : createProperty
   const [state, formAction] = useActionState(action, EMPTY_ACTION_STATE)
   useActionRedirect(state)
+
+  /**
+   * The shared-bookings toggle is the gate for every bed-level feature: the bed
+   * count field only exists on the page while it is ticked, and the action
+   * ignores both when the flag is off. `defaultValue` (uncontrolled) keeps the
+   * checkbox a plain form field — the bed count below is what needs to come and
+   * go with it.
+   */
+  const [shared, setShared] = useState(property?.allowSharedBookings ?? false)
 
   return (
     <form action={formAction} className="space-y-5">
@@ -82,22 +92,49 @@ export function PropertyForm({ property }: PropertyFormProps) {
         </p>
       </div>
 
-      <div className="space-y-2">
-        <label htmlFor="bedCount" className="text-sm font-medium text-muted-foreground">
-          {t.forms.bedCount}
-        </label>
-        <Input
-          id="bedCount"
-          name="bedCount"
-          type="number"
-          min={1}
-          max={200}
-          step={1}
-          inputMode="numeric"
-          defaultValue={Math.max(1, property?.bedCount ?? 1)}
-          required
-        />
-        <p className="text-xs text-subtle-foreground">{t.forms.bedCountHelp}</p>
+      {/*
+        The opt-in toggle. Disabled when the property already has shared stays:
+        flipping it off would hide inventory that live bookings still claim, and
+        that refusal is the action's to explain, so the field itself stays
+        enabled and the server rejects it.
+      */}
+      <div className="space-y-2 rounded-2xl border border-border bg-muted p-4">
+        <div className="flex items-start gap-3">
+          <input
+            id="allowSharedBookings"
+            name="allowSharedBookings"
+            type="checkbox"
+            checked={shared}
+            onChange={(event) => setShared(event.target.checked)}
+            className="mt-1 h-4 w-4 rounded border-border accent-[color:var(--primary)]"
+          />
+          <div>
+            <label htmlFor="allowSharedBookings" className="text-sm font-medium text-foreground">
+              {t.forms.sharedBookings}
+            </label>
+            <p className="mt-1 text-xs text-subtle-foreground">{t.forms.sharedBookingsHelp}</p>
+          </div>
+        </div>
+
+        {shared ? (
+          <div className="space-y-2 pt-1">
+            <label htmlFor="bedCount" className="text-sm font-medium text-muted-foreground">
+              {t.forms.bedCount}
+            </label>
+            <Input
+              id="bedCount"
+              name="bedCount"
+              type="number"
+              min={1}
+              max={200}
+              step={1}
+              inputMode="numeric"
+              defaultValue={Math.max(1, property?.bedCount ?? 1)}
+              required
+            />
+            <p className="text-xs text-subtle-foreground">{t.forms.bedCountHelp}</p>
+          </div>
+        ) : null}
       </div>
 
       <div className="space-y-2">

@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress"
 
 interface MetricCardProps {
   title: string
-  value: string | number
+  value: React.ReactNode
   subtitle?: string
   icon: React.ReactNode
   trend?: { value: number; label: string }
@@ -95,7 +95,7 @@ export function MetricCard({
 interface MetricsGridProps {
   metrics: Array<{
     title: string
-    value: string | number
+    value: React.ReactNode
     subtitle?: string
     icon: React.ReactNode
     trend?: { value: number; label: string }

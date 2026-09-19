@@ -38,7 +38,8 @@ export default async function DashboardPage() {
           subscription: true,
           properties: {
             include: {
-              bookings: true
+              bookings: true,
+              _count: { select: { units: true } },
             }
           }
         }
@@ -106,17 +107,32 @@ export default async function DashboardPage() {
   const recentProperties = [...properties]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 5)
-    .map((property) => ({
-      id: property.id,
-      name: property.name,
-      bookingCount: property.bookings.length,
-      occupied: property.bookings.some(
+    .map((property) => {
+      const tonight = property.bookings.filter(
         (booking) =>
           booking.status !== "CANCELLED" &&
           new Date(booking.startDate) <= now &&
           new Date(booking.endDate) >= now
-      ),
-    }))
+      )
+      return {
+        id: property.id,
+        name: property.name,
+        bookingCount: property.bookings.length,
+        occupied: tonight.length > 0,
+        /** Capacity read for shared properties; null keeps the classic badge. */
+        bedsOccupied: property.allowSharedBookings
+          ? tonight.reduce(
+              (sum, booking) =>
+                sum +
+                (booking.type === "SHARED_BED"
+                  ? booking.bedIds.length
+                  : property._count.units || 1),
+              0
+            )
+          : null,
+        bedsTotal: property._count.units,
+      }
+    })
 
   // Recent bookings (newest first), reporting the status actually stored
   const recentBookings = [...bookings]

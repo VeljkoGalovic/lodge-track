@@ -42,7 +42,13 @@ function readProperty(formData: FormData) {
     currency = currencyRaw
   }
 
-  return { name, address, icalUrl: icalUrl || null, currency }
+  /**
+   * A missing field means unchecked: HTML checkboxes post nothing when they are
+   * not ticked, so "absent" is exactly "off" and needs no extra marker.
+   */
+  const allowSharedBookings = formData.get("allowSharedBookings") === "on"
+
+  return { name, address, icalUrl: icalUrl || null, currency, allowSharedBookings }
 }
 
 function validate(
@@ -92,12 +98,11 @@ export async function createProperty(
   if (!membership) return { error: "Your session has expired. Please sign in again." }
   if (!canManage(membership.user.role)) {
     return { error: "You do not have permission to add properties." }
-  }
-
-  const { name, address, icalUrl, currency } = readProperty(formData)
+  }  const { name, address, icalUrl, currency, allowSharedBookings } = readProperty(formData)
   const bedCount = readBedCount(formData)
   const problem = validate(name, address, bedCount)
   if (problem) return { error: problem }
+
 
   const { maxProperties } = getOrgFeatures(
     membership.subscription?.tier ?? "STARTER",
@@ -120,12 +125,17 @@ export async function createProperty(
    * Property and its beds are one unit of creation: a property with a stated
    * bed count but no bed rows would book whole and contradict its own form.
    * Inside one transaction either both exist or neither does.
+   *
+   * Beds are only created when shared bookings are on — the whole point of the
+   * flag is that a traditional landlord never gets bed rows, bed pickers, or any
+   * of the shared inventory UI. The bed-count field is likewise only shown for
+   * opted-in properties, so an unticked form means no units at all.
    */
   const property = await prisma.$transaction(async tx => {
     const created = await tx.property.create({
-      data: { name, address, icalUrl, currency, orgId: membership.organization.id },
+      data: { name, address, icalUrl, currency, allowSharedBookings, orgId: membership.organization.id },
     })
-    if (wanted >= 1) {
+    if (allowSharedBookings && wanted >= 1) {
       await tx.propertyUnit.createMany({
         data: Array.from({ length: wanted }, (_, i) => ({
           name: `Bed ${i + 1}`,
@@ -154,7 +164,7 @@ export async function updateProperty(
   }
 
   const id = field(formData, "id")
-  const { name, address, icalUrl, currency } = readProperty(formData)
+  const { name, address, icalUrl, currency, allowSharedBookings } = readProperty(formData)
   const bedCount = readBedCount(formData)
   const problem = validate(name, address, bedCount)
   if (problem) return { error: problem }
@@ -163,12 +173,14 @@ export async function updateProperty(
     const updated = await serializable(async tx => {
       const { count } = await tx.property.updateMany({
         where: { id, orgId: membership.organization.id },
-        data: { name, address, icalUrl, currency },
+        data: { name, address, icalUrl, currency, allowSharedBookings },
       })
       if (count === 0) return false
 
       // Lowering never deletes units; UnitsCard checks bookings before removal.
-      if (bedCount.ok && bedCount.count !== null) {
+      // Shared stays already on the property keep their beds — flipping the
+      // flag off hides the bed UI, it does not rewrite anyone's booking.
+      if (allowSharedBookings && bedCount.ok && bedCount.count !== null) {
         const beds = await missingBeds(tx, id, membership.organization.id, bedCount.count)
         if (beds.length > 0) await tx.propertyUnit.createMany({ data: beds })
       }

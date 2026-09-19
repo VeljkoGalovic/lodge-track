@@ -32,6 +32,7 @@ export default async function BookingsPage() {
               bookings: {
                 include: { unit: { select: { name: true } } },
               },
+              _count: { select: { units: true } },
             },
           },
         },
@@ -57,8 +58,23 @@ export default async function BookingsPage() {
       propertyName: p.name,
       propertyId: p.id,
       propertyCurrency: p.currency || org.currency,
+      propertyUnits: p._count.units,
     }))
   ).sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
+
+  /**
+   * What the unit column says for one stay: a shared stay names its beds, an
+   * exclusive stay on a divided property names the unit, everything else is the
+   * whole property.
+   */
+  function slotLabel(booking: (typeof allBookings)[number]): string {
+    if (booking.type === "SHARED_BED") {
+      return booking.bedIds.length === 1
+        ? booking.unit?.name ?? t.forms.modeBeds
+        : `${booking.unit?.name ?? ""} +${booking.bedIds.length - 1}`.trim()
+    }
+    return booking.unit?.name ?? t.forms.unitWholeProperty
+  }
 
   return (
     <div className="space-y-6">
@@ -114,7 +130,7 @@ export default async function BookingsPage() {
                     <TableCell className="font-medium text-foreground">{booking.guestName}</TableCell>
                     <TableCell>{booking.propertyName}</TableCell>
                     <TableCell className="text-subtle-foreground">
-                      {booking.unit?.name ?? t.forms.unitWholeProperty}
+                      {slotLabel(booking)}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-sm text-subtle-foreground">
                       {formatDateRange(booking.startDate, booking.endDate, locale)}
