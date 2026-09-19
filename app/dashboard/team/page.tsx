@@ -9,25 +9,13 @@ import { MemberRow } from "@/components/team/MemberRow"
 import { canModifyMember, isOwner } from "@/lib/authorization"
 import { Lock, Users, UserPlus, Shield, ArrowUpRight, Mail } from "lucide-react"
 import { currentLocale } from "@/lib/i18n/server"
-import { getDictionary } from "@/lib/i18n/dictionaries"
-
-const PREVIEW_FEATURES = [
-  {
-    icon: Users,
-    title: "Team Members",
-    description: "Invite and manage team members",
-  },
-  {
-    icon: Shield,
-    title: "Role Management",
-    description: "Assign Owner, Manager, Maintenance roles",
-  },
-  {
-    icon: UserPlus,
-    title: "Invitations",
-    description: "Send and track team invitations",
-  },
-]
+import {
+  format,
+  getDictionary,
+  LINK_COUNT_FORMS,
+  MEMBER_COUNT_FORMS,
+  plural,
+} from "@/lib/i18n/dictionaries"
 
 export default async function TeamPage() {
   const session = await auth()
@@ -59,7 +47,26 @@ export default async function TeamPage() {
 
   // The locale lives on the member row, so it is only readable once that row is
   // in hand. The dashboard layout resolves the same value for the shell.
-  const t = getDictionary(await currentLocale(user.locale))
+  const locale = await currentLocale(user.locale)
+  const t = getDictionary(locale)
+
+  const previewFeatures = [
+    {
+      icon: Users,
+      title: t.pages.team.preview.members,
+      description: t.pages.team.preview.membersHelp,
+    },
+    {
+      icon: Shield,
+      title: t.pages.team.preview.roles,
+      description: t.pages.team.preview.rolesHelp,
+    },
+    {
+      icon: UserPlus,
+      title: t.pages.team.preview.invitations,
+      description: t.pages.team.preview.invitationsHelp,
+    },
+  ]
 
   const org = user.organization
   const subscription = org.subscription
@@ -89,20 +96,19 @@ export default async function TeamPage() {
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-brand-purple/25 bg-brand-purple/10">
               <Lock className="h-8 w-8 text-brand-purple" />
             </div>
-            <h3 className="text-xl font-semibold text-foreground">Team Management Locked</h3>
+            <h3 className="text-xl font-semibold text-foreground">{t.pages.team.locked}</h3>
             <p className="mx-auto mt-2 max-w-2xl text-sm text-subtle-foreground">
-              Invite team members, assign roles (Owner, Manager, Maintenance), and manage permissions
-              with the Pro plan.
+              {t.pages.team.lockedHelp}
             </p>
             <Button size="lg" href="/dashboard/billing" className="mt-6">
               <ArrowUpRight className="mr-2 h-4 w-4" />
-              Upgrade to Pro
+              {t.pages.analytics.upgrade}
             </Button>
           </div>
         </Card>
 
         <div className="grid gap-4 md:grid-cols-3">
-          {PREVIEW_FEATURES.map(({ icon: Icon, title, description }) => (
+          {previewFeatures.map(({ icon: Icon, title, description }) => (
             <Card key={title} className="opacity-60">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -136,9 +142,9 @@ export default async function TeamPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Team Members</CardTitle>
+          <CardTitle>{t.pages.team.members}</CardTitle>
           <CardDescription>
-            {org.users.length} member{org.users.length === 1 ? "" : "s"} in your organization
+            {format(t.pages.team.membersSummary, { members: plural(org.users.length, MEMBER_COUNT_FORMS[locale], locale) })}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -166,17 +172,17 @@ export default async function TeamPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5 text-primary" />
-            Pending invitations
+            {t.pages.team.pendingInvitations}
           </CardTitle>
           <CardDescription>
             {pendingInvitations === 0
-              ? "No invitations are outstanding."
-              : `${pendingInvitations} link${pendingInvitations === 1 ? "" : "s"} created but not yet used.`}
+              ? t.pages.team.noPendingInvitations
+              : format(t.pages.team.pendingSummary, { links: plural(pendingInvitations, LINK_COUNT_FORMS[locale], locale) })}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Button variant="outline" href="/dashboard/team/invite">
-            {pendingInvitations === 0 ? "Invite someone" : "View invitation links"}
+            {pendingInvitations === 0 ? t.pages.team.inviteSomeone : t.pages.team.viewInvitationLinks}
           </Button>
         </CardContent>
       </Card>

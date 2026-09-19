@@ -1,5 +1,6 @@
 "use client"
 
+import { useI18n } from "@/components/i18n/LocaleProvider"
 import { useState } from "react"
 import { Check, Copy } from "lucide-react"
 import { Button } from "@/components/ui/Button"
@@ -16,6 +17,7 @@ interface InviteLinkProps {
  * is always readable, and always selectable by hand.
  */
 export function InviteLink({ url }: InviteLinkProps) {
+  const { t } = useI18n()
   const [copied, setCopied] = useState(false)
 
   async function copy() {
@@ -37,12 +39,12 @@ export function InviteLink({ url }: InviteLinkProps) {
         {copied ? (
           <>
             <Check className="mr-1.5 h-3.5 w-3.5" />
-            Copied
+            {t.team.copied}
           </>
         ) : (
           <>
             <Copy className="mr-1.5 h-3.5 w-3.5" />
-            Copy
+            {t.team.copy}
           </>
         )}
       </Button>

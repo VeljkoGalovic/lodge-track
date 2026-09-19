@@ -8,11 +8,15 @@ import { Button } from "@/components/ui/Button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, Mail } from "lucide-react"
 import { currentLocale } from "@/lib/i18n/server"
-import { getDictionary } from "@/lib/i18n/dictionaries"
+import {
+  format,
+  getDictionary,
+  LINK_COUNT_FORMS,
+  plural,
+} from "@/lib/i18n/dictionaries"
 
 export default async function InviteMemberPage() {
   const { user, organization } = await requireMembership()
-  // Only used to format the expiry dates below in the reader's own language.
   const locale = await currentLocale(user.locale)
   const t = getDictionary(locale)
 
@@ -30,7 +34,7 @@ export default async function InviteMemberPage() {
           <CardContent>
             <Button variant="ghost" href="/dashboard/team">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to team
+              {t.pages.team.backToTeam}
             </Button>
           </CardContent>
         </Card>
@@ -60,18 +64,15 @@ export default async function InviteMemberPage() {
         action={
           <Button variant="ghost" href="/dashboard/team">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            {t.common.back}
           </Button>
         }
       />
 
       <Card>
         <CardHeader>
-          <CardTitle>New invitation</CardTitle>
-          <CardDescription>
-            There is no email provider connected, so nothing is sent automatically — copy the link
-            and pass it on yourself.
-          </CardDescription>
+          <CardTitle>{t.pages.team.newInvitation}</CardTitle>
+          <CardDescription>{t.pages.team.newInvitationHelp}</CardDescription>
         </CardHeader>
         <CardContent>
           <InviteForm canInviteOwner={isOwner(user.role)} />
@@ -86,8 +87,10 @@ export default async function InviteMemberPage() {
           </CardTitle>
           <CardDescription>
             {invitations.length === 0
-              ? "No invitations are outstanding."
-              : `${invitations.length} link${invitations.length === 1 ? "" : "s"} still to be used. Each one works once.`}
+              ? t.pages.team.noPendingInvitations
+              : invitations.length === 1
+                ? t.pages.team.pendingLinksOne
+                : format(t.pages.team.pendingLinks, { links: plural(invitations.length, LINK_COUNT_FORMS[locale], locale) })}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -99,7 +102,7 @@ export default async function InviteMemberPage() {
                 email: invitation.email,
                 role: invitation.role,
                 url: `${origin}/invite/${invitation.token}`,
-                expiresAt: invitation.expiresAt.toLocaleDateString(locale, {
+                expiresAt: invitation.expiresAt.toLocaleDateString(locale === "sr" ? "sr-Latn-RS" : "en-US", {
                   month: "short",
                   day: "numeric",
                   year: "numeric",

@@ -1,8 +1,9 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { BookingStatus } from "@prisma/client"
+import { BookingStatus, type Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
+import { serializable } from "@/lib/transaction"
 import {
   type ActionState,
   canManage,
@@ -44,7 +45,7 @@ function validate(input: BookingInput): string | null {
   if (!guestName) return "Give the booking a guest name."
   if (guestName.length > 120) return "Guest name is too long."
   if (!startDate || !endDate) return "Both a start and an end date are required."
-  if (endDate < startDate) return "The end date cannot be before the start date."
+  if (endDate <= startDate) return "The check-out date must be after the check-in date."
 
   const nights = Math.round((endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000))
   if (nights > MAX_STAY_NIGHTS) return "That stay is longer than two years — check the dates."
@@ -60,8 +61,8 @@ function validate(input: BookingInput): string | null {
  * `orgId` term a request could file a booking against another tenant's property
  * simply by guessing its id, since ids are the only thing the form carries.
  */
-async function propertyIsOurs(propertyId: string, orgId: string): Promise<boolean> {
-  const property = await prisma.property.findFirst({
+async function propertyIsOurs(tx: Prisma.TransactionClient, propertyId: string, orgId: string): Promise<boolean> {
+  const property = await tx.property.findFirst({
     where: { id: propertyId, orgId },
     select: { id: true },
   })
@@ -78,13 +79,14 @@ async function propertyIsOurs(propertyId: string, orgId: string): Promise<boolea
  * yours" (`ok: false`), which is the mistake that would let a forged id through.
  */
 async function resolveUnit(
+  tx: Prisma.TransactionClient,
   rawUnitId: string,
   propertyId: string,
   orgId: string
 ): Promise<{ ok: true; unitId: string | null } | { ok: false }> {
   if (!rawUnitId) return { ok: true, unitId: null }
 
-  const unit = await prisma.propertyUnit.findFirst({
+  const unit = await tx.propertyUnit.findFirst({
     where: { id: rawUnitId, propertyId, orgId },
     select: { id: true },
   })
@@ -102,11 +104,12 @@ async function resolveUnit(
  * which unit is taken rather than just that something is.
  */
 async function findBookingConflicts(
+  tx: Prisma.TransactionClient,
   orgId: string,
   candidate: { propertyId: string; unitId: string | null; startDate: Date; endDate: Date },
   ignoreId?: string
 ): Promise<(SlotClaim & { unitName: string | null })[]> {
-  const overlapping = await prisma.booking.findMany({
+  const overlapping = await tx.booking.findMany({
     where: {
       propertyId: candidate.propertyId,
       property: { orgId },
@@ -161,24 +164,25 @@ export async function createBooking(
   const amount = parseMoneyField(field(formData, "totalAmount"), membership.organization.currency)
   if (!amount.ok) return { error: "The rate must be a number, or left empty." }
 
-  if (!(await propertyIsOurs(input.propertyId, membership.organization.id))) {
-    return { error: "Choose a property in your organization." }
-  }
+  const result = await serializable(async (tx): Promise<ActionState> => {
+    if (!(await propertyIsOurs(tx, input.propertyId, membership.organization.id))) {
+      return { error: "Choose a property in your organization." }
+    }
 
-  const unit = await resolveUnit(input.unitId, input.propertyId, membership.organization.id)
-  if (!unit.ok) return { error: "Choose a unit that belongs to this property." }
+    const unit = await resolveUnit(tx, input.unitId, input.propertyId, membership.organization.id)
+    if (!unit.ok) return { error: "Choose a unit that belongs to this property." }
 
-  const conflicts = await findBookingConflicts(membership.organization.id, {
-    propertyId: input.propertyId,
-    unitId: unit.unitId,
-    startDate: input.startDate!,
-    endDate: input.endDate!,
+    const conflicts = input.status === "CANCELLED" ? [] : await findBookingConflicts(tx, membership.organization.id, {
+      propertyId: input.propertyId,
+      unitId: unit.unitId,
+      startDate: input.startDate!,
+      endDate: input.endDate!,
   })
   if (conflicts.length > 0) {
     return { error: `Those dates are not free. ${describeConflict(conflicts[0], conflicts[0].unitName)}` }
   }
 
-  const booking = await prisma.booking.create({
+  const booking = await tx.booking.create({
     data: {
       propertyId: input.propertyId,
       unitId: unit.unitId,
@@ -191,8 +195,10 @@ export async function createBooking(
     },
   })
 
-  revalidateBooking(input.propertyId, booking.id)
-  return { success: `Booking added for ${input.guestName}.`, redirect: `/dashboard/bookings/${booking.id}` }
+    return { success: `Booking added for ${input.guestName}.`, redirect: `/dashboard/bookings/${booking.id}` }
+  })
+  if (result.success) revalidateBooking(input.propertyId)
+  return result
 }
 
 export async function updateBooking(
@@ -213,11 +219,18 @@ export async function updateBooking(
   const amount = parseMoneyField(field(formData, "totalAmount"), membership.organization.currency)
   if (!amount.ok) return { error: "The rate must be a number, or left empty." }
 
-  if (!(await propertyIsOurs(input.propertyId, membership.organization.id))) {
+  const result = await serializable(async (tx): Promise<ActionState & { previousPropertyId?: string }> => {
+    const previous = await tx.booking.findFirst({
+      where: { id, property: { orgId: membership.organization.id } },
+      select: { propertyId: true },
+  })
+
+  if (!previous) return { error: "That booking no longer exists." }
+  if (!(await propertyIsOurs(tx, input.propertyId, membership.organization.id))) {
     return { error: "Choose a property in your organization." }
   }
 
-  const unit = await resolveUnit(input.unitId, input.propertyId, membership.organization.id)
+  const unit = await resolveUnit(tx, input.unitId, input.propertyId, membership.organization.id)
   if (!unit.ok) return { error: "Choose a unit that belongs to this property." }
 
   /*
@@ -225,7 +238,8 @@ export async function updateBooking(
    * saving any change to a booking would collide with the row it is updating.
    * A conflict with a *different* booking still blocks, which is the point.
    */
-  const conflicts = await findBookingConflicts(
+  const conflicts = input.status === "CANCELLED" ? [] : await findBookingConflicts(
+    tx,
     membership.organization.id,
     {
       propertyId: input.propertyId,
@@ -239,12 +253,7 @@ export async function updateBooking(
     return { error: `Those dates are not free. ${describeConflict(conflicts[0], conflicts[0].unitName)}` }
   }
 
-  const previous = await prisma.booking.findFirst({
-    where: { id, property: { orgId: membership.organization.id } },
-    select: { propertyId: true },
-  })
-
-  const { count } = await prisma.booking.updateMany({
+  const { count } = await tx.booking.updateMany({
     where: { id, property: { orgId: membership.organization.id } },
     data: {
       propertyId: input.propertyId,
@@ -259,12 +268,13 @@ export async function updateBooking(
   })
   if (count === 0) return { error: "That booking no longer exists." }
 
-  revalidateBooking(input.propertyId, id)
-  // A booking moved to another property leaves the old one's page stale.
-  if (previous && previous.propertyId !== input.propertyId) {
-    revalidateBooking(previous.propertyId)
+    return { success: "Booking updated.", previousPropertyId: previous.propertyId }
+  })
+  if (result.success) {
+    revalidateBooking(input.propertyId, id)
+    if (result.previousPropertyId && result.previousPropertyId !== input.propertyId) revalidateBooking(result.previousPropertyId)
   }
-  return { success: "Booking updated." }
+  return { error: result.error, success: result.success }
 }
 
 export async function deleteBooking(
@@ -309,14 +319,15 @@ export async function setBookingStatus(
   const status = field(formData, "status")
   if (!STATUSES.includes(status as BookingStatus)) return { error: "Choose a valid status." }
 
-  const booking = await prisma.booking.findFirst({
-    where: { id, property: { orgId: membership.organization.id } },
-    select: {
-      propertyId: true,
-      unitId: true,
-      startDate: true,
-      endDate: true,
-    },
+  const result = await serializable(async (tx): Promise<ActionState & { propertyId?: string }> => {
+    const booking = await tx.booking.findFirst({
+      where: { id, property: { orgId: membership.organization.id } },
+      select: {
+        propertyId: true,
+        unitId: true,
+        startDate: true,
+        endDate: true,
+      },
   })
   if (!booking) return { error: "That booking no longer exists." }
 
@@ -328,6 +339,7 @@ export async function setBookingStatus(
    */
   if (status !== "CANCELLED") {
     const conflicts = await findBookingConflicts(
+      tx,
       membership.organization.id,
       {
         propertyId: booking.propertyId,
@@ -344,12 +356,14 @@ export async function setBookingStatus(
     }
   }
 
-  const { count } = await prisma.booking.updateMany({
+  const { count } = await tx.booking.updateMany({
     where: { id, property: { orgId: membership.organization.id } },
     data: { status: status as BookingStatus },
   })
   if (count === 0) return { error: "That booking no longer exists." }
 
-  revalidateBooking(booking.propertyId, id)
-  return { success: "Status updated." }
+    return { success: "Status updated.", propertyId: booking.propertyId }
+  })
+  if (result.success && result.propertyId) revalidateBooking(result.propertyId, id)
+  return { error: result.error, success: result.success }
 }

@@ -13,7 +13,7 @@ import { EXPENSE_CATEGORY_STYLES } from "@/lib/expense-category"
 import { cn } from "@/lib/utils"
 import { formatDateRange, monthWindow, statsForWindow } from "@/lib/dashboard-metrics"
 import { currentLocale } from "@/lib/i18n/server"
-import { getDictionary } from "@/lib/i18n/dictionaries"
+import { BOOKING_COUNT_FORMS, EXPENSE_COUNT_FORMS, format, getDictionary, plural } from "@/lib/i18n/dictionaries"
 import type { Locale } from "@/lib/i18n/locales"
 import { ArrowLeft, Building2, Paperclip, Pencil, Plus, Receipt } from "lucide-react"
 
@@ -98,13 +98,13 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
           <>
             <Button variant="ghost" href="/dashboard/properties">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
+              {t.common.back}
             </Button>
             {canEdit ? (
               <>
                 <Button variant="outline" href={`/dashboard/properties/${property.id}/edit`}>
                   <Pencil className="mr-2 h-4 w-4" />
-                  Edit
+                  {t.common.edit}
                 </Button>
                 <DeletePropertyButton
                   propertyId={property.id}
@@ -119,10 +119,10 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: "Status", value: occupied ? "Occupied" : "Available" },
-          { label: "Bookings", value: String(bookings.length) },
-          { label: "Revenue this month", value: formatCurrency(thisMonth.revenueCents, displayCurrency) },
-          { label: "Lifetime revenue", value: priced.length === 0 ? "—" : formatCurrency(lifetimeRevenue, displayCurrency) },
+          { label: t.forms.status, value: occupied ? t.pages.dashboard.recent.occupied : t.pages.dashboard.recent.available },
+          { label: t.pages.bookings.title, value: String(bookings.length) },
+          { label: t.pages.properties.revenueThisMonth, value: formatCurrency(thisMonth.revenueCents, displayCurrency) },
+          { label: t.pages.properties.lifetimeRevenue, value: priced.length === 0 ? "—" : formatCurrency(lifetimeRevenue, displayCurrency) },
         ].map((stat) => (
           <Card key={stat.label}>
             <CardContent className="pt-6">
@@ -137,18 +137,18 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5 text-primary" />
-            Upcoming stays
+            {t.pages.properties.upcomingStays}
           </CardTitle>
           <CardDescription>
             {upcoming.length === 0
-              ? "Nothing booked from today onwards."
-              : `${upcoming.length} stay${upcoming.length === 1 ? "" : "s"} still to come.`}
+              ? t.pages.properties.nothingUpcoming
+              : format(t.pages.properties.upcomingSummary, { bookings: plural(upcoming.length, BOOKING_COUNT_FORMS[locale], locale) })}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {upcoming.length === 0 ? (
             <p className="py-6 text-center text-sm text-subtle-foreground">
-              No upcoming stays for this property.
+              {t.pages.properties.noUpcoming}
             </p>
           ) : (
             <div className="space-y-3">
@@ -166,11 +166,11 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-medium text-muted-foreground">
-                      {formatAmount(booking.totalAmount, displayCurrency) ?? "No rate"}
+                      {formatAmount(booking.totalAmount, displayCurrency) ?? t.pages.properties.noRate}
                     </span>
                     <BookingStatusBadge status={booking.status} />
                     <Button variant="ghost" size="sm" href={`/dashboard/bookings/${booking.id}`}>
-                      View
+                      {t.common.view}
                     </Button>
                   </div>
                 </div>
@@ -188,18 +188,18 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Receipt className="h-5 w-5 text-primary" />
-                Expenses
+                {t.pages.expenses.title}
               </CardTitle>
               <CardDescription>
                 {expenses.length === 0
-                  ? "No costs logged against this property."
-                  : `${expenses.length} cost${expenses.length === 1 ? "" : "s"} logged, ${formatCurrency(expenseTotal, displayCurrency)} in total.`}
+                  ? t.pages.properties.noExpenses
+                  : format(t.pages.properties.expenseSummary, { expenses: plural(expenses.length, EXPENSE_COUNT_FORMS[locale], locale), amount: formatCurrency(expenseTotal, displayCurrency) })}
               </CardDescription>
             </div>
             {canEdit ? (
               <Button variant="outline" size="sm" href="/dashboard/expenses/new">
                 <Plus className="mr-2 h-4 w-4" />
-                Log expense
+                {t.pages.expenses.logExpense}
               </Button>
             ) : null}
           </div>
@@ -207,7 +207,7 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
         <CardContent>
           {expenses.length === 0 ? (
             <p className="py-6 text-center text-sm text-subtle-foreground">
-              Maintenance, utilities and supplies for this property go here.
+              {t.pages.properties.expenseHelp}
             </p>
           ) : (
             <div className="space-y-3">
@@ -227,7 +227,7 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
                         EXPENSE_CATEGORY_STYLES[expense.category].badge
                       )}
                     >
-                      {EXPENSE_CATEGORY_STYLES[expense.category].label}
+                      {t.pages.expenses.categories[expense.category]}
                     </span>
                     <span className="text-sm font-medium text-muted-foreground">
                       {formatCurrency(expense.amount, displayCurrency)}
@@ -238,7 +238,7 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
                         target="_blank"
                         rel="noreferrer"
                         className="text-primary hover:underline"
-                        title={expense.receiptName ?? "Receipt"}
+                        title={expense.receiptName ?? t.pages.expenses.receipt}
                       >
                         <Paperclip className="h-4 w-4" />
                       </a>
@@ -249,7 +249,7 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
                         size="sm"
                         href={`/dashboard/expenses/${expense.id}/edit`}
                       >
-                        Edit
+                        {t.common.edit}
                       </Button>
                     ) : null}
                   </div>
@@ -257,14 +257,13 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
               ))}
               {expenses.length > 8 ? (
                 <p className="text-center text-sm text-subtle-foreground">
-                  {expenses.length - 8} older cost{expenses.length - 8 === 1 ? "" : "s"} — see{" "}
+                  {format(t.pages.properties.olderExpenses, { expenses: plural(expenses.length - 8, EXPENSE_COUNT_FORMS[locale], locale) })}{" "}
                   <a
                     href={`/dashboard/expenses?propertyId=${property.id}`}
                     className="text-primary hover:underline"
                   >
-                    all expenses
+                    {t.pages.properties.allExpenses}
                   </a>
-                  .
                 </p>
               ) : null}
             </div>
@@ -275,10 +274,9 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
       {bookings.length > 0 && upcoming.length !== bookings.length ? (
         <Card>
           <CardHeader>
-            <CardTitle>Past and cancelled</CardTitle>
+            <CardTitle>{t.pages.properties.pastCancelled}</CardTitle>
             <CardDescription>
-              {bookings.length - upcoming.length} earlier booking
-              {bookings.length - upcoming.length === 1 ? "" : "s"} on this property.
+              {format(t.pages.properties.pastSummary, { bookings: plural(bookings.length - upcoming.length, BOOKING_COUNT_FORMS[locale], locale) })}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -298,7 +296,7 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
                   </div>
                   <div className="flex items-center gap-3">
                     {booking.totalAmount == null ? (
-                      <Badge variant="outline">No rate</Badge>
+                      <Badge variant="outline">{t.pages.properties.noRate}</Badge>
                     ) : (
                       <span className="text-sm text-subtle-foreground">
                         {formatAmount(booking.totalAmount, displayCurrency)}

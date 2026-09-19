@@ -1,6 +1,6 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
-import { minorUnitDigits } from "@/lib/currency"
+export { parseMoneyField } from "@/lib/currency"
 import { redirect } from "next/navigation"
 import type { Role } from "@prisma/client"
 
@@ -89,28 +89,6 @@ export function canModifyMember(actor: { id: string; role: Role }, target: { id:
 export function field(formData: FormData, name: string): string {
   const value = formData.get(name)
   return typeof value === "string" ? value.trim() : ""
-}
-
-/**
- * Parses a currency input into minor units for `currency`. An empty string is not
- * an error — "no rate recorded" is a state the schema supports on purpose — but
- * anything else unparseable is reported rather than quietly dropped.
- *
- * The currency's own precision decides the scale. Hardcoding a multiply-by-100
- * here would store ¥15,000 as ¥150, and no amount of correct formatting later
- * could recover it.
- */
-export function parseMoneyField(
-  raw: string,
-  currency: string
-): { ok: true; minorUnits: number | null } | { ok: false } {
-  if (raw === "") return { ok: true, minorUnits: null }
-
-  // Accept "1,250.50", since that is how a figure is likely to be pasted in.
-  const parsed = Number(raw.replace(/,/g, ""))
-  if (!Number.isFinite(parsed) || parsed < 0) return { ok: false }
-
-  return { ok: true, minorUnits: Math.round(parsed * 10 ** minorUnitDigits(currency)) }
 }
 
 /** A `YYYY-MM-DD` date input as a local-midnight `Date`, or `null` when invalid. */

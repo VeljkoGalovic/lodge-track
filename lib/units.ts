@@ -46,6 +46,6 @@ export async function unitBusyIntervals(
       status: { not: "CANCELLED" },
       id: excludeBookingId ? { not: excludeBookingId } : undefined,
     },
-    select: { unitId: true, startDate: true, endDate: true },
+    select: { propertyId: true, unitId: true, startDate: true, endDate: true },
   })
 }

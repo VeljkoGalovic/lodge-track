@@ -1,5 +1,6 @@
 "use client"
 
+import { useI18n } from "@/components/i18n/LocaleProvider"
 import { useActionState } from "react"
 import { updateOrganization } from "@/app/actions/organization"
 import { EMPTY_ACTION_STATE } from "@/lib/action-state"
@@ -17,6 +18,8 @@ interface OrganizationFormProps {
 }
 
 export function OrganizationForm({ name, currency, canEdit }: OrganizationFormProps) {
+  const { t, locale } = useI18n()
+  const currencies = new Intl.DisplayNames(locale === "sr" ? "sr-Latn-RS" : "en-US", { type: "currency" })
   const [state, formAction] = useActionState(updateOrganization, EMPTY_ACTION_STATE)
 
   return (
@@ -26,7 +29,7 @@ export function OrganizationForm({ name, currency, canEdit }: OrganizationFormPr
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <label htmlFor="orgName" className="text-sm font-medium text-muted-foreground">
-            Organization name
+            {t.onboarding.organizationName}
           </label>
           <Input
             id="orgName"
@@ -39,26 +42,26 @@ export function OrganizationForm({ name, currency, canEdit }: OrganizationFormPr
         </div>
         <div className="space-y-2">
           <label htmlFor="currency" className="text-sm font-medium text-muted-foreground">
-            Currency
+            {t.onboarding.currency}
           </label>
           <Select id="currency" name="currency" defaultValue={currency} disabled={!canEdit}>
             {SUPPORTED_CURRENCIES.map((option) => (
               <option key={option.code} value={option.code}>
-                {option.code} — {option.label}
+                {option.code} — {currencies.of(option.code)}
               </option>
             ))}
           </Select>
           <p className="text-xs text-subtle-foreground">
-            Booking rates are stored as whole minor units and displayed in this currency.
+            {t.pages.settings.currencyHelp}
           </p>
         </div>
       </div>
 
       {canEdit ? (
-        <SubmitButton pendingLabel="Saving...">Save changes</SubmitButton>
+        <SubmitButton pendingLabel={t.common.saving}>{t.forms.saveChanges}</SubmitButton>
       ) : (
         <p className="text-sm text-subtle-foreground">
-          Only an owner can change the organization&apos;s name or currency.
+          {t.pages.settings.ownerOnly}
         </p>
       )}
     </form>

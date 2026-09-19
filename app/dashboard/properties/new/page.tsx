@@ -21,13 +21,13 @@ export default async function NewPropertyPage() {
           <CardHeader>
             <CardTitle>{t.pages.notPermitted}</CardTitle>
             <CardDescription>
-              Your role is view-only. Ask an owner or manager to add properties.
+              {t.pages.properties.viewOnlyAdd}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button variant="ghost" href="/dashboard/properties">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to properties
+              {t.pages.properties.backToProperties}
             </Button>
           </CardContent>
         </Card>
@@ -58,7 +58,7 @@ export default async function NewPropertyPage() {
         action={
           <Button variant="ghost" href="/dashboard/properties">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            {t.common.back}
           </Button>
         }
       />
@@ -66,21 +66,20 @@ export default async function NewPropertyPage() {
       {atLimit ? (
         <Card className="border-warning/25 bg-warning/[0.04]">
           <CardHeader>
-            <CardTitle className="text-warning">Property limit reached</CardTitle>
+            <CardTitle className="text-warning">{t.pages.properties.limitReached}</CardTitle>
             <CardDescription>
-              Your plan allows {features.maxProperties} propert
-              {features.maxProperties === 1 ? "y" : "ies"}. Upgrade to add more.
+              {format(t.pages.properties.limitHelp, { count: features.maxProperties })}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button href="/dashboard/billing">View plans</Button>
+            <Button href="/dashboard/billing">{t.pages.settings.viewPlans}</Button>
           </CardContent>
         </Card>
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Property details</CardTitle>
-            <CardDescription>A name and address are all that is needed to start.</CardDescription>
+            <CardTitle>{t.pages.properties.details}</CardTitle>
+            <CardDescription>{t.pages.properties.detailsHelp}</CardDescription>
           </CardHeader>
           <CardContent>
             <PropertyForm />

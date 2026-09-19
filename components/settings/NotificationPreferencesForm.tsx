@@ -1,5 +1,7 @@
 "use client"
 
+import { useI18n } from "@/components/i18n/LocaleProvider"
+import { format, plural, ITEM_COUNT_FORMS } from "@/lib/i18n/dictionaries"
 import { useActionState } from "react"
 import { updateNotificationPreferences } from "@/app/actions/account"
 import { EMPTY_ACTION_STATE } from "@/lib/action-state"
@@ -13,28 +15,16 @@ interface NotificationPreferencesFormProps {
   counts: NotificationCounts
 }
 
-const OPTIONS: { name: keyof NotificationPreferences; label: string; description: string }[] = [
-  {
-    name: "notifyCheckInsDue",
-    label: "Check-ins due",
-    description: "Guests arriving in the next two days whose booking is still open",
-  },
-  {
-    name: "notifyStaysEnding",
-    label: "Stays ending",
-    description: "Stays finishing in the next two days",
-  },
-  {
-    name: "notifyMissingRate",
-    label: "Bookings with no rate",
-    description: "Stays from the last 30 days onwards with no amount recorded",
-  },
-]
-
 export function NotificationPreferencesForm({
   preferences,
   counts,
 }: NotificationPreferencesFormProps) {
+  const { t, locale } = useI18n()
+  const options: { name: keyof NotificationPreferences; label: string; description: string }[] = [
+    { name: "notifyCheckInsDue", label: t.pages.notifications.checkIns, description: t.pages.notifications.checkInsHelp },
+    { name: "notifyStaysEnding", label: t.pages.notifications.ending, description: t.pages.notifications.endingHelp },
+    { name: "notifyMissingRate", label: t.pages.notifications.missingRate, description: t.pages.notifications.missingRateHelp },
+  ]
   const [state, formAction] = useActionState(updateNotificationPreferences, EMPTY_ACTION_STATE)
 
   return (
@@ -42,7 +32,7 @@ export function NotificationPreferencesForm({
       <FormMessage error={state.error} success={state.success} />
 
       <div className="divide-y divide-border">
-        {OPTIONS.map((option) => (
+        {options.map((option) => (
           <label
             key={option.name}
             htmlFor={option.name}
@@ -59,14 +49,14 @@ export function NotificationPreferencesForm({
               <span className="block font-medium text-foreground">{option.label}</span>
               <span className="block text-sm text-subtle-foreground">{option.description}</span>
               <span className="mt-1 block text-xs text-subtle-foreground">
-                {counts[option.name]} item{counts[option.name] === 1 ? "" : "s"} right now
+                {format(t.pages.notifications.currentItems, { items: plural(counts[option.name], ITEM_COUNT_FORMS[locale], locale) })}
               </span>
             </span>
           </label>
         ))}
       </div>
 
-      <SubmitButton pendingLabel="Saving...">Save preferences</SubmitButton>
+      <SubmitButton pendingLabel={t.common.saving}>{t.pages.notifications.savePreferences}</SubmitButton>
     </form>
   )
 }

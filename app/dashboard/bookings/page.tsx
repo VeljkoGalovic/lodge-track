@@ -1,4 +1,6 @@
 import { auth } from "@/auth"
+import { canManage } from "@/lib/authorization"
+import { BookingStatusSelect } from "@/components/bookings/BookingStatusSelect"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -118,7 +120,9 @@ export default async function BookingsPage() {
                       {formatDateRange(booking.startDate, booking.endDate, locale)}
                     </TableCell>
                     <TableCell>
-                      <BookingStatusBadge status={booking.status} />
+                      {canManage(user.role) ? (
+                        <BookingStatusSelect key={`${booking.id}-${booking.status}`} bookingId={booking.id} status={booking.status} guestName={booking.guestName} />
+                      ) : <BookingStatusBadge status={booking.status} />}
                     </TableCell>
                     <TableCell>{booking.source}</TableCell>
                     <TableCell className="text-right font-medium">

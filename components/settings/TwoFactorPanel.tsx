@@ -1,5 +1,7 @@
 "use client"
 
+import { useI18n } from "@/components/i18n/LocaleProvider"
+import { format } from "@/lib/i18n/dictionaries"
 import { useActionState, useEffect, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { QRCodeSVG } from "qrcode.react"
@@ -24,6 +26,7 @@ interface TwoFactorPanelProps {
  * the code is confirmed, signing in still only needs the password.
  */
 export function TwoFactorPanel({ enabled, issuer, accountName }: TwoFactorPanelProps) {
+  const { t } = useI18n()
   const router = useRouter()
   const [setup, setSetup] = useState<{ secret: string; uri: string } | null>(null)
   const [startError, setStartError] = useState("")
@@ -58,9 +61,9 @@ export function TwoFactorPanel({ enabled, issuer, accountName }: TwoFactorPanelP
         <div className="flex items-start gap-3 rounded-xl border border-primary/25 bg-primary/10 px-4 py-3">
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
           <div>
-            <p className="font-medium text-primary">Two-factor authentication is on</p>
+            <p className="font-medium text-primary">{t.pages.settings.factorOn}</p>
             <p className="text-sm text-muted-foreground">
-              Signing in requires a code from your authenticator app.
+              {t.pages.settings.factorOnHelp}
             </p>
           </div>
         </div>
@@ -69,7 +72,7 @@ export function TwoFactorPanel({ enabled, issuer, accountName }: TwoFactorPanelP
           <FormMessage error={disableState.error} success={disableState.success} />
           <div className="space-y-2">
             <label htmlFor="disablePassword" className="text-sm font-medium text-muted-foreground">
-              Confirm your password to turn it off
+              {t.pages.settings.confirmDisable}
             </label>
             <Input
               id="disablePassword"
@@ -79,9 +82,9 @@ export function TwoFactorPanel({ enabled, issuer, accountName }: TwoFactorPanelP
               required
             />
           </div>
-          <SubmitButton variant="outline" pendingLabel="Turning off...">
+          <SubmitButton variant="outline" pendingLabel={t.pages.settings.disabling}>
             <ShieldOff className="mr-1.5 h-4 w-4" />
-            Turn off two-factor
+            {t.pages.settings.disableFactor}
           </SubmitButton>
         </form>
       </div>
@@ -93,12 +96,10 @@ export function TwoFactorPanel({ enabled, issuer, accountName }: TwoFactorPanelP
       <div className="space-y-4">
         <FormMessage error={startError} />
         <p className="text-sm text-subtle-foreground">
-          Adds a second step to sign-in using an authenticator app such as Google Authenticator,
-          1Password or Authy. If you lose the device, an owner of this organization can reset the
-          factor for you.
+          {t.pages.settings.setupHelp}
         </p>
-        <SubmitButton onClick={begin} pendingLabel="Preparing..." disabled={starting}>
-          Set up two-factor
+        <SubmitButton onClick={begin} pendingLabel={t.pages.settings.preparing} disabled={starting}>
+          {starting ? t.pages.settings.preparing : t.pages.settings.setupFactor}
         </SubmitButton>
       </div>
     )
@@ -116,13 +117,13 @@ export function TwoFactorPanel({ enabled, issuer, accountName }: TwoFactorPanelP
 
         <div className="min-w-0 space-y-3">
           <p className="text-sm text-muted-foreground">
-            Scan this with your authenticator app. If it cannot scan, enter the key by hand:
+            {t.pages.settings.scanCode}
           </p>
           <code className="block break-all rounded-xl border border-border bg-muted px-3 py-2 font-mono text-xs text-muted-foreground">
             {setup.secret}
           </code>
           <p className="text-xs text-subtle-foreground">
-            {issuer} account: {accountName}
+            {format(t.pages.settings.factorAccount, { issuer, account: accountName })}
           </p>
         </div>
       </div>
@@ -130,7 +131,7 @@ export function TwoFactorPanel({ enabled, issuer, accountName }: TwoFactorPanelP
       <form action={confirmAction} className="space-y-3 border-t border-border pt-5">
         <div className="space-y-2">
           <label htmlFor="code" className="text-sm font-medium text-muted-foreground">
-            Enter the six-digit code it shows
+            {t.pages.settings.enterCode}
           </label>
           <Input
             id="code"
@@ -145,9 +146,9 @@ export function TwoFactorPanel({ enabled, issuer, accountName }: TwoFactorPanelP
           />
         </div>
         <div className="flex flex-wrap gap-3">
-          <SubmitButton pendingLabel="Verifying...">Turn on two-factor</SubmitButton>
+          <SubmitButton pendingLabel={t.auth.verifying}>{t.pages.settings.enableFactor}</SubmitButton>
           <SubmitButton type="button" variant="ghost" onClick={() => setSetup(null)}>
-            Cancel
+            {t.common.cancel}
           </SubmitButton>
         </div>
       </form>

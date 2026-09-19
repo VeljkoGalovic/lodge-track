@@ -49,7 +49,7 @@ export interface SlotClaim {
  * common pattern in a property calendar.
  */
 export function rangesOverlap(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date): boolean {
-  return aStart.getTime() < bEnd.getTime() && bStart.getTime() < aEnd.getTime()
+  return aStart < aEnd && bStart < bEnd && aStart < bEnd && bStart < aEnd
 }
 
 /** Whether two stays are competing for the same thing. */
@@ -98,6 +98,7 @@ function formatDay(date: Date): string {
 
 /** A stay reduced to what the picker needs: which unit, and when. */
 export interface BusyInterval {
+  propertyId: string
   unitId: string | null
   startDate: Date
   endDate: Date
@@ -111,6 +112,7 @@ export interface BusyInterval {
  * force callers to fetch columns the answer does not use.
  */
 export interface RangeQuery {
+  propertyId: string
   unitId: string | null
   startDate: Date
   endDate: Date
@@ -150,11 +152,12 @@ export interface AvailabilitySummary {
  * question with a single answer, and `findConflicts` is what answers it.
  */
 export function unitAvailability<TUnit extends { id: string }>(
-  candidate: Pick<RangeQuery, "startDate" | "endDate">,
+  candidate: Pick<RangeQuery, "propertyId" | "startDate" | "endDate">,
   units: TUnit[],
   busy: BusyInterval[]
 ): UnitAvailability<TUnit>[] {
   const blocking = busy.filter((interval) =>
+    interval.propertyId === candidate.propertyId &&
     rangesOverlap(candidate.startDate, candidate.endDate, interval.startDate, interval.endDate)
   )
 
@@ -165,7 +168,7 @@ export function unitAvailability<TUnit extends { id: string }>(
     return {
       unit,
       available: claim === undefined,
-      blockedByWholeProperty: claim !== undefined && claim.unitId === null,
+      blockedByWholeProperty: blocking.some((interval) => interval.unitId === null),
     }
   })
 }
@@ -183,6 +186,6 @@ export function summarizeAvailability<TUnit>(
     // Only meaningful when the property is divided up at all. With no units the
     // caller is looking at a single whole-property booking, and calling that
     // "blocked by a whole-property stay" would be circular.
-    wholePropertyBlocked: hasUnits && free === 0,
+    wholePropertyBlocked: hasUnits && availability.every((entry) => entry.blockedByWholeProperty),
   }
 }

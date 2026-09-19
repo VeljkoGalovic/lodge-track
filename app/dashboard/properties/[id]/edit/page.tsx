@@ -22,13 +22,13 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
           <CardHeader>
             <CardTitle>{t.pages.notPermitted}</CardTitle>
             <CardDescription>
-              Your role is view-only. Ask an owner or manager to change this property.
+              {t.pages.properties.viewOnlyEdit}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button variant="ghost" href="/dashboard/properties">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to properties
+              {t.pages.properties.backToProperties}
             </Button>
           </CardContent>
         </Card>
@@ -38,6 +38,7 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
 
   const property = await prisma.property.findFirst({
     where: { id, orgId: organization.id },
+    include: { _count: { select: { units: true } } },
   })
 
   if (!property) notFound()
@@ -51,15 +52,15 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
         action={
           <Button variant="ghost" href={`/dashboard/properties/${property.id}`}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            {t.common.back}
           </Button>
         }
       />
 
       <Card>
         <CardHeader>
-          <CardTitle>Property details</CardTitle>
-          <CardDescription>Changes take effect immediately.</CardDescription>
+          <CardTitle>{t.pages.properties.details}</CardTitle>
+          <CardDescription>{t.pages.properties.editHelp}</CardDescription>
         </CardHeader>
         <CardContent>
           <PropertyForm
@@ -69,6 +70,7 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
               address: property.address,
               icalUrl: property.icalUrl,
               currency: property.currency,
+              bedCount: property._count.units,
             }}
           />
         </CardContent>

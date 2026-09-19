@@ -1,5 +1,6 @@
 "use client"
 
+import { useI18n } from "@/components/i18n/LocaleProvider"
 import { useActionState } from "react"
 import { changePassword } from "@/app/actions/account"
 import { EMPTY_ACTION_STATE } from "@/lib/action-state"
@@ -8,6 +9,7 @@ import { FormMessage } from "@/components/dashboard/FormMessage"
 import { SubmitButton } from "@/components/dashboard/SubmitButton"
 
 export function PasswordForm() {
+  const { t } = useI18n()
   const [state, formAction] = useActionState(changePassword, EMPTY_ACTION_STATE)
 
   return (
@@ -16,7 +18,7 @@ export function PasswordForm() {
 
       <div className="space-y-2">
         <label htmlFor="currentPassword" className="text-sm font-medium text-muted-foreground">
-          Current password
+          {t.pages.settings.currentPassword}
         </label>
         <Input
           id="currentPassword"
@@ -30,7 +32,7 @@ export function PasswordForm() {
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <label htmlFor="newPassword" className="text-sm font-medium text-muted-foreground">
-            New password
+            {t.pages.settings.newPassword}
           </label>
           <Input
             id="newPassword"
@@ -43,7 +45,7 @@ export function PasswordForm() {
         </div>
         <div className="space-y-2">
           <label htmlFor="confirmPassword" className="text-sm font-medium text-muted-foreground">
-            Confirm new password
+            {t.pages.settings.confirmPassword}
           </label>
           <Input
             id="confirmPassword"
@@ -56,9 +58,9 @@ export function PasswordForm() {
         </div>
       </div>
 
-      <p className="text-xs text-subtle-foreground">At least 8 characters.</p>
+      <p className="text-xs text-subtle-foreground">{t.auth.passwordMinLength}</p>
 
-      <SubmitButton pendingLabel="Updating...">Change password</SubmitButton>
+      <SubmitButton pendingLabel={t.pages.settings.updating}>{t.pages.settings.changePassword}</SubmitButton>
     </form>
   )
 }

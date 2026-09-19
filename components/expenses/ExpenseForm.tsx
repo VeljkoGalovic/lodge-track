@@ -139,7 +139,7 @@ export function ExpenseForm({ properties, currency, expense }: ExpenseFormProps)
           id="description"
           name="description"
           defaultValue={expense?.description ?? ""}
-          placeholder="Replaced the upstairs water heater element"
+          placeholder={t.forms.expensePlaceholder}
           maxLength={300}
           required
         />

@@ -29,7 +29,7 @@ export default async function EditBookingPage({ params }: { params: Promise<{ id
           <CardContent>
             <Button variant="ghost" href="/dashboard/bookings">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to bookings
+              {t.pages.bookings.backToBookings}
             </Button>
           </CardContent>
         </Card>
@@ -66,15 +66,15 @@ export default async function EditBookingPage({ params }: { params: Promise<{ id
         action={
           <Button variant="ghost" href={`/dashboard/bookings/${booking.id}`}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            {t.common.back}
           </Button>
         }
       />
 
       <Card>
         <CardHeader>
-          <CardTitle>Stay details</CardTitle>
-          <CardDescription>Clearing the rate records the stay as unpriced.</CardDescription>
+          <CardTitle>{t.pages.bookings.details}</CardTitle>
+          <CardDescription>{t.pages.bookings.editHelp}</CardDescription>
         </CardHeader>
         <CardContent>
           <BookingForm

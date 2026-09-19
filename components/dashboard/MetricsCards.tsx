@@ -1,5 +1,6 @@
 "use client"
 
+import { useI18n } from "@/components/i18n/LocaleProvider"
 import * as React from "react"
 import { TrendingUp, AlertCircle, ArrowUpRight } from "lucide-react"
 import { clsx } from "clsx"
@@ -29,6 +30,7 @@ export function MetricCard({
   action,
   className
 }: MetricCardProps) {
+  const { t } = useI18n()
   return (
     <div
       className={clsx(
@@ -61,7 +63,7 @@ export function MetricCard({
           {isAtLimit && (
             <div className="flex items-center gap-2 text-xs text-warning">
               <AlertCircle className="h-3 w-3" />
-              <span>Property limit reached</span>
+              <span>{t.pages.properties.limitReached}</span>
             </div>
           )}
         </div>

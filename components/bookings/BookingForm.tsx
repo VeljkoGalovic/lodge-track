@@ -5,8 +5,7 @@ import { BookingStatus } from "@prisma/client"
 import { createBooking, updateBooking } from "@/app/actions/bookings"
 import { EMPTY_ACTION_STATE } from "@/lib/action-state"
 import { useActionRedirect } from "@/lib/use-action-redirect"
-import { unitAvailability, type BusyInterval } from "@/lib/availability"
-import { BOOKING_STATUS_STYLES } from "@/lib/booking-status"
+import { unitAvailability, rangesOverlap, claimsSameSlot, type BusyInterval } from "@/lib/availability"
 import { toMajorUnits } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
@@ -72,12 +71,13 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
     booking?.totalAmount != null ? toMajorUnits(booking.totalAmount, currency) : ""
   )
   /**
-   * Held in state so the unit picker below can follow it. The select itself is
-   * keyed on this value, so changing the property remounts it at "whole
-   * property" — a unit chosen for one property is never carried over to another,
-   * where it would be a unit the server would refuse anyway.
+   * Changing the property explicitly resets the controlled unit selection. A
+   * unit chosen for one property is never carried over to another property.
    */
   const [propertyId, setPropertyId] = useState(booking?.propertyId ?? properties[0]?.id ?? "")
+
+  const [unitId, setUnitId] = useState(booking?.unitId ?? "")
+  const [status, setStatus] = useState<BookingStatus>(booking?.status ?? "PENDING")
 
   const unitsHere = useMemo(
     () => units.filter((unit) => unit.propertyId === propertyId),
@@ -93,8 +93,8 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
    * Which units this property could take the stay in, recomputed as the dates
    * change.
    *
-   * The very same `unitAvailability` the server relies on to refuse a conflicting
-   * booking, run in the browser so the answer arrives while the host is still
+   * Uses the same range and slot rules as the server's conflict check,
+   * run in the browser so the answer arrives while the host is still
    * choosing rather than after they submit. It is a pure function over data
    * already on the page — no request is made — which is the whole reason `busy`
    * is handed down instead of being looked up per date range.
@@ -106,11 +106,11 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
   const availability = useMemo(() => {
     if (!start || !end || nights <= 0 || unitsHere.length === 0) return null
     return unitAvailability(
-      { startDate: new Date(`${start}T00:00:00`), endDate: new Date(`${end}T00:00:00`) },
+      { propertyId, startDate: new Date(`${start}T00:00:00`), endDate: new Date(`${end}T00:00:00`) },
       unitsHere,
       busy
     )
-  }, [start, end, nights, unitsHere, busy])
+  }, [start, end, nights, propertyId, unitsHere, busy])
 
   const statusByUnitId = useMemo(
     () => new Map((availability ?? []).map((entry) => [entry.unit.id, entry])),
@@ -121,6 +121,14 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
   /** Every unit taken because a whole-property stay covers the range. */
   const wholePropertyBlocked =
     availability !== null && freeCount === 0 && availability.every((e) => e.blockedByWholeProperty)
+
+  const wholeUnavailable = nights > 0 && busy.some(interval =>
+    interval.propertyId === propertyId && rangesOverlap(new Date(`${start}T00:00:00`), new Date(`${end}T00:00:00`), interval.startDate, interval.endDate)
+  )
+  const selectionUnavailable = status !== "CANCELLED" && nights > 0 && busy.some(interval =>
+    interval.propertyId === propertyId && claimsSameSlot({ unitId: unitId || null }, interval) &&
+    rangesOverlap(new Date(`${start}T00:00:00`), new Date(`${end}T00:00:00`), interval.startDate, interval.endDate)
+  )
 
   return (
     <form action={formAction} className="space-y-5">
@@ -142,7 +150,7 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
           id="propertyId"
           name="propertyId"
           value={propertyId}
-          onChange={(event) => setPropertyId(event.target.value)}
+          onChange={(event) => { setPropertyId(event.target.value); setUnitId("") }}
           required
         >
           {properties.map((property) => (
@@ -204,14 +212,13 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
             ) : null}
           </div>
 
-          {/* Keyed on the property, so a unit picked for one property is not
-              carried over to another where it does not exist. */}
-          <Select key={propertyId} id="unitId" name="unitId" defaultValue={booking?.unitId ?? ""}>
-            <option value="">{t.forms.unitWholeProperty}</option>
+          {/* Property changes reset this controlled selection. */}
+          <Select id="unitId" name="unitId" value={unitId} onChange={event => setUnitId(event.target.value)}>
+            <option value="" disabled={status !== "CANCELLED" && wholeUnavailable}>{t.forms.unitWholeProperty}</option>
             {unitsHere.map((unit) => {
               const taken = statusByUnitId.get(unit.id)?.available === false
               return (
-                <option key={unit.id} value={unit.id} disabled={taken}>
+                <option key={unit.id} value={unit.id} disabled={status !== "CANCELLED" && taken}>
                   {unit.kind ? `${unit.name} — ${unit.kind}` : unit.name}
                   {taken ? ` · ${t.availability.occupied}` : ""}
                 </option>
@@ -280,10 +287,10 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
           <label htmlFor="status" className="text-sm font-medium text-muted-foreground">
             {t.forms.status}
           </label>
-          <Select id="status" name="status" defaultValue={booking?.status ?? "PENDING"}>
+          <Select id="status" name="status" value={status} onChange={event => setStatus(event.target.value as BookingStatus)}>
             {Object.values(BookingStatus).map((status) => (
               <option key={status} value={status}>
-                {BOOKING_STATUS_STYLES[status].label}
+                {t.pages.bookings.statuses[status]}
               </option>
             ))}
           </Select>
@@ -326,8 +333,13 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
         <p className="text-xs text-subtle-foreground">{t.forms.rateHelp}</p>
       </div>
 
-      <div className="flex flex-wrap gap-3 pt-2">
-        <SubmitButton pendingLabel={t.common.saving}>
+      <div className="flex flex-wrap items-center gap-3 pt-2">
+        {selectionUnavailable && (
+          <p role="alert" className="inline-flex items-center justify-center rounded-full border border-red-500/25 bg-red-500/10 px-4 py-2 text-center text-xs font-medium text-red-400">
+            {t.availability.occupied}
+          </p>
+        )}
+        <SubmitButton pendingLabel={t.common.saving} disabled={!propertyId || !(nights > 0) || selectionUnavailable}>
           {booking ? t.forms.saveChanges : t.forms.addBooking}
         </SubmitButton>
       </div>

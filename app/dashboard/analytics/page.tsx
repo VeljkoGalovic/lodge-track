@@ -12,24 +12,6 @@ import { currentLocale } from "@/lib/i18n/server"
 import { getDictionary } from "@/lib/i18n/dictionaries"
 import { getExchangeRates } from "@/lib/exchange-rates"
 
-const PREVIEW_FEATURES = [
-  {
-    icon: DollarSign,
-    title: "Revenue Reports",
-    description: "Monthly, quarterly, and yearly revenue breakdowns",
-  },
-  {
-    icon: Home,
-    title: "Occupancy Trends",
-    description: "Historical occupancy rates and seasonal patterns",
-  },
-  {
-    icon: TrendingUp,
-    title: "Forecasting",
-    description: "AI-powered revenue and occupancy predictions",
-  },
-]
-
 export default async function AnalyticsPage() {
   const session = await auth()
 
@@ -62,6 +44,24 @@ export default async function AnalyticsPage() {
   const locale = await currentLocale(user.locale)
   const t = getDictionary(locale)
 
+  const previewFeatures = [
+    {
+      icon: DollarSign,
+      title: t.pages.analytics.revenueReports,
+      description: t.pages.analytics.revenueHelp,
+    },
+    {
+      icon: Home,
+      title: t.pages.analytics.occupancyTrends,
+      description: t.pages.analytics.occupancyHelp,
+    },
+    {
+      icon: TrendingUp,
+      title: t.pages.analytics.forecasting,
+      description: t.pages.analytics.forecastingPreview,
+    },
+  ]
+
   const org = user.organization
   const subscription = org.subscription
 
@@ -90,21 +90,20 @@ export default async function AnalyticsPage() {
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-brand-purple/25 bg-brand-purple/10">
               <Lock className="h-8 w-8 text-brand-purple" />
             </div>
-            <h3 className="text-xl font-semibold text-foreground">Financial Analytics Locked</h3>
+            <h3 className="text-xl font-semibold text-foreground">{t.pages.analytics.locked}</h3>
             <p className="mx-auto mt-2 max-w-2xl text-sm text-subtle-foreground">
-              Unlock detailed revenue reports, occupancy trends, financial forecasting, and advanced
-              analytics with the Pro plan.
+              {t.pages.analytics.unlock}
             </p>
             <Button size="lg" href="/dashboard/billing" className="mt-6">
               <ArrowUpRight className="mr-2 h-4 w-4" />
-              Upgrade to Pro
+              {t.pages.analytics.upgrade}
             </Button>
           </div>
         </Card>
 
         {/* Feature preview cards */}
         <div className="grid gap-4 md:grid-cols-3">
-          {PREVIEW_FEATURES.map(({ icon: Icon, title, description }) => (
+          {previewFeatures.map(({ icon: Icon, title, description }) => (
             <Card key={title} className="opacity-60">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -140,11 +139,10 @@ export default async function AnalyticsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-brand-purple" />
-            Forecasting
+            {t.pages.analytics.forecasting}
           </CardTitle>
           <CardDescription>
-            Projected revenue and occupancy are not built yet — the charts above report what has
-            actually been recorded.
+            {t.pages.analytics.forecastingHelp}
           </CardDescription>
         </CardHeader>
       </Card>

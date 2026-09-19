@@ -27,7 +27,7 @@ export default async function NewBookingPage() {
           <CardContent>
             <Button variant="ghost" href="/dashboard/bookings">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to bookings
+              {t.pages.bookings.backToBookings}
             </Button>
           </CardContent>
         </Card>
@@ -54,18 +54,18 @@ export default async function NewBookingPage() {
         action={
           <Button variant="ghost" href="/dashboard/bookings">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            {t.common.back}
           </Button>
         }
       />
 
       <Card>
         <CardHeader>
-          <CardTitle>Stay details</CardTitle>
+          <CardTitle>{t.pages.bookings.details}</CardTitle>
           <CardDescription>
             {properties.length === 0
-              ? "You need a property first."
-              : "Only the property, guest and dates are required."}
+              ? t.forms.needsProperty
+              : t.pages.bookings.detailsHelp}
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -209,7 +209,7 @@ export function UnitsCard({ propertyId, units, canEdit }: UnitsCardProps) {
                 <Input
                   id="unit-name"
                   name="name"
-                  placeholder="Room 1"
+                  placeholder={t.forms.unitPlaceholder}
                   maxLength={60}
                   required
                 />

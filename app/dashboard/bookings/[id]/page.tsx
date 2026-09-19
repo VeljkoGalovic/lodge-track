@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/dashboard/PageHeader"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/Button"
 import { BookingStatusBadge } from "@/components/dashboard/BookingStatusBadge"
+import { BookingStatusSelect } from "@/components/bookings/BookingStatusSelect"
 import { BookingActions } from "@/components/bookings/BookingActions"
 import { formatAmount } from "@/lib/currency"
 import { formatDateRange } from "@/lib/dashboard-metrics"
@@ -32,7 +33,10 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
 
   const booking = await prisma.booking.findFirst({
     where: { id, property: { orgId: organization.id } },
-    include: { property: { select: { id: true, name: true, address: true, currency: true } } },
+    include: {
+      property: { select: { id: true, name: true, address: true, currency: true } },
+      unit: { select: { name: true } },
+    },
   })
 
   if (!booking) notFound()
@@ -98,7 +102,9 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
           <CardContent className="pt-6">
             <p className="text-sm text-subtle-foreground">{t.forms.status}</p>
             <div className="mt-2">
-              <BookingStatusBadge status={booking.status} />
+              {canEdit ? (
+                <BookingStatusSelect key={`${booking.id}-${booking.status}`} bookingId={booking.id} status={booking.status} guestName={booking.guestName} />
+              ) : <BookingStatusBadge status={booking.status} />}
             </div>
           </CardContent>
         </Card>
@@ -121,6 +127,7 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
           <div>
             <p className="font-medium text-foreground">{booking.property.name}</p>
             <p className="text-sm text-subtle-foreground">{booking.property.address}</p>
+            <p className="mt-1 text-sm text-subtle-foreground">{t.forms.unit}: {booking.unit?.name ?? t.forms.unitWholeProperty}</p>
           </div>
           <Button
             variant="outline"

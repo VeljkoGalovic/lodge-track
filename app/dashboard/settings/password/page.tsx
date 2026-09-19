@@ -19,7 +19,7 @@ export default async function PasswordPage() {
         className="inline-flex items-center gap-1 text-sm text-subtle-foreground transition-colors hover:text-foreground"
       >
         <ChevronLeft className="h-4 w-4" />
-        Settings
+        {t.pages.settings.title}
       </Link>
 
       <PageHeader
@@ -32,9 +32,9 @@ export default async function PasswordPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <KeyRound className="h-5 w-5 text-primary" />
-            Password
+            {t.auth.passwordLabel}
           </CardTitle>
-          <CardDescription>Enter your current password to set a new one</CardDescription>
+          <CardDescription>{t.pages.settings.passwordInstructions}</CardDescription>
         </CardHeader>
         <CardContent>
           <PasswordForm />

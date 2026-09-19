@@ -1,4 +1,6 @@
 import type { BookingStatus } from "@prisma/client"
+import { format, getDictionary, NIGHT_FORMS, plural } from "@/lib/i18n/dictionaries"
+import type { Locale } from "@/lib/i18n/locales"
 
 /**
  * The activity feed.
@@ -74,22 +76,21 @@ function nights(booking: ActivityBooking): number {
 }
 
 /** Whole days from `now`, so "today" and "tomorrow" read naturally. */
-function relativeDay(date: Date, now: Date): string {
+function relativeDay(date: Date, now: Date, locale: Locale): string {
   const startOfDay = (value: Date) =>
     new Date(value.getFullYear(), value.getMonth(), value.getDate()).getTime()
   const days = Math.round((startOfDay(date) - startOfDay(now)) / DAY_MS)
 
-  if (days === 0) return "today"
-  if (days === 1) return "tomorrow"
-  if (days === -1) return "yesterday"
-  return days > 0 ? `in ${days} days` : `${Math.abs(days)} days ago`
+  return new Intl.RelativeTimeFormat(locale === "sr" ? "sr-Latn-RS" : "en-US", { numeric: "auto" }).format(days, "day")
 }
 
 export function buildActivity(
   bookings: ActivityBooking[],
   preferences: NotificationPreferences,
-  now: Date
+  now: Date,
+  locale: Locale = "en"
 ): ActivityItem[] {
+  const t = getDictionary(locale)
   const items: ActivityItem[] = []
   const bookingHref = (id: string) => `/dashboard/bookings/${id}`
 
@@ -101,8 +102,8 @@ export function buildActivity(
       items.push({
         id: `check-in-${booking.id}`,
         kind: "CHECK_IN_DUE",
-        title: `${booking.guestName} arrives ${relativeDay(booking.startDate, now)}`,
-        description: `${booking.property.name} · ${nights(booking)} night${nights(booking) === 1 ? "" : "s"} · ${booking.status.replace("_", " ").toLowerCase()}`,
+        title: format(t.pages.notifications.arrivalTitle, { guest: booking.guestName, day: relativeDay(booking.startDate, now, locale) }),
+        description: format(t.pages.notifications.arrivalDetail, { property: booking.property.name, nights: plural(nights(booking), NIGHT_FORMS[locale], locale), status: t.pages.bookings.statuses[booking.status] }),
         date: booking.startDate,
         href: bookingHref(booking.id),
       })
@@ -118,8 +119,8 @@ export function buildActivity(
       items.push({
         id: `stay-ending-${booking.id}`,
         kind: "STAY_ENDING",
-        title: `${booking.guestName} checks out ${relativeDay(booking.endDate, now)}`,
-        description: `${booking.property.name} · stay began ${relativeDay(booking.startDate, now)}`,
+        title: format(t.pages.notifications.departureTitle, { guest: booking.guestName, day: relativeDay(booking.endDate, now, locale) }),
+        description: format(t.pages.notifications.departureDetail, { property: booking.property.name, day: relativeDay(booking.startDate, now, locale) }),
         date: booking.endDate,
         href: bookingHref(booking.id),
       })
@@ -138,8 +139,8 @@ export function buildActivity(
       items.push({
         id: `missing-rate-${booking.id}`,
         kind: "MISSING_RATE",
-        title: `No rate recorded for ${booking.guestName}`,
-        description: `${booking.property.name} · ${ACTIVE_STATUSES.includes(booking.status) ? "stay not yet complete" : "completed stay"}`,
+        title: format(t.pages.notifications.missingTitle, { guest: booking.guestName }),
+        description: format(t.pages.notifications.missingDetail, { property: booking.property.name, status: ACTIVE_STATUSES.includes(booking.status) ? t.pages.notifications.incomplete : t.pages.notifications.complete }),
         date: booking.startDate,
         href: bookingHref(booking.id),
       })

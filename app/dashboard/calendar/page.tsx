@@ -9,25 +9,7 @@ import { BookingStatus } from "@prisma/client"
 import Link from "next/link"
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react"
 import { currentLocale } from "@/lib/i18n/server"
-import { getDictionary } from "@/lib/i18n/dictionaries"
-
-const MONTH_NAMES = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-]
-
-/** Monday-first, which is how a European property calendar reads. */
-const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+import { BOOKING_COUNT_FORMS, format, getDictionary, plural } from "@/lib/i18n/dictionaries"
 
 /** How many booking chips a single day shows before collapsing into "+N more". */
 const MAX_CHIPS_PER_DAY = 3
@@ -103,7 +85,12 @@ export default async function CalendarPage({
   searchParams: Promise<{ month?: string; propertyId?: string }>
 }) {
   const { user, organization } = await requireMembership()
-  const t = getDictionary(await currentLocale(user.locale))
+  const locale = await currentLocale(user.locale)
+  const t = getDictionary(locale)
+  const dateLocale = locale === "sr" ? "sr-Latn-RS" : "en-US"
+  const weekdays = Array.from({ length: 7 }, (_, index) =>
+    new Date(2024, 0, 1 + index).toLocaleDateString(dateLocale, { weekday: "short" })
+  )
   const params = await searchParams
 
   const now = new Date()
@@ -206,13 +193,13 @@ export default async function CalendarPage({
         description={t.pages.calendar.description}
         action={
           <>
-            <Button variant="ghost" size="sm" href={monthHref(previousMonth)} aria-label="Previous month">
+            <Button variant="ghost" size="sm" href={monthHref(previousMonth)} aria-label={t.pages.calendar.previousMonth}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <Button variant="outline" size="sm" href={monthHref(new Date(now.getFullYear(), now.getMonth(), 1))}>
-              Today
+              {t.pages.calendar.today}
             </Button>
-            <Button variant="ghost" size="sm" href={monthHref(nextMonth)} aria-label="Next month">
+            <Button variant="ghost" size="sm" href={monthHref(nextMonth)} aria-label={t.pages.calendar.nextMonth}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </>
@@ -225,12 +212,12 @@ export default async function CalendarPage({
             <div>
               <CardTitle className="flex items-center gap-2">
                 <CalendarDays className="h-5 w-5 text-primary" />
-                {MONTH_NAMES[monthStart.getMonth()]} {monthStart.getFullYear()}
+                {monthStart.toLocaleDateString(dateLocale, { month: "long", year: "numeric" })}
               </CardTitle>
               <CardDescription>
                 {bookings.length === 0
-                  ? "No stays overlap this month."
-                  : `${bookings.length} stay${bookings.length === 1 ? "" : "s"} shown. A stay fills every night up to its check-out day.`}
+                  ? t.pages.calendar.noStays
+                  : format(t.pages.calendar.staySummary, { bookings: plural(bookings.length, BOOKING_COUNT_FORMS[locale], locale) })}
               </CardDescription>
             </div>
 
@@ -240,7 +227,7 @@ export default async function CalendarPage({
                 size="sm"
                 href={propertyHref()}
               >
-                All properties
+                {t.pages.calendar.allProperties}
               </Button>
               {properties.map((property) => (
                 <Button
@@ -266,7 +253,7 @@ export default async function CalendarPage({
                     BOOKING_STATUS_STYLES[status].badge
                   )}
                 />
-                {BOOKING_STATUS_STYLES[status].label}
+                {t.pages.bookings.statuses[status]}
               </span>
             ))}
           </div>
@@ -278,7 +265,7 @@ export default async function CalendarPage({
           <div className="overflow-x-auto">
             <div className="min-w-[46rem]">
               <div className="grid grid-cols-7 gap-1 pb-2">
-                {WEEKDAYS.map((weekday) => (
+                {weekdays.map((weekday) => (
                   <div
                     key={weekday}
                     className="px-2 text-xs font-medium uppercase tracking-wide text-subtle-foreground"
@@ -339,7 +326,7 @@ export default async function CalendarPage({
                           </Link>
                         ))}
                         {hidden > 0 ? (
-                          <p className="px-1.5 text-[11px] text-subtle-foreground">+{hidden} more</p>
+                          <p className="px-1.5 text-[11px] text-subtle-foreground">{format(t.pages.calendar.moreChips, { count: hidden })}</p>
                         ) : null}
                       </div>
                     </div>
@@ -355,7 +342,7 @@ export default async function CalendarPage({
         <Card>
           <CardContent className="pt-6">
             <p className="text-sm text-subtle-foreground">
-              Add a property to start putting stays on the calendar.
+              {t.pages.calendar.addPropertyHint}
             </p>
           </CardContent>
         </Card>

@@ -14,7 +14,7 @@ import { ThemeSwitcher } from "@/components/theme/ThemeSwitcher"
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher"
 import { receiptBytesUsed } from "@/lib/receipt-quota"
 import { currentLocale } from "@/lib/i18n/server"
-import { getDictionary } from "@/lib/i18n/dictionaries"
+import { format, getDictionary } from "@/lib/i18n/dictionaries"
 import { User, Building2, Bell, Palette, Shield, KeyRound, Mail, ArrowUpRight } from "lucide-react"
 
 export default async function SettingsPage() {
@@ -66,9 +66,9 @@ export default async function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <User className="h-5 w-5 text-primary" />
-            Profile
+            {t.pages.settings.profile}
           </CardTitle>
-          <CardDescription>Update your personal information</CardDescription>
+          <CardDescription>{t.pages.settings.profileHelp}</CardDescription>
         </CardHeader>
         <CardContent>
           <ProfileForm name={user.name} email={user.email} />
@@ -79,10 +79,10 @@ export default async function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Palette className="h-5 w-5 text-primary" />
-            Appearance &amp; language
+            {t.pages.settings.appearance}
           </CardTitle>
           <CardDescription>
-            Both apply to your account only — other members of {organization.name} keep their own.
+            {format(t.pages.settings.appearanceHelp, { org: organization.name })}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -103,9 +103,9 @@ export default async function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5 text-primary" />
-            Organization
+            {t.pages.settings.organization}
           </CardTitle>
-          <CardDescription>Manage your organization details</CardDescription>
+          <CardDescription>{t.pages.settings.organizationHelp}</CardDescription>
         </CardHeader>
         <CardContent>
           <OrganizationForm
@@ -120,9 +120,9 @@ export default async function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bell className="h-5 w-5 text-primary" />
-            Notifications
+            {t.pages.notifications.title}
           </CardTitle>
-          <CardDescription>Choose what appears in your activity feed</CardDescription>
+          <CardDescription>{t.pages.settings.notificationsHelp}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <NotificationPreferencesForm
@@ -137,11 +137,10 @@ export default async function SettingsPage() {
           <div className="rounded-xl border border-border bg-muted px-4 py-3 text-sm text-subtle-foreground">
             <span className="flex items-center gap-2 font-medium text-muted-foreground">
               <Mail className="h-4 w-4" />
-              Email and push delivery
+              {t.pages.settings.delivery}
             </span>
             <p className="mt-1">
-              Not connected. There is no mail or push provider wired up, so the feed above is only
-              visible inside the app. Nothing is sent to you.
+              {t.pages.settings.deliveryHelp}
             </p>
           </div>
         </CardContent>
@@ -151,31 +150,31 @@ export default async function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            Security
+            {t.pages.settings.security}
           </CardTitle>
-          <CardDescription>Manage your password and sign-in protection</CardDescription>
+          <CardDescription>{t.pages.settings.securityHelp}</CardDescription>
         </CardHeader>
         <CardContent className="divide-y divide-border">
           <div className="flex flex-wrap items-center justify-between gap-3 pb-4">
             <div>
-              <p className="font-medium text-foreground">Change password</p>
-              <p className="text-sm text-subtle-foreground">Update your account password</p>
+              <p className="font-medium text-foreground">{t.pages.settings.changePassword}</p>
+              <p className="text-sm text-subtle-foreground">{t.pages.settings.passwordHelp}</p>
             </div>
             <Button variant="outline" size="sm" href="/dashboard/settings/password">
-              Change
+              {t.pages.settings.change}
             </Button>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3 pt-4">
             <div>
-              <p className="font-medium text-foreground">Two-factor authentication</p>
+              <p className="font-medium text-foreground">{t.pages.settings.twoFactor}</p>
               <p className="text-sm text-subtle-foreground">
                 {user.twoFactorEnabled
-                  ? "On — a code is required at sign-in"
-                  : "Add an extra layer of security"}
+                  ? t.pages.settings.factorEnabled
+                  : t.pages.settings.factorHelp}
               </p>
             </div>
             <Button variant="outline" size="sm" href="/dashboard/settings/2fa">
-              {user.twoFactorEnabled ? "Manage" : "Enable"}
+              {user.twoFactorEnabled ? t.pages.settings.manage : t.pages.settings.enable}
             </Button>
           </div>
         </CardContent>
@@ -185,19 +184,19 @@ export default async function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <KeyRound className="h-5 w-5 text-primary" />
-            Plan &amp; access
+            {t.pages.settings.planAccess}
           </CardTitle>
-          <CardDescription>What your subscription currently entitles this organization to</CardDescription>
+          <CardDescription>{t.pages.settings.planHelp}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
             <Badge variant="secondary" className={getTierBadgeColor(features.tier)}>
               {getTierLabel(features.tier)}
             </Badge>
-            {subscription?.isLifetimeFree ? <Badge variant="success">Lifetime free</Badge> : null}
+            {subscription?.isLifetimeFree ? <Badge variant="success">{t.pages.settings.lifetimeFree}</Badge> : null}
             {subscription?.maxPropertiesOverride != null ? (
               <Badge variant="outline">
-                Property limit overridden to {subscription.maxPropertiesOverride}
+                {format(t.pages.settings.propertyOverride, { count: subscription.maxPropertiesOverride })}
               </Badge>
             ) : null}
           </div>
@@ -205,17 +204,17 @@ export default async function SettingsPage() {
           <ul className="space-y-2 text-sm">
             {[
               [
-                "Property limit",
-                features.maxProperties === Infinity ? "Unlimited" : String(features.maxProperties),
+                t.pages.settings.propertyLimit,
+                features.maxProperties === Infinity ? t.common.unlimited : String(features.maxProperties),
               ],
-              ["Advanced analytics", features.hasAdvancedAnalytics ? "Included" : "Not included"],
-              ["Team roles", features.hasTeamRoles ? "Included" : "Not included"],
-              ["API access", features.hasApiAccess ? "Enabled" : "Not included"],
+              [t.pages.settings.analytics, features.hasAdvancedAnalytics ? t.pages.settings.included : t.pages.settings.notIncluded],
+              [t.pages.settings.teamRoles, features.hasTeamRoles ? t.pages.settings.included : t.pages.settings.notIncluded],
+              [t.pages.settings.apiAccess, features.hasApiAccess ? t.pages.settings.enabled : t.pages.settings.notIncluded],
               [
-                "Receipt storage",
+                t.pages.settings.storage,
                 features.maxStorageBytes === Infinity
-                  ? `${formatBytes(receiptBytes)} used — unlimited`
-                  : `${formatBytes(receiptBytes)} of ${formatBytes(features.maxStorageBytes)}`,
+                  ? format(t.pages.settings.storageUnlimited, { used: formatBytes(receiptBytes) })
+                  : format(t.pages.settings.storageUsed, { used: formatBytes(receiptBytes), total: formatBytes(features.maxStorageBytes) }),
               ],
             ].map(([label, value]) => (
               <li key={label} className="flex items-center justify-between gap-4">
@@ -227,18 +226,19 @@ export default async function SettingsPage() {
 
           {subscription?.hasApiAccessOverride != null ? (
             <p className="text-xs text-subtle-foreground">
-              API access is {subscription.hasApiAccessOverride ? "granted" : "withheld"} by an
-              override on this subscription
-              {features.hasApiAccess === planDefaultApiAccess
-                ? ", which matches what your plan already gives you"
-                : ", which differs from your plan's default"}
-              .
+              {subscription.hasApiAccessOverride
+                ? features.hasApiAccess === planDefaultApiAccess
+                  ? t.pages.settings.apiGrantedMatch
+                  : t.pages.settings.apiGrantedDifferent
+                : features.hasApiAccess === planDefaultApiAccess
+                  ? t.pages.settings.apiWithheldMatch
+                  : t.pages.settings.apiWithheldDifferent}
             </p>
           ) : null}
 
           <Button variant="outline" size="sm" href="/dashboard/billing">
             <ArrowUpRight className="mr-2 h-4 w-4" />
-            View plans
+            {t.pages.settings.viewPlans}
           </Button>
         </CardContent>
       </Card>

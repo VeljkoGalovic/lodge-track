@@ -1,10 +1,34 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
+import { serializable } from "@/lib/transaction"
 import { type ActionState, canManage, currentMembership, field } from "@/lib/authorization"
 import { getOrgFeatures } from "@/lib/subscriptions"
 import { isSupportedCurrency } from "@/lib/currency"
+
+/** A bed count the schema can hold without the picker becoming unusable. */
+const MAX_BEDS = 200
+/** Bed units are named by number, so the highest number names the next gap to fill. */
+const BED_NAME = /^Bed (\d+)$/
+
+/**
+ * Reads the bed count the form sent, or null when the field is absent.
+ *
+ * Absent is a distinct outcome from empty: the edit form's help text and the
+ * per-unit delete in UnitsCard both treat "don't touch units" as different from
+ * "make it one bed", so a stale or trimmed page must not be able to shrink a
+ * hostel's unit list by posting a form without the field.
+ */
+function readBedCount(formData: FormData): { ok: true; count: number | null } | { ok: false } {
+  const raw = formData.get("bedCount")
+  if (raw === null) return { ok: true, count: null }
+  const value = typeof raw === "string" ? raw.trim() : ""
+  if (value === "") return { ok: true, count: null }
+  if (!/^\d+$/.test(value) || Number(value) < 1 || Number(value) > MAX_BEDS) return { ok: false }
+  return { ok: true, count: Number(value) }
+}
 
 /** Fields shared by create and edit, so the two cannot drift apart. */
 function readProperty(formData: FormData) {
@@ -21,12 +45,43 @@ function readProperty(formData: FormData) {
   return { name, address, icalUrl: icalUrl || null, currency }
 }
 
-function validate(name: string, address: string): string | null {
+function validate(
+  name: string,
+  address: string,
+  bedCount: { ok: true; count: number | null } | { ok: false }
+): string | null {
   if (!name) return "Give the property a name."
   if (name.length > 120) return "Property name is too long."
   if (!address) return "Give the property an address."
   if (address.length > 300) return "Address is too long."
+  if (!bedCount.ok) return "Bed count must be a whole number from 1 to 200."
   return null
+}
+
+/** Add enough beds to reach the total, numbering past existing Bed N names. */
+async function missingBeds(
+  tx: Prisma.TransactionClient,
+  propertyId: string,
+  orgId: string,
+  count: number
+) {
+  const existing = await tx.propertyUnit.findMany({
+    where: { propertyId, orgId },
+    select: { name: true },
+  })
+  let highest = 0
+  for (const unit of existing) {
+    const match = BED_NAME.exec(unit.name)
+    if (match) highest = Math.max(highest, Number(match[1]))
+  }
+  return existing.length < count
+    ? Array.from({ length: count - existing.length }, (_, i) => ({
+        name: `Bed ${highest + i + 1}`,
+        kind: "Bed",
+        propertyId,
+        orgId,
+      }))
+    : []
 }
 
 export async function createProperty(
@@ -40,7 +95,8 @@ export async function createProperty(
   }
 
   const { name, address, icalUrl, currency } = readProperty(formData)
-  const problem = validate(name, address)
+  const bedCount = readBedCount(formData)
+  const problem = validate(name, address, bedCount)
   if (problem) return { error: problem }
 
   const { maxProperties } = getOrgFeatures(
@@ -58,8 +114,28 @@ export async function createProperty(
     }
   }
 
-  const property = await prisma.property.create({
-    data: { name, address, icalUrl, currency, orgId: membership.organization.id },
+  const wanted = bedCount.ok && bedCount.count !== null ? bedCount.count : 1
+
+  /**
+   * Property and its beds are one unit of creation: a property with a stated
+   * bed count but no bed rows would book whole and contradict its own form.
+   * Inside one transaction either both exist or neither does.
+   */
+  const property = await prisma.$transaction(async tx => {
+    const created = await tx.property.create({
+      data: { name, address, icalUrl, currency, orgId: membership.organization.id },
+    })
+    if (wanted >= 1) {
+      await tx.propertyUnit.createMany({
+        data: Array.from({ length: wanted }, (_, i) => ({
+          name: `Bed ${i + 1}`,
+          kind: "Bed",
+          propertyId: created.id,
+          orgId: membership.organization.id,
+        })),
+      })
+    }
+    return created
   })
 
   revalidatePath("/dashboard")
@@ -79,19 +155,33 @@ export async function updateProperty(
 
   const id = field(formData, "id")
   const { name, address, icalUrl, currency } = readProperty(formData)
-  const problem = validate(name, address)
+  const bedCount = readBedCount(formData)
+  const problem = validate(name, address, bedCount)
   if (problem) return { error: problem }
 
-  /**
-   * Scoped by `orgId` in the `where` rather than checked after the read: a
-   * property id from another tenant then simply matches nothing, so there is no
-   * window between the check and the write.
-   */
-  const { count } = await prisma.property.updateMany({
-    where: { id, orgId: membership.organization.id },
-    data: { name, address, icalUrl, currency },
-  })
-  if (count === 0) return { error: "That property no longer exists." }
+  try {
+    const updated = await serializable(async tx => {
+      const { count } = await tx.property.updateMany({
+        where: { id, orgId: membership.organization.id },
+        data: { name, address, icalUrl, currency },
+      })
+      if (count === 0) return false
+
+      // Lowering never deletes units; UnitsCard checks bookings before removal.
+      if (bedCount.ok && bedCount.count !== null) {
+        const beds = await missingBeds(tx, id, membership.organization.id, bedCount.count)
+        if (beds.length > 0) await tx.propertyUnit.createMany({ data: beds })
+      }
+      return true
+    })
+    if (!updated) return { error: "That property no longer exists." }
+  } catch (error) {
+    // Catch outside the transaction: PostgreSQL aborts it on a unique violation.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return { error: "Some of the new bed names are already taken by units on this property." }
+    }
+    throw error
+  }
 
   revalidatePath("/dashboard")
   revalidatePath("/dashboard/properties")

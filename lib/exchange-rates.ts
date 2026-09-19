@@ -69,7 +69,7 @@ export const getExchangeRates = unstable_cache(
         // 160+ keys in memory when the UI only allows picking 17.
         const filtered: ExchangeRates = {}
         for (const option of SUPPORTED_CURRENCIES) {
-          if (typeof data.rates[option.code] === "number") {
+          if (Number.isFinite(data.rates[option.code]) && data.rates[option.code] > 0) {
             filtered[option.code] = data.rates[option.code]
           } else {
             // Found a supported currency missing from the API
@@ -99,26 +99,44 @@ export const getExchangeRates = unstable_cache(
  *
  * A minor-unit amount has to be converted as its *major* unit because rates
  * relate majors (1 USD = 108 RSD), and then stepped back down into the minor
- * unit of the target to maintain the storage shape. An unrecognised currency
- * falls back to a 1:1 ratio.
+ * unit of the target to maintain the storage shape. Missing or invalid rates
+ * are rejected; the fetch layer supplies explicit fallback rates.
  */
+function decimalRatio(value: number): [bigint, bigint] {
+  const [mantissa, exponent = "0"] = String(value).toLowerCase().split("e")
+  const [whole, fraction = ""] = mantissa.split(".")
+  const scale = fraction.length - Number(exponent)
+  const numerator = BigInt(whole + fraction)
+  return scale >= 0
+    ? [numerator, BigInt(10) ** BigInt(scale)]
+    : [numerator * BigInt(10) ** BigInt(-scale), BigInt(1)]
+}
+
 export function convertAmount(
   amountMinor: number,
   fromCurrency: string,
   toCurrency: string,
   rates: ExchangeRates
 ): number {
+  if (!Number.isSafeInteger(amountMinor)) throw new RangeError("Amount must be safe integer minor units")
   if (fromCurrency === toCurrency) return amountMinor
 
-  // Protect against a null or zero rate inside the cache or fallback
-  const fromRate = rates[fromCurrency] || 1
-  const toRate = rates[toCurrency] || 1
+  const fromRate = rates[fromCurrency]
+  const toRate = rates[toCurrency]
+  if (!Number.isFinite(fromRate) || fromRate <= 0 || !Number.isFinite(toRate) || toRate <= 0) {
+    throw new RangeError("Exchange rates must be finite and positive")
+  }
 
-  const fromDigits = minorUnitDigits(fromCurrency)
-  const toDigits = minorUnitDigits(toCurrency)
-
-  const amountMajor = amountMinor / Math.pow(10, fromDigits)
-  const convertedMajor = (amountMajor / fromRate) * toRate
-
-  return Math.round(convertedMajor * Math.pow(10, toDigits))
+  // Treat the published decimal rates as exact fractions. Floating point
+  // intermediates turn 100 × 1.005 into 100.499999..., losing a cent.
+  const [fromNumerator, fromDenominator] = decimalRatio(fromRate)
+  const [toNumerator, toDenominator] = decimalRatio(toRate)
+  const numerator = BigInt(Math.abs(amountMinor)) * toNumerator * fromDenominator *
+    BigInt(10) ** BigInt(minorUnitDigits(toCurrency))
+  const denominator = fromNumerator * toDenominator *
+    BigInt(10) ** BigInt(minorUnitDigits(fromCurrency))
+  const rounded = (numerator + denominator / BigInt(2)) / denominator
+  const result = Number(rounded) * Math.sign(amountMinor)
+  if (!Number.isSafeInteger(result)) throw new RangeError("Converted amount exceeds safe integer range")
+  return result
 }

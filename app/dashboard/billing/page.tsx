@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/dashboard/PageHeader"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { CreditCard, Check, Lock, AlertTriangle, ArrowUpRight } from "lucide-react"
 import { currentLocale } from "@/lib/i18n/server"
-import { getDictionary } from "@/lib/i18n/dictionaries"
+import { format, getDictionary, type Dictionary } from "@/lib/i18n/dictionaries"
 import { getOrgFeatures, getTierBadgeColor, formatBytes } from "@/lib/subscriptions"
 import type { Tier } from "@/lib/subscriptions"
 
@@ -19,67 +19,50 @@ interface TierCopy {
   /** Indicative only — the amount actually charged is the one configured on the
    *  variant in the Lemon Squeezy store, and is shown on the checkout page. */
   price: number
-  tagline: string
   popular: boolean
 }
 
 const TIER_COPY: Record<Tier, TierCopy> = {
-  STARTER: { name: "Starter", price: 0, tagline: "For a first property or two", popular: false },
-  PRO: { name: "Pro", price: 49, tagline: "For a growing portfolio", popular: true },
-  ENTERPRISE: { name: "Enterprise", price: 199, tagline: "For large or multi-site operators", popular: false },
+  STARTER: { name: "Starter", price: 0, popular: false },
+  PRO: { name: "Pro", price: 49, popular: true },
+  ENTERPRISE: { name: "Enterprise", price: 199, popular: false },
 }
 
 const TIER_ORDER: Tier[] = ["STARTER", "PRO", "ENTERPRISE"]
 
-/** Every plan includes these; they are not gated by tier. */
-const BASE_FEATURES = [
-  "Property and booking management",
-  "Availability calendar",
-  "Activity feed and notifications",
-  "Team members with roles",
-]
-
-/** Read straight from the feature gates, so this list cannot drift from the code. */
-function tierFeatures(tier: Tier): string[] {
+/** Feature availability is data, never inferred from translated copy. */
+function tierFeatures(tier: Tier, t: Dictionary): { label: string; included: boolean }[] {
   const features = getOrgFeatures(tier)
   return [
-    features.maxProperties === Infinity
-      ? "Unlimited properties"
-      : `Up to ${features.maxProperties} properties`,
-    features.maxStorageBytes === Infinity
-      ? "Unlimited receipt storage"
-      : `Up to ${formatBytes(features.maxStorageBytes)} receipt storage`,
-    ...BASE_FEATURES,
-    features.hasAdvancedAnalytics ? "Advanced financial analytics" : "No advanced analytics",
-    features.hasTeamRoles ? "Role-based permissions" : "No role-based permissions",
-    features.hasApiAccess ? "API access" : "No API access",
+    { label: features.maxProperties === Infinity ? t.pages.billing.unlimitedProperties : format(t.pages.billing.propertyAllowance, { count: features.maxProperties }), included: true },
+    { label: features.maxStorageBytes === Infinity ? t.pages.billing.unlimitedStorage : format(t.pages.billing.storageAllowance, { amount: formatBytes(features.maxStorageBytes) }), included: true },
+    ...[t.pages.billing.propertyManagement, t.pages.billing.calendar, t.pages.billing.notifications, t.pages.billing.members].map((label) => ({ label, included: true })),
+    { label: features.hasAdvancedAnalytics ? t.pages.billing.analytics : t.pages.billing.noAnalytics, included: features.hasAdvancedAnalytics },
+    { label: features.hasTeamRoles ? t.pages.billing.permissions : t.pages.billing.noPermissions, included: features.hasTeamRoles },
+    { label: features.hasApiAccess ? t.pages.settings.apiAccess : t.pages.billing.noApi, included: features.hasApiAccess },
   ]
 }
 
-const COMPARISON_ROWS: Array<{ feature: string; value: (tier: Tier) => string | boolean }> = [
-  {
-    feature: "Max properties",
-    value: (tier) => {
+function comparisonRows(t: Dictionary): Array<{ feature: string; value: (tier: Tier) => string | boolean }> {
+  return [
+    { feature: t.pages.settings.propertyLimit, value: (tier) => {
       const { maxProperties } = getOrgFeatures(tier)
-      return maxProperties === Infinity ? "Unlimited" : String(maxProperties)
-    },
-  },
-  {
-    feature: "Receipt storage",
-    value: (tier) => {
+      return maxProperties === Infinity ? t.common.unlimited : String(maxProperties)
+    } },
+    { feature: t.pages.settings.storage, value: (tier) => {
       const { maxStorageBytes } = getOrgFeatures(tier)
-      return maxStorageBytes === Infinity ? "Unlimited" : formatBytes(maxStorageBytes)
-    },
-  },
-  { feature: "Booking management", value: () => true },
-  { feature: "Availability calendar", value: () => true },
-  { feature: "Activity feed", value: () => true },
-  { feature: "Financial analytics", value: (tier) => getOrgFeatures(tier).hasAdvancedAnalytics },
-  { feature: "Role-based permissions", value: (tier) => getOrgFeatures(tier).hasTeamRoles },
-  { feature: "API access", value: (tier) => getOrgFeatures(tier).hasApiAccess },
-]
+      return maxStorageBytes === Infinity ? t.common.unlimited : formatBytes(maxStorageBytes)
+    } },
+    { feature: t.pages.billing.bookingManagement, value: () => true },
+    { feature: t.pages.billing.calendar, value: () => true },
+    { feature: t.pages.billing.activity, value: () => true },
+    { feature: t.pages.billing.financialAnalytics, value: (tier) => getOrgFeatures(tier).hasAdvancedAnalytics },
+    { feature: t.pages.billing.permissions, value: (tier) => getOrgFeatures(tier).hasTeamRoles },
+    { feature: t.pages.settings.apiAccess, value: (tier) => getOrgFeatures(tier).hasApiAccess },
+  ]
+}
 
-function ComparisonCell({ value }: { value: string | boolean }) {
+function ComparisonCell({ value, t }: { value: string | boolean; t: Dictionary }) {
   if (typeof value === "string") {
     return <span className="text-muted-foreground">{value}</span>
   }
@@ -87,22 +70,14 @@ function ComparisonCell({ value }: { value: string | boolean }) {
   return value ? (
     <>
       <Check className="mx-auto h-4 w-4 text-primary" />
-      <span className="sr-only">Included</span>
+      <span className="sr-only">{t.pages.settings.included}</span>
     </>
   ) : (
     <>
       <Lock className="mx-auto h-4 w-4 text-subtle-foreground" />
-      <span className="sr-only">Not included</span>
+      <span className="sr-only">{t.pages.settings.notIncluded}</span>
     </>
   )
-}
-
-/** What a checkout redirect reports back through the query string. */
-const CHECKOUT_ERRORS: Record<string, string> = {
-  not_configured:
-    "Checkout is not available yet — this deployment has no Lemon Squeezy credentials set. See the configuration note below.",
-  unknown_tier: "That plan is not one we sell.",
-  not_owner: "Only an owner of this organization can change its plan.",
 }
 
 export default async function BillingPage({
@@ -136,7 +111,20 @@ export default async function BillingPage({
 
   // The locale lives on the member row, so it is only readable once that row is
   // in hand. The dashboard layout resolves the same value for the shell.
-  const t = getDictionary(await currentLocale(user.locale))
+  const locale = await currentLocale(user.locale)
+  const t = getDictionary(locale)
+  const dateLocale = locale === "sr" ? "sr-Latn-RS" : "en-US"
+  const price = (amount: number) => new Intl.NumberFormat(dateLocale, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(amount)
+  const taglines: Record<Tier, string> = {
+    STARTER: t.pages.billing.starterTagline,
+    PRO: t.pages.billing.proTagline,
+    ENTERPRISE: t.pages.billing.enterpriseTagline,
+  }
+  const checkoutErrors: Record<string, string> = {
+    not_configured: t.pages.billing.errorNotConfigured,
+    unknown_tier: t.pages.billing.errorUnknownTier,
+    not_owner: t.pages.billing.errorNotOwner,
+  }
 
   const params = await searchParams
 
@@ -153,7 +141,7 @@ export default async function BillingPage({
 
   const provider = billingStatus()
   const isOwner = user.role === "OWNER"
-  const statusLabel = (subscription?.status ?? "ACTIVE").toLowerCase().replace(/_/g, " ")
+  const statusLabel = t.pages.billing.statuses[subscription?.status ?? "ACTIVE"]
 
   return (
     <div className="space-y-6">
@@ -163,17 +151,16 @@ export default async function BillingPage({
         description={t.pages.billing.description}
       />
 
-      {params.error && CHECKOUT_ERRORS[params.error] ? (
+      {params.error && checkoutErrors[params.error] ? (
         <div className="flex items-start gap-3 rounded-xl border border-warning/20 bg-warning/10 px-4 py-3 text-sm text-warning">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <p>{CHECKOUT_ERRORS[params.error]}</p>
+          <p>{checkoutErrors[params.error]}</p>
         </div>
       ) : null}
 
       {params.checkout === "complete" ? (
         <div className="rounded-xl border border-primary/25 bg-primary/10 px-4 py-3 text-sm text-muted-foreground">
-          Checkout finished. Your plan updates as soon as Lemon Squeezy confirms the payment — reload
-          this page in a moment if it still shows the old one.
+          {t.pages.billing.checkoutComplete}
         </div>
       ) : null}
 
@@ -184,9 +171,9 @@ export default async function BillingPage({
             <div>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5 text-primary" />
-                Current Plan
+                {t.pages.billing.currentPlan}
               </CardTitle>
-              <CardDescription>Your current subscription tier</CardDescription>
+              <CardDescription>{t.pages.billing.currentPlanHelp}</CardDescription>
             </div>
             <Badge variant="outline" className={getTierBadgeColor(features.tier)}>
               {subscription?.tier ?? "STARTER"}
@@ -197,25 +184,25 @@ export default async function BillingPage({
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {[
               {
-                label: "Plan price",
+                label: t.pages.billing.planPrice,
                 value:
                   TIER_COPY[currentTier].price === 0
-                    ? "Free"
-                    : `$${TIER_COPY[currentTier].price}/mo`,
+                    ? t.pages.billing.free
+                    : format(t.pages.billing.monthlyPrice, { amount: price(TIER_COPY[currentTier].price) }),
               },
               {
-                label: "Properties used",
+                label: t.pages.billing.propertiesUsed,
                 value: `${org._count?.properties || 0} / ${
                   features.maxProperties === Infinity ? "∞" : features.maxProperties
                 }`,
               },
               {
-                label: "Receipt storage",
+                label: t.pages.settings.storage,
                 value: `${formatBytes(usedBytes)} / ${
                   features.maxStorageBytes === Infinity ? "∞" : formatBytes(features.maxStorageBytes)
                 }`,
               },
-              { label: "Status", value: statusLabel },
+              { label: t.forms.status, value: statusLabel },
             ].map((item) => (
               <div
                 key={item.label}
@@ -231,19 +218,15 @@ export default async function BillingPage({
 
           {subscription?.billingSubscriptionId ? (
             <div className="rounded-2xl border border-border bg-muted p-4">
-              <p className="text-sm text-subtle-foreground">Lemon Squeezy subscription</p>
+              <p className="text-sm text-subtle-foreground">{t.pages.billing.providerSubscription}</p>
               <p className="mt-1 font-mono text-sm text-muted-foreground">
                 {subscription.billingSubscriptionId}
               </p>
               {subscription.currentPeriodEnd ? (
                 <p className="mt-1 text-xs text-subtle-foreground">
-                  Current period ends{" "}
-                  {subscription.currentPeriodEnd.toLocaleDateString("en-US", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
-                  .
+                  {format(t.pages.billing.periodEnds, { date: subscription.currentPeriodEnd.toLocaleDateString(dateLocale, {
+                    day: "numeric", month: "long", year: "numeric",
+                  }) })}
                 </p>
               ) : null}
             </div>
@@ -251,8 +234,7 @@ export default async function BillingPage({
 
           {subscription?.isLifetimeFree ? (
             <p className="text-sm text-subtle-foreground">
-              This organization is marked lifetime free — no payment is taken, and plan changes are
-              not needed.
+              {t.pages.billing.lifetimeHelp}
             </p>
           ) : null}
 
@@ -261,8 +243,7 @@ export default async function BillingPage({
               without credentials there is no customer portal to point at. */}
           {subscription?.billingSubscriptionId && provider.canCheckout ? (
             <p className="text-sm text-subtle-foreground">
-              To change your card, download an invoice, or cancel, use the customer portal link in
-              the receipt email Lemon Squeezy sent when you subscribed.
+              {t.pages.billing.portalHelp}
             </p>
           ) : null}
         </CardContent>
@@ -270,12 +251,12 @@ export default async function BillingPage({
 
       {/* Plan Comparison */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold tracking-tight text-foreground">Choose Your Plan</h2>
+        <h2 className="text-xl font-semibold tracking-tight text-foreground">{t.pages.billing.choosePlan}</h2>
         <div className="grid gap-4 md:grid-cols-3">
           {TIER_ORDER.map((tier) => {
             const copy = TIER_COPY[tier]
             const isCurrent = tier === currentTier
-            const featuresForTier = tierFeatures(tier)
+            const featuresForTier = tierFeatures(tier, t)
             // STARTER is the free tier created at registration, so it is never
             // bought. The paid tiers are self-serve once the deployment has the
             // credentials to open a checkout at all.
@@ -298,7 +279,7 @@ export default async function BillingPage({
                     />
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                       <Badge className="border-transparent bg-brand-purple text-[#07090E]">
-                        Most Popular
+                        {t.pages.billing.popular}
                       </Badge>
                     </div>
                   </>
@@ -307,15 +288,15 @@ export default async function BillingPage({
                   <div className="text-center">
                     <div className="mb-2 flex items-baseline justify-center gap-1">
                       <span className="text-4xl font-bold tracking-tight text-foreground">
-                        ${copy.price}
+                        {price(copy.price)}
                       </span>
-                      <span className="text-subtle-foreground">/month</span>
+                      <span className="text-subtle-foreground">{t.pages.billing.perMonth}</span>
                     </div>
                     <h3 className="text-xl font-semibold text-foreground">{copy.name}</h3>
-                    <p className="mt-1 text-sm text-subtle-foreground">{copy.tagline}</p>
+                    <p className="mt-1 text-sm text-subtle-foreground">{taglines[tier]}</p>
                     {isCurrent && (
                       <Badge variant="secondary" className="mt-3">
-                        Current Plan
+                        {t.pages.billing.currentPlan}
                       </Badge>
                     )}
                   </div>
@@ -323,10 +304,10 @@ export default async function BillingPage({
                 <CardContent className="flex flex-1 flex-col">
                   <ul className="mb-6 flex-1 space-y-3">
                     {featuresForTier.map((feature) => {
-                      const excluded = feature.startsWith("No ")
+                      const excluded = !feature.included
                       return (
                         <li
-                          key={feature}
+                          key={feature.label}
                           className={
                             excluded
                               ? "flex items-start gap-2 text-sm text-subtle-foreground"
@@ -338,7 +319,7 @@ export default async function BillingPage({
                           ) : (
                             <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                           )}
-                          <span>{feature}</span>
+                          <span>{feature.label}</span>
                         </li>
                       )
                     })}
@@ -346,7 +327,7 @@ export default async function BillingPage({
 
                   {isCurrent ? (
                     <Button variant="outline" className="w-full" disabled>
-                      Current plan
+                      {t.pages.billing.currentPlan}
                     </Button>
                   ) : purchasable && isOwner ? (
                     <Button
@@ -354,7 +335,7 @@ export default async function BillingPage({
                       className="w-full"
                       href={`/api/billing/checkout?tier=${tier}`}
                     >
-                      Choose {copy.name}
+                      {format(t.pages.billing.choose, { plan: copy.name })}
                     </Button>
                   ) : (
                     // Says why rather than appearing to do something: either the
@@ -366,11 +347,11 @@ export default async function BillingPage({
                       disabled
                       title={
                         !isOwner
-                          ? "Only an owner can change this organization's plan"
-                          : "Checkout is not configured on this deployment"
+                          ? t.pages.billing.ownerOnlyHint
+                          : t.pages.billing.unavailableHint
                       }
                     >
-                      {isOwner ? "Checkout unavailable" : "Owner only"}
+                      {isOwner ? t.pages.billing.unavailable : t.pages.billing.ownerOnly}
                       {isOwner ? <ArrowUpRight className="ml-2 h-4 w-4" /> : null}
                     </Button>
                   )}
@@ -381,36 +362,35 @@ export default async function BillingPage({
         </div>
 
         <p className="text-xs text-subtle-foreground">
-          Amounts shown are indicative. The price charged is the one configured on the variant in
-          your Lemon Squeezy store, and is displayed on the checkout page before you pay.
+          {t.pages.billing.priceDisclaimer}
         </p>
       </div>
 
       {/* Feature Comparison Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Feature Comparison</CardTitle>
+          <CardTitle>{t.pages.billing.comparison}</CardTitle>
           <CardDescription>
-            Taken from the same limits the app enforces, so what is listed here is what you get
+            {t.pages.billing.comparisonHelp}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Feature</TableHead>
+                <TableHead>{t.pages.billing.feature}</TableHead>
                 <TableHead className="text-center">Starter</TableHead>
                 <TableHead className="text-center">Pro</TableHead>
                 <TableHead className="text-center">Enterprise</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {COMPARISON_ROWS.map((row) => (
+              {comparisonRows(t).map((row) => (
                 <TableRow key={row.feature}>
                   <TableCell className="font-medium text-foreground">{row.feature}</TableCell>
                   {TIER_ORDER.map((tier) => (
                     <TableCell key={tier} className="text-center">
-                      <ComparisonCell value={row.value(tier)} />
+                      <ComparisonCell value={row.value(tier)} t={t} />
                     </TableCell>
                   ))}
                 </TableRow>
@@ -423,8 +403,8 @@ export default async function BillingPage({
       {/* Billing history */}
       <Card>
         <CardHeader>
-          <CardTitle>Billing History</CardTitle>
-          <CardDescription>Invoices are issued by Lemon Squeezy</CardDescription>
+          <CardTitle>{t.pages.billing.history}</CardTitle>
+          <CardDescription>{t.pages.billing.historyHelp}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="py-8 text-center">
@@ -432,8 +412,7 @@ export default async function BillingPage({
               <CreditCard className="h-6 w-6 text-primary" />
             </div>
             <p className="mx-auto mt-4 max-w-md text-sm text-subtle-foreground">
-              Invoices are not read back from the provider, so none are listed here. Each payment
-              sends a receipt with a customer portal link, and that is where invoices live.
+              {t.pages.billing.noInvoices}
             </p>
           </div>
         </CardContent>
@@ -444,10 +423,10 @@ export default async function BillingPage({
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-warning">
               <AlertTriangle className="h-5 w-5" />
-              Billing is not configured on this deployment
+              {t.pages.billing.notConfigured}
             </CardTitle>
             <CardDescription>
-              The plan cards above are read-only until these environment variables are set.
+              {t.pages.billing.configurationHelp}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -457,11 +436,7 @@ export default async function BillingPage({
               ))}
             </ul>
             <p className="text-sm text-subtle-foreground">
-              Webhook deliveries are {provider.canReceiveWebhooks ? "verifiable" : "not verifiable"} —
-              {" "}
-              {provider.canReceiveWebhooks
-                ? "the signing secret is set, so subscription updates from the provider will be applied."
-                : "LEMON_SQUEEZY_WEBHOOK_SECRET is unset, so any webhook delivery is rejected and plans never change on payment."}
+              {provider.canReceiveWebhooks ? t.pages.billing.webhooksReady : t.pages.billing.webhooksUnavailable}
             </p>
           </CardContent>
         </Card>

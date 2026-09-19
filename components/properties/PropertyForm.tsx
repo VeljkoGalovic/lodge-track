@@ -19,11 +19,14 @@ interface PropertyFormProps {
     address: string
     icalUrl: string | null
     currency: string | null
+    /** Current number of units, prefilling the bed-count field on edit. */
+    bedCount?: number
   }
 }
 
 export function PropertyForm({ property }: PropertyFormProps) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
+  const currencies = new Intl.DisplayNames(locale === "sr" ? "sr-Latn-RS" : "en-US", { type: "currency" })
   const action = property ? updateProperty : createProperty
   const [state, formAction] = useActionState(action, EMPTY_ACTION_STATE)
   useActionRedirect(state)
@@ -42,7 +45,7 @@ export function PropertyForm({ property }: PropertyFormProps) {
           id="name"
           name="name"
           defaultValue={property?.name ?? ""}
-          placeholder="Lakeside Cabin"
+          placeholder={t.forms.propertyPlaceholder}
           required
           maxLength={120}
         />
@@ -56,7 +59,7 @@ export function PropertyForm({ property }: PropertyFormProps) {
           id="address"
           name="address"
           defaultValue={property?.address ?? ""}
-          placeholder="12 Lake Road, Bled"
+          placeholder={t.forms.addressPlaceholder}
           required
           maxLength={300}
         />
@@ -64,19 +67,37 @@ export function PropertyForm({ property }: PropertyFormProps) {
 
       <div className="space-y-2">
         <label htmlFor="currency" className="text-sm font-medium text-muted-foreground">
-          Currency
+          {t.onboarding.currency}
         </label>
         <Select id="currency" name="currency" defaultValue={property?.currency ?? "INHERIT"}>
-          <option value="INHERIT">Inherit from organization</option>
+          <option value="INHERIT">{t.forms.inheritCurrency}</option>
           {SUPPORTED_CURRENCIES.map((option) => (
             <option key={option.code} value={option.code}>
-              {option.code} — {option.label}
+              {option.code} — {currencies.of(option.code)}
             </option>
           ))}
         </Select>
         <p className="text-xs text-subtle-foreground">
-          If this property charges guests in a different currency from the rest of your organization.
+          {t.forms.propertyCurrencyHelp}
         </p>
+      </div>
+
+      <div className="space-y-2">
+        <label htmlFor="bedCount" className="text-sm font-medium text-muted-foreground">
+          {t.forms.bedCount}
+        </label>
+        <Input
+          id="bedCount"
+          name="bedCount"
+          type="number"
+          min={1}
+          max={200}
+          step={1}
+          inputMode="numeric"
+          defaultValue={Math.max(1, property?.bedCount ?? 1)}
+          required
+        />
+        <p className="text-xs text-subtle-foreground">{t.forms.bedCountHelp}</p>
       </div>
 
       <div className="space-y-2">

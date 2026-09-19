@@ -22,7 +22,7 @@ export default async function TwoFactorPage() {
         className="inline-flex items-center gap-1 text-sm text-subtle-foreground transition-colors hover:text-foreground"
       >
         <ChevronLeft className="h-4 w-4" />
-        Settings
+        {t.pages.settings.title}
       </Link>
 
       <PageHeader
@@ -35,12 +35,12 @@ export default async function TwoFactorPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            Authenticator app
+            {t.pages.settings.authenticator}
           </CardTitle>
           <CardDescription>
             {user.twoFactorEnabled
-              ? "This account already requires a code at sign-in"
-              : "Not enabled on this account yet"}
+              ? t.pages.settings.factorAlreadyEnabled
+              : t.pages.settings.factorNotEnabled}
           </CardDescription>
         </CardHeader>
         <CardContent>

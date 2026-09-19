@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { PageHeader } from "@/components/dashboard/PageHeader"
 import { Building2, Plus } from "lucide-react"
 import { currentLocale } from "@/lib/i18n/server"
-import { getDictionary } from "@/lib/i18n/dictionaries"
+import { BOOKING_COUNT_FORMS, format, getDictionary, plural } from "@/lib/i18n/dictionaries"
 
 export default async function PropertiesPage() {
   const session = await auth()
@@ -39,7 +39,8 @@ export default async function PropertiesPage() {
 
   // The locale lives on the member row, so it is only readable once that row is
   // in hand. The dashboard layout resolves the same value for the shell.
-  const t = getDictionary(await currentLocale(user.locale))
+  const locale = await currentLocale(user.locale)
+  const t = getDictionary(locale)
 
   const org = user.organization
   const subscription = org.subscription
@@ -68,9 +69,9 @@ export default async function PropertiesPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Properties</CardTitle>
+          <CardTitle>{t.pages.properties.allProperties}</CardTitle>
           <CardDescription>
-            {properties.length} / {features.maxProperties === Infinity ? "∞" : features.maxProperties} properties used
+            {format(t.pages.properties.usedSummary, { used: properties.length, max: features.maxProperties === Infinity ? "∞" : features.maxProperties })}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -79,9 +80,9 @@ export default async function PropertiesPage() {
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-muted">
                 <Building2 className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="mt-4 text-lg font-medium text-foreground">No properties yet</h3>
+              <h3 className="mt-4 text-lg font-medium text-foreground">{t.pages.properties.empty}</h3>
               <p className="mt-2 text-sm text-subtle-foreground">
-                Get started by adding your first property
+                {t.pages.properties.emptyHelp}
               </p>
               <Button href="/dashboard/properties/new" className="mt-6">
                 <Plus className="mr-2 h-4 w-4" />
@@ -118,12 +119,12 @@ export default async function PropertiesPage() {
 
                     <div className="mt-4 flex flex-wrap items-center gap-2">
                       {occupied ? (
-                        <Badge variant="success">Occupied</Badge>
+                        <Badge variant="success">{t.pages.dashboard.recent.occupied}</Badge>
                       ) : (
-                        <Badge variant="secondary">Available</Badge>
+                        <Badge variant="secondary">{t.pages.dashboard.recent.available}</Badge>
                       )}
                       <Badge variant="outline">
-                        {bookingCount} booking{bookingCount === 1 ? "" : "s"}
+                        {plural(bookingCount, BOOKING_COUNT_FORMS[locale], locale)}
                       </Badge>
                     </div>
 
@@ -133,14 +134,14 @@ export default async function PropertiesPage() {
                         size="sm"
                         href={`/dashboard/properties/${property.id}`}
                       >
-                        View
+                        {t.common.view}
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         href={`/dashboard/properties/${property.id}/edit`}
                       >
-                        Edit
+                        {t.common.edit}
                       </Button>
                     </div>
                   </div>

@@ -70,6 +70,25 @@ export function minorUnitDigits(currency: string): number {
   return digits
 }
 
+/** Parse decimal input exactly and round half up once, within Prisma's Int range. */
+export function parseMoneyField(
+  raw: string,
+  currency: string
+): { ok: true; minorUnits: number | null } | { ok: false } {
+  if (raw === "") return { ok: true, minorUnits: null }
+  if (!isSupportedCurrency(currency) || raw.length > 80) return { ok: false }
+  if (!/^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?$/.test(raw)) return { ok: false }
+  const [whole, fraction = ""] = raw.replace(/,/g, "").split(".")
+  const digits = minorUnitDigits(currency)
+  // `BigInt(...)` rather than `10n` literals: this file compiles under the
+  // project's ES2017 target, which rejects literal BigInt syntax in `tsc`.
+  const minor = BigInt(whole) * BigInt(10) ** BigInt(digits) +
+    BigInt(fraction.slice(0, digits).padEnd(digits, "0") || "0") +
+    (Number(fraction[digits] ?? "0") >= 5 ? BigInt(1) : BigInt(0))
+  if (minor > BigInt(2147483647)) return { ok: false }
+  return { ok: true, minorUnits: Number(minor) }
+}
+
 /** Formats minor units (cents) as a currency string. */
 export function formatCurrency(minorUnits: number, currency: string): string {
   const code = normalizeCurrency(currency)

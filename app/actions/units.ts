@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
+import { serializable } from "@/lib/transaction"
 import { type ActionState, canManage, currentMembership, field } from "@/lib/authorization"
 
 const MAX_NAME_LENGTH = 60
@@ -128,9 +129,10 @@ export async function deleteUnit(
 
   const id = field(formData, "id")
 
-  const unit = await prisma.propertyUnit.findFirst({
-    where: { id, orgId: membership.organization.id },
-    select: { id: true, name: true, propertyId: true },
+  const result = await serializable(async (tx): Promise<ActionState & { propertyId?: string }> => {
+    const unit = await tx.propertyUnit.findFirst({
+      where: { id, orgId: membership.organization.id },
+      select: { id: true, name: true, propertyId: true },
   })
   if (!unit) return { error: "That unit no longer exists." }
 
@@ -141,7 +143,7 @@ export async function deleteUnit(
    * happen as a side effect of removing a room. The count is reported so the
    * person knows what stopped them.
    */
-  const bookings = await prisma.booking.count({
+  const bookings = await tx.booking.count({
     where: {
       unitId: unit.id,
       property: { orgId: membership.organization.id },
@@ -154,11 +156,13 @@ export async function deleteUnit(
     }
   }
 
-  const { count } = await prisma.propertyUnit.deleteMany({
+  const { count } = await tx.propertyUnit.deleteMany({
     where: { id: unit.id, orgId: membership.organization.id },
   })
   if (count === 0) return { error: "That unit no longer exists." }
 
-  revalidateProperty(unit.propertyId)
-  return { success: `${unit.name} removed.` }
+    return { success: `${unit.name} removed.`, propertyId: unit.propertyId }
+  })
+  if (result.success && result.propertyId) revalidateProperty(result.propertyId)
+  return { error: result.error, success: result.success }
 }

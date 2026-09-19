@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
+import { createHash } from "node:crypto"
+import { Prisma } from "@prisma/client"
+import { serializable } from "@/lib/transaction"
 import {
   statusForProviderStatus,
   tierForVariantId,
@@ -33,37 +35,33 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid json" }, { status: 400 })
   }
 
-  const eventName = payload.meta?.event_name
-  const eventId = request.headers.get("x-event-id") ?? payload.data?.id
-  if (!eventName || !eventId) {
-    return NextResponse.json({ error: "missing event identity" }, { status: 400 })
+  if (!validPayload(payload)) {
+    return NextResponse.json({ error: "invalid payload" }, { status: 400 })
   }
-
-  // Lemon Squeezy retries until it sees a 2xx, so the same event can arrive more
-  // than once. The id is the primary key of WebhookEvent, which makes this
-  // check-and-insert atomic: a duplicate loses the race and is acknowledged
-  // without being applied twice.
-  //
-  // Recorded before the work rather than after, so a handler that crashes
-  // half-way is not retried into a partial second application. The trade is that
-  // a genuinely failed update is not retried either, which is why the log line
-  // below exists.
+  const eventName = payload.meta!.event_name!
+  // Resource IDs identify subscriptions, not deliveries. Only the body is
+  // signed; an unsigned header must not control deduplication. Identical retries
+  // hash alike, while lifecycle updates on the same subscription remain distinct.
+  const eventId = `lemonsqueezy:${createHash("sha256").update(rawBody).digest("hex")}`
   try {
-    await prisma.webhookEvent.create({ data: { id: eventId, provider: "lemonsqueezy", type: eventName } })
-  } catch {
-    return NextResponse.json({ received: true, duplicate: true })
-  }
-
-  try {
-    await applyEvent(eventName, payload)
+    await serializable(async (tx) => {
+      try {
+        await tx.webhookEvent.create({ data: { id: eventId, provider: "lemonsqueezy", type: eventName } })
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+          throw new DuplicateDelivery()
+        }
+        throw error
+      }
+      // Both writes commit together. A failed application rolls back the ledger,
+      // so the provider's retry can apply the event rather than lose it forever.
+      await applyEvent(tx, eventName, payload)
+    })
   } catch (error) {
-    // Still a 2xx: the event is recorded, so a retry would be rejected as a
-    // duplicate and the failure would be invisible either way. The log is the
-    // honest record of it.
+    if (error instanceof DuplicateDelivery) return NextResponse.json({ received: true, duplicate: true })
     console.error("[billing] failed to apply webhook", eventId, eventName, error)
-    return NextResponse.json({ received: true, applied: false })
+    return NextResponse.json({ received: false }, { status: 503 })
   }
-
   return NextResponse.json({ received: true, applied: true })
 }
 
@@ -72,7 +70,26 @@ export async function POST(request: Request) {
  * and the rest are recorded and acknowledged so they are not retried — but they
  * do not touch a plan.
  */
-async function applyEvent(eventName: string, payload: WebhookPayload): Promise<void> {
+class DuplicateDelivery extends Error {}
+
+function validPayload(value: unknown): value is WebhookPayload {
+  if (!value || typeof value !== "object") return false
+  const { meta, data } = value as WebhookPayload
+  if (typeof meta?.event_name !== "string" || !meta.event_name ||
+      typeof data?.id !== "string" || !data.id || typeof data.type !== "string") return false
+  if (meta.custom_data?.org_id != null && typeof meta.custom_data.org_id !== "string") return false
+  const attrs = data.attributes
+  if (!attrs || typeof attrs !== "object" || Array.isArray(attrs)) return false
+  for (const key of ["status", "ends_at", "renews_at"] as const) {
+    if (attrs[key] != null && typeof attrs[key] !== "string") return false
+  }
+  for (const key of ["subscription_id", "variant_id"] as const) {
+    if (attrs[key] != null && (!Number.isSafeInteger(attrs[key]) || attrs[key]! <= 0)) return false
+  }
+  return [attrs.ends_at, attrs.renews_at].every(date => date == null || Number.isFinite(Date.parse(date)))
+}
+
+async function applyEvent(tx: Prisma.TransactionClient, eventName: string, payload: WebhookPayload): Promise<void> {
   const data = payload.data
   if (!data || !eventName.startsWith("subscription_")) return
 
@@ -97,7 +114,7 @@ async function applyEvent(eventName: string, payload: WebhookPayload): Promise<v
   const periodEnd = attributes.ends_at ?? attributes.renews_at
   const tier = tierForVariantId(attributes.variant_id ? String(attributes.variant_id) : null)
 
-  const subscription = await findSubscription(orgId, providerSubscriptionId)
+  const subscription = await findSubscription(tx, orgId, providerSubscriptionId)
 
   // A subscription event for an organization this deployment does not know
   // about cannot be applied, and inventing a tenant from a webhook would be
@@ -107,7 +124,7 @@ async function applyEvent(eventName: string, payload: WebhookPayload): Promise<v
     return
   }
 
-  await prisma.subscription.update({
+  await tx.subscription.update({
     where: { id: subscription.id },
     data: {
       status,
@@ -121,9 +138,9 @@ async function applyEvent(eventName: string, payload: WebhookPayload): Promise<v
 }
 
 /** The subscription this event belongs to, matched by organization before provider id. */
-async function findSubscription(orgId: string | undefined, providerSubscriptionId: string) {
+async function findSubscription(tx: Prisma.TransactionClient, orgId: string | undefined, providerSubscriptionId: string) {
   if (orgId) {
-    const byOrg = await prisma.subscription.findUnique({
+    const byOrg = await tx.subscription.findUnique({
       where: { orgId },
       select: { id: true },
     })
@@ -132,7 +149,7 @@ async function findSubscription(orgId: string | undefined, providerSubscriptionI
 
   // Second chance for an event that predates the org id being carried through
   // checkout — the provider id was still stored on the first successful event.
-  return prisma.subscription.findFirst({
+  return tx.subscription.findFirst({
     where: { billingSubscriptionId: providerSubscriptionId },
     select: { id: true },
   })
