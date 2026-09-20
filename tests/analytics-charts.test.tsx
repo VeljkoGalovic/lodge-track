@@ -13,7 +13,7 @@
  *      value, so series values cannot silently decouple from what is drawn.
  */
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { cleanup, render, screen } from "@testing-library/react"
+import { cleanup, fireEvent, render, screen } from "@testing-library/react"
 import "@testing-library/jest-dom/vitest"
 import { AnalyticsSection } from "@/components/dashboard/AnalyticsSection"
 import { getDictionary } from "@/lib/i18n/dictionaries"
@@ -83,10 +83,12 @@ describe("AnalyticsSection chart rendering with backend data", () => {
     render(<AnalyticsSection hasAccess currency="USD" range="6" data={{ revenue, occupancy, expenses }} />)
 
     const region = chartRegion(t.pages.analytics.monthlyRevenue)
-    const labels = [...region.querySelectorAll("span")].map((span) => span.textContent)
+    // Month labels are in the bars area (last flex-1 child), not the Y-axis
+    const barsArea = region.querySelector(".flex-1")
+    const labels = [...barsArea!.querySelectorAll("span")].map((span) => span.textContent)
     expect(labels).toEqual(revenue.map((point) => point.month))
 
-    const bars = [...region.querySelectorAll<HTMLElement>(".rounded-t")]
+    const bars = [...barsArea!.querySelectorAll<HTMLElement>(".rounded-t")]
     expect(bars).toHaveLength(revenue.length)
 
     const peak = Math.max(...revenue.map((point) => point.value))
@@ -115,6 +117,95 @@ describe("AnalyticsSection chart rendering with backend data", () => {
     expect(screen.getByText("+18.2% vs last month")).toBeInTheDocument()
     // Expenses went 26000 -> 20800: -20%.
     expect(screen.getByText("-20% vs last month")).toBeInTheDocument()
+  })
+
+  it("styles a falling expense series with the success colour, not the danger one", () => {
+    render(<AnalyticsSection hasAccess currency="USD" range="6" data={{ revenue, occupancy, expenses }} />)
+
+    // Expenses fell 26000 -> 20800 (-20%) — that is good, so the trend block
+    // carries text-success. Revenue/occupancy rises carry it too; the point
+    // here is the direction-flip for costs.
+    const expenseTrend = screen.getByText("-20% vs last month").closest("div")!
+    expect(expenseTrend.className).toContain("text-success")
+    expect(expenseTrend.className).not.toContain("text-destructive")
+
+    const revenueTrend = screen.getByText("+16.7% vs last month").closest("div")!
+    expect(revenueTrend.className).toContain("text-success")
+  })
+
+  it("styles a rising expense series with the danger colour, since higher costs are bad", () => {
+    const risingExpenses = expenses.map((point, index) =>
+      index === expenses.length - 1 ? { ...point, value: 31_200 } : point
+    )
+    render(
+      <AnalyticsSection
+        hasAccess
+        currency="USD"
+        range="6"
+        data={{ revenue, occupancy, expenses: risingExpenses }}
+      />
+    )
+
+    // 26000 -> 31200: +20%. For expenses that is the bad direction.
+    const expenseTrend = screen.getByText("+20% vs last month").closest("div")!
+    expect(expenseTrend.className).toContain("text-destructive")
+  })
+
+  it("paints expense bars with the amber warning token, distinct from teal revenue", () => {
+    render(<AnalyticsSection hasAccess currency="USD" range="6" data={{ revenue, occupancy, expenses }} />)
+
+    const expenseBars = [...chartRegion(t.pages.analytics.expensesTitle).querySelectorAll<HTMLElement>(".rounded-t")]
+    expect(expenseBars.length).toBeGreaterThan(0)
+    for (const bar of expenseBars) {
+      expect(bar.className).toContain("from-warning")
+    }
+
+    const revenueBars = [...chartRegion(t.pages.analytics.monthlyRevenue).querySelectorAll<HTMLElement>(".rounded-t")]
+    for (const bar of revenueBars) {
+      expect(bar.className).toContain("from-primary")
+      expect(bar.className).not.toContain("from-warning")
+    }
+  })
+
+  it("draws grid lines behind the bars for at-a-glance value gauging", () => {
+    const { container } = render(
+      <AnalyticsSection hasAccess currency="USD" range="6" data={{ revenue, occupancy, expenses }} />
+    )
+
+    // The new grid lines are border-t elements on absolute positioned divs
+    // inside the bars area, one per chart (3 charts = 3 sets of grid lines)
+    // Each chart has 3 interior grid lines (at 25%, 50%, 75%)
+    const gridLines = [...container.querySelectorAll('[style*="bottom: 25%"], [style*="bottom: 50%"], [style*="bottom: 75%"]')]
+    // 3 charts × 3 interior grid lines = 9
+    expect(gridLines.length).toBeGreaterThanOrEqual(3)
+  })
+
+  it("pins the exact value under a bar when clicked, and unpins on second click", () => {
+    render(<AnalyticsSection hasAccess currency="USD" range="6" data={{ revenue, occupancy, expenses }} />)
+
+    const may = screen.getByRole("button", { name: "May USD 1805.00" })
+    expect(screen.queryByRole("status")).not.toBeInTheDocument()
+
+    fireEvent.click(may)
+    expect(screen.getByRole("status")).toHaveTextContent("USD 1805.00")
+
+    fireEvent.click(may)
+    expect(screen.queryByRole("status")).not.toBeInTheDocument()
+  })
+
+  it("opens the value tooltip with Enter, keeping bars keyboard-operable", () => {
+    const { container } = render(
+      <AnalyticsSection hasAccess currency="USD" range="6" data={{ revenue, occupancy, expenses }} />
+    )
+
+    const junBar = screen.getByRole("button", { name: "Jun USD 950.00" })
+    junBar.focus()
+    fireEvent.keyDown(junBar, { key: "Enter" })
+    expect(screen.getByRole("status")).toHaveTextContent("USD 950.00")
+
+    fireEvent.keyDown(junBar, { key: " " })
+    expect(screen.queryByRole("status")).not.toBeInTheDocument()
+    expect(container).toBeDefined()
   })
 
   it("still shows the empty placeholder when there is genuinely nothing to draw", () => {

@@ -8,7 +8,7 @@ import { AnalyticsSection } from "@/components/dashboard/AnalyticsSection"
 import { PageHeader } from "@/components/dashboard/PageHeader"
 import { ForecastCard } from "@/components/dashboard/AnalyticsSection"
 import { monthlySeries, expenseSeries } from "@/lib/dashboard-metrics"
-import { projectSeries } from "@/lib/metrics-display"
+import { projectSeries, projectSeriesWithMeta } from "@/lib/metrics-display"
 import { Lock, DollarSign, Home, TrendingUp, ArrowUpRight } from "lucide-react"
 import { currentLocale } from "@/lib/i18n/server"
 import { getDictionary } from "@/lib/i18n/dictionaries"
@@ -154,6 +154,33 @@ export default async function AnalyticsPage({
     locale
   )
 
+  // Get full history for 24+ month detection (use 24 months regardless of selected range)
+  const fullHistorySeries = monthlySeries(org.properties, new Date(), 24, org.currency, rates, locale)
+  const fullHistoryExpenses = expenseSeries(
+    org.properties.flatMap((property) =>
+      property.expenses.map((expense) => ({
+        date: expense.date,
+        amount: expense.amount,
+        currency: property.currency,
+      }))
+    ),
+    new Date(),
+    24,
+    org.currency,
+    rates,
+    locale
+  )
+
+  const revenueProjection = showForecast
+    ? projectSeriesWithMeta(series.revenue, { referenceDate: new Date(), locale, fullHistory: fullHistorySeries.revenue })
+    : undefined
+  const occupancyProjection = showForecast
+    ? projectSeriesWithMeta(series.occupancy, { referenceDate: new Date(), locale, fullHistory: fullHistorySeries.occupancy })
+    : undefined
+  const expensesProjection = showForecast && expenses.length > 0
+    ? projectSeriesWithMeta(expenses, { referenceDate: new Date(), locale, allowNegative: true, fullHistory: fullHistoryExpenses })
+    : undefined
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -180,6 +207,7 @@ export default async function AnalyticsPage({
         hasAccess
         currency={org.currency}
         range={range}
+        showForecast={showForecast}
         data={{ ...series, expenses }}
       />
 
@@ -187,9 +215,14 @@ export default async function AnalyticsPage({
         showForecast={showForecast}
         currency={org.currency}
         revenue={series.revenue}
-        revenueProjection={showForecast ? projectSeries(series.revenue) : undefined}
+        revenueProjection={revenueProjection?.projections}
+        revenueMetadata={revenueProjection?.metadata}
         occupancy={series.occupancy}
-        occupancyProjection={showForecast ? projectSeries(series.occupancy) : undefined}
+        occupancyProjection={occupancyProjection?.projections}
+        occupancyMetadata={occupancyProjection?.metadata}
+        expenses={expenses}
+        expensesProjection={expensesProjection?.projections}
+        expensesMetadata={expensesProjection?.metadata}
       />
     </div>
   )

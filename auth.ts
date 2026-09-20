@@ -36,6 +36,10 @@ class SecondFactorInvalid extends CredentialsSignin {
 class SecondFactorUnavailable extends CredentialsSignin {
   code = "second_factor_unavailable"
 }
+/** Email not verified - user needs to verify email first. */
+class EmailNotVerified extends CredentialsSignin {
+  code = "email_not_verified"
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -61,6 +65,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
 
         if (!(await bcrypt.compare(password, user.passwordHash))) return null
+
+        // Check if email is verified
+        if (!user.emailVerified) {
+          throw new EmailNotVerified()
+        }
 
         if (user.twoFactorEnabled) {
           const secret = user.twoFactorSecret ? decryptSecret(user.twoFactorSecret) : null

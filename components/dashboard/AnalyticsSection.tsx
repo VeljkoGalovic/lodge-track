@@ -7,10 +7,11 @@ import { clsx } from "clsx"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { percentChange, type ChartPoint } from "@/lib/metrics-display"
+import { percentChange, type ChartPoint, type ProjectedPoint, type ForecastMetadata, projectSeries, projectSeriesWithMeta } from "@/lib/metrics-display"
 import { useI18n } from "@/components/i18n/LocaleProvider"
 import { format } from "@/lib/i18n/dictionaries"
 import { formatCurrency } from "@/lib/currency"
+import { monthWindow } from "@/lib/dashboard-metrics"
 
 type RangeKey = "3" | "6" | "12"
 
@@ -26,6 +27,8 @@ interface AnalyticsSectionProps {
    * overview in place instead of navigating away.
    */
   rangeBasePath?: string
+  /** Whether projections are currently shown, to preserve in range links. */
+  showForecast?: boolean
   data?: {
     /** Revenue per month, in cents. */
     revenue: ChartPoint[]
@@ -40,9 +43,11 @@ interface AnalyticsSectionProps {
 function RangeSelector({
   current,
   basePath = "/dashboard/analytics",
+  showForecast = false,
 }: {
   current: RangeKey
   basePath?: string
+  showForecast?: boolean
 }) {
   const { t } = useI18n()
   const options: Array<{ key: RangeKey; label: string }> = [
@@ -56,7 +61,7 @@ function RangeSelector({
       {options.map(({ key, label }) => (
         <Link
           key={key}
-          href={`${basePath}?range=${key}`}
+          href={`${basePath}?range=${key}${showForecast ? "&forecast=on" : ""}`}
           aria-current={key === current ? "true" : undefined}
           className={clsx(
             "rounded-lg px-3 py-1.5 text-sm transition-colors",
@@ -73,6 +78,42 @@ function RangeSelector({
   )
 }
 
+/** Bar fill per accent. Warning is the theme's amber token, so it follows dark mode. */
+function barFill(accent: "teal" | "purple" | "amber"): string {
+  if (accent === "teal") return "bg-gradient-to-t from-primary to-primary/40"
+  if (accent === "purple") return "bg-gradient-to-t from-brand-purple to-brand-purple/40"
+  return "bg-gradient-to-t from-warning to-warning/30"
+}
+
+/** Outlined projection bars draw the accent as a dashed border instead of a fill. */
+function projectionBorder(accent: "teal" | "purple" | "amber"): string {
+  if (accent === "teal") return "border-primary/70"
+  if (accent === "purple") return "border-brand-purple/70"
+  return "border-warning/70"
+}
+
+/** Chart height constant — used for bars, grid, axis, and empty state. */
+const CHART_HEIGHT = 160
+/** Responsive chart height: 160px base, 200px on md, 240px on lg. */
+const chartHeightClass = `h-[${CHART_HEIGHT}px] md:h-[200px] lg:h-[240px]`
+
+interface ChartPanelProps {
+  title: string
+  badge: string
+  series: ChartPoint[]
+  accent: "teal" | "purple" | "amber"
+  /** Fixed ceiling for the bars; omit to scale against the series peak. */
+  ceiling?: number
+  formatValue: (value: number) => string
+  /** Outlined continuation bars — the projection reads as distinct from history. */
+  projected?: ProjectedPoint[]
+  /**
+   * Expense-style series where a decrease is the good outcome: the trend line
+   * flips to the success colour on a negative change instead of the danger one.
+   */
+  goodWhenDown?: boolean
+}
+
 function ChartPanel({
   title,
   badge,
@@ -80,18 +121,9 @@ function ChartPanel({
   accent,
   ceiling,
   formatValue,
-  /** Outlined continuation bars — the projection reads as distinct from history. */
   projected,
-}: {
-  title: string
-  badge: string
-  series: ChartPoint[]
-  accent: "teal" | "purple"
-  /** Fixed ceiling for the bars; omit to scale against the series peak. */
-  ceiling?: number
-  formatValue: (value: number) => string
-  projected?: ChartPoint[]
-}) {
+  goodWhenDown = false,
+}: ChartPanelProps) {
   const { t, locale } = useI18n()
   const all = projected ? [...series, ...projected] : series
   const latest = series.at(-1)?.value ?? 0
@@ -112,6 +144,19 @@ function ChartPanel({
 
   const formatFor = (point: ChartPoint) => formatValue(point.value)
 
+  /** The month whose exact value is pinned open; null when nothing is. */
+  const [activeMonth, setActiveMonth] = React.useState<string | null>(null)
+
+  /** Direction-aware trend colour: costs falling is a win, revenue falling is not. */
+  const trendGood = goodWhenDown ? (change ?? 0) < 0 : (change ?? 0) >= 0
+
+  /** Y-axis steps: 0, 25%, 50%, 75%, 100% of scale (5 labels, 4 intervals). */
+  const axisSteps = React.useMemo(() => {
+    if (scale <= 0) return [0]
+    const steps = 4
+    return Array.from({ length: steps + 1 }, (_, i) => (scale * i) / steps)
+  }, [scale])
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
@@ -120,57 +165,96 @@ function ChartPanel({
       </div>
 
       {hasData ? (
-        <div
-          className="flex h-48 items-end justify-around gap-2 px-2"
-          role="img"
-          aria-label={`${title}: ${all
-            .map((point) => `${point.month} ${formatFor(point)}`)
-            .join(", ")}`}
-        >
-          {all.map((point) => {
-            const isProjected = projected?.includes(point) ?? false
-            return (
-              /**
-               * `self-stretch` overrides the row's `items-end` so the column
-               * spans the full chart height. Without it the column is
-               * content-sized, and the bar's percentage height below has no
-               * definite parent to resolve against — every bar collapses to
-               * 0px, leaving month labels and the trend line on a blank chart.
-               */
-              <div key={point.month} className="flex flex-1 flex-col items-center self-stretch">
-                {/*
-                 * The bar area, not the label-sized column, is what the bar's
-                 * `height: N%` measures against. As a growing flex item inside
-                 * the stretched column it has a definite height, so the
-                 * percentage finally lands.
-                 */}
-                <div className="flex w-full flex-1 items-end">
-                  <div
-                    title={`${point.month}: ${formatFor(point)}`}
-                    className={clsx(
-                      "w-full rounded-t transition-all duration-500",
-                      isProjected
-                        ? // Outlined, not filled: the projection is a sketch of
-                          // the future, drawn in the accent but not committed.
-                          "border-2 border-dashed bg-transparent"
-                        : accent === "teal"
-                          ? "bg-gradient-to-t from-primary to-primary/40"
-                          : "bg-gradient-to-t from-brand-purple to-brand-purple/40",
-                      isProjected && accent === "teal" ? "border-primary/70" : undefined,
-                      isProjected && accent === "purple" ? "border-brand-purple/70" : undefined
-                    )}
-                    style={{ height: `${scale > 0 ? Math.max(4, (point.value / scale) * 100) : 0}%` }}
-                  />
+        <div className="relative">
+          {/* Chart area: Y-axis labels + grid lines on left, bars on right */}
+          <div className="flex gap-2" role="img" aria-label={`${title}: ${all.map((point) => `${point.month} ${formatFor(point)}`).join(", ")}`}>
+            {/* Y-axis column: labels on far left, grid lines as horizontal rules */}
+            <div className="w-12 flex-shrink-0 flex flex-col justify-between" style={{ height: CHART_HEIGHT }} aria-hidden="true">
+              {axisSteps.slice().reverse().map((step, index) => (
+                <div key={index} className="relative h-1/4 border-t border-border/40">
+                  <span className="absolute -right-2 top-0 text-[10px] text-subtle-foreground -translate-y-1/2 text-right w-10 pr-1">
+                    {formatFor({ month: "", value: step } as ChartPoint)}
+                  </span>
                 </div>
-                <span className={clsx("mt-2 text-xs", isProjected && "text-subtle-foreground/70")}>
-                  {point.month}
-                </span>
+              ))}
+            </div>
+
+            {/* Bars area */}
+            <div className="flex-1 relative" style={{ height: CHART_HEIGHT }}>
+              {/* Grid lines matching axis steps */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0"
+                style={{ height: CHART_HEIGHT }}
+              >
+                {axisSteps.slice(1, -1).map((step, index) => (
+                  <div
+                    key={index}
+                    className="absolute left-0 right-0 border-t border-border/40"
+                    style={{ bottom: `${(step / scale) * 100}%` }}
+                  />
+                ))}
               </div>
-            )
-          })}
+
+              {/* Bars */}
+              <div
+                className="relative flex items-end justify-around gap-2 px-2"
+                style={{ height: CHART_HEIGHT }}
+              >
+                {all.map((point) => {
+                  const isProjected = projected?.includes(point) ?? false
+                  const isActive = activeMonth === point.month
+                  return (
+                    <div key={point.month} className="flex flex-1 flex-col items-center self-stretch">
+                      <div className="flex w-full flex-1 items-end">
+                        <div
+                          title={`${point.month}: ${formatFor(point)}`}
+                          className={clsx(
+                            "w-full rounded-t transition-all duration-500",
+                            isProjected
+                              ? "border-2 border-dashed bg-transparent"
+                              : barFill(accent),
+                            isProjected ? projectionBorder(accent) : undefined,
+                            "cursor-pointer hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                          )}
+                          style={{
+                            height: `${scale > 0 ? Math.max(4, (point.value / scale) * 100) : 0}%`,
+                          }}
+                          role="button"
+                          tabIndex={0}
+                          aria-pressed={isActive}
+                          aria-label={`${point.month} ${formatFor(point)}`}
+                          onClick={() => setActiveMonth(isActive ? null : point.month)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault()
+                              setActiveMonth(isActive ? null : point.month)
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className="relative">
+                        <span className={clsx("mt-2 text-xs", isProjected && "text-subtle-foreground/70")}>
+                          {point.month}
+                        </span>
+                        {isActive ? (
+                          <span
+                            role="status"
+                            className="absolute left-1/2 top-full z-10 mt-1 -translate-x-1/2 whitespace-nowrap rounded-md border border-border bg-popover px-2 py-0.5 text-xs font-medium text-foreground shadow-sm"
+                          >
+                            {formatFor(point)}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
         </div>
       ) : (
-        <div className="flex h-48 items-center justify-center rounded-xl border border-dashed border-border text-sm text-subtle-foreground">
+        <div className={`flex items-center justify-center rounded-xl border border-dashed border-border text-sm text-subtle-foreground ${chartHeightClass}`}>
           {t.pages.analytics.noData}
         </div>
       )}
@@ -183,7 +267,7 @@ function ChartPanel({
         <div
           className={clsx(
             "flex items-center gap-2 text-sm",
-            change >= 0 ? "text-primary" : "text-destructive"
+            trendGood ? "text-success" : "text-destructive"
           )}
         >
           <TrendingUp className="h-4 w-4" />
@@ -201,6 +285,7 @@ export function AnalyticsSection({
   currency,
   range = "6",
   rangeBasePath,
+  showForecast = false,
   data,
 }: AnalyticsSectionProps) {
   const { t } = useI18n()
@@ -246,10 +331,10 @@ export function AnalyticsSection({
           </CardTitle>
           <CardDescription>{t.pages.analytics.chartDescription}</CardDescription>
         </div>
-        <RangeSelector current={range} basePath={rangeBasePath} />
+        <RangeSelector current={range} basePath={rangeBasePath} showForecast={showForecast} />
       </CardHeader>
       <CardContent>
-        <div className="grid gap-8 md:grid-cols-2">
+        <div className="space-y-6">
           <ChartPanel
             title={t.pages.analytics.monthlyRevenue}
             badge={rangeLabel}
@@ -272,8 +357,9 @@ export function AnalyticsSection({
               title={t.pages.analytics.expensesTitle}
               badge={rangeLabel}
               series={data.expenses}
-              accent="teal"
+              accent="amber"
               formatValue={(value) => formatCurrency(value, currency)}
+              goodWhenDown
             />
           ) : null}
         </div>
@@ -293,17 +379,28 @@ export function ForecastCard({
   currency,
   revenue,
   revenueProjection,
+  revenueMetadata,
   occupancy,
   occupancyProjection,
+  occupancyMetadata,
+  expenses,
+  expensesProjection,
+  expensesMetadata,
 }: {
   showForecast: boolean
   currency: string
   /** Recorded history, drawn solid. */
   revenue: ChartPoint[]
-  /** Mean-trend continuation, drawn outlined. */
-  revenueProjection?: ChartPoint[]
+  /** Trend-slope continuation, drawn outlined. */
+  revenueProjection?: ProjectedPoint[]
+  /** Metadata about the forecasting method used for revenue. */
+  revenueMetadata?: ForecastMetadata
   occupancy: ChartPoint[]
-  occupancyProjection?: ChartPoint[]
+  occupancyProjection?: ProjectedPoint[]
+  occupancyMetadata?: ForecastMetadata
+  expenses: ChartPoint[]
+  expensesProjection?: ProjectedPoint[]
+  expensesMetadata?: ForecastMetadata
 }) {
   const { t } = useI18n()
 
@@ -324,17 +421,48 @@ export function ForecastCard({
     )
   }
 
+  // Determine overall forecast method (use revenue as primary indicator)
+  const forecastMethod = revenueMetadata?.method ?? "seasonal"
+  const forecastConfidence = revenueMetadata?.confidence ?? 0.4
+  const historyMonths = revenueMetadata?.historyMonths ?? 0
+
+  const methodLabel = forecastMethod === "learned"
+    ? t.pages.analytics.forecastMethodLearned
+    : t.pages.analytics.forecastMethodSeasonal
+
+  const methodDescription = forecastMethod === "learned"
+    ? t.pages.analytics.forecastMethodLearnedDesc
+    : t.pages.analytics.forecastMethodSeasonalDesc
+
   return (
-    <Card>
+    <Card className="border-border/50 bg-muted/30">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-brand-purple" />
-          {t.pages.analytics.forecasting}
-        </CardTitle>
-        <CardDescription>{t.pages.analytics.forecastingHelp}</CardDescription>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-brand-purple" />
+            <span>{t.pages.analytics.forecasting}</span>
+          </div>
+          {/* Forecast method indicator */}
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-xs">
+              {methodLabel}
+            </Badge>
+            <span className="text-xs text-subtle-foreground hidden sm:inline">
+              ({Math.round(forecastConfidence * 100)}% confidence)
+            </span>
+          </div>
+        </div>
+        <CardDescription className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <span>{methodDescription}</span>
+          {historyMonths > 0 && (
+            <span className="text-xs text-subtle-foreground">
+              {t.pages.analytics.forecastBasedOn} {historyMonths} {t.pages.analytics.forecastMonthsOfData}
+            </span>
+          )}
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-8 md:grid-cols-2">
+        <div className="space-y-6">
           <ChartPanel
             title={t.pages.analytics.monthlyRevenue}
             badge={t.pages.analytics.projected}
@@ -352,6 +480,17 @@ export function ForecastCard({
             ceiling={100}
             formatValue={(value) => `${value}%`}
           />
+          {expenses.length > 0 ? (
+            <ChartPanel
+              title={t.pages.analytics.expensesTitle}
+              badge={t.pages.analytics.projected}
+              series={expenses}
+              projected={expensesProjection}
+              accent="amber"
+              formatValue={(value) => formatCurrency(value, currency)}
+              goodWhenDown
+            />
+          ) : null}
         </div>
         <p className="mt-6 border-t border-border pt-4 text-xs text-subtle-foreground">
           {t.pages.analytics.forecastDisclaimer}

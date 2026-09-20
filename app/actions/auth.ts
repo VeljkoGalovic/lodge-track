@@ -1,16 +1,23 @@
 // app/actions/auth.ts
 "use server"
 
-import { prisma } from "@/lib/prisma" // Use your shared prisma client instance
+import { prisma } from "@/lib/prisma"
 import bcrypt from "bcrypt"
+import { createVerificationToken, verifyAndConsumeToken, invalidateUserTokens } from "@/lib/tokens"
+import { sendVerificationEmail, sendPasswordResetEmail, buildResetLink } from "@/lib/email"
 
 export async function registerUser(prevState: { error?: string; success?: string }, formData: FormData): Promise<{ error?: string; success?: string; redirect?: string }> {
   const email = formData.get("email") as string
   const password = formData.get("password") as string
   const name = formData.get("name") as string
+  const termsAccepted = formData.get("termsAccepted") === "on"
 
   if (!email || !password) {
     return { error: "Email and password are required." }
+  }
+
+  if (!termsAccepted) {
+    return { error: "You must accept the Terms of Service and Privacy Policy to register." }
   }
 
   const existingUser = await prisma.user.findUnique({
@@ -40,6 +47,7 @@ export async function registerUser(prevState: { error?: string; success?: string
         passwordHash,
         role: "OWNER",
         orgId: organization.id,
+        termsAcceptedAt: new Date(),
       },
     })
 
@@ -53,5 +61,119 @@ export async function registerUser(prevState: { error?: string; success?: string
     })
   })
 
-  return { success: "Account created successfully!", redirect: "/dashboard" }
+  // Create verification token and send email (outside transaction to avoid long-running transaction)
+  try {
+    const { token } = await createVerificationToken(email, "email_verification", 24)
+    await sendVerificationEmail(email, token, "en") // TODO: Get locale from request
+  } catch (error) {
+    console.error("Failed to send verification email:", error)
+    // Don't fail registration if email fails - user can request resend later
+  }
+
+  return { success: "Account created! Please check your email to verify your address.", redirect: "/signin?verify=pending" }
+}
+
+/**
+ * Send password reset email - creates a reset token and sends it via Resend
+ */
+export async function sendPasswordReset(prevState: { error?: string; success?: string }, formData: FormData): Promise<{ error?: string; success?: string; redirect?: string }> {
+  const email = formData.get("email") as string
+
+  if (!email) {
+    return { error: "Email is required." }
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email }
+  })
+
+  // Always return success to prevent email enumeration
+  // But only actually send email if user exists
+  if (user) {
+    try {
+      // Invalidate any existing unused reset tokens for this user
+      await invalidateUserTokens(email, "password_reset")
+
+      // Create new reset token (expires in 1 hour)
+      const { token } = await createVerificationToken(email, "password_reset", 1)
+      await sendPasswordResetEmail(email, token, "en") // TODO: Get locale from request
+    } catch (error) {
+      console.error("Failed to send password reset email:", error)
+      return { error: "Failed to send reset email. Please try again." }
+    }
+  }
+
+  return { success: "If an account exists with that email, a password reset link has been sent.", redirect: "/signin?reset=sent" }
+}
+
+/**
+ * Reset password - verify token and update user's password
+ */
+export async function resetPassword(prevState: { error?: string; success?: string }, formData: FormData): Promise<{ error?: string; success?: string; redirect?: string }> {
+  const token = formData.get("token") as string
+  const password = formData.get("password") as string
+  const confirmPassword = formData.get("confirmPassword") as string
+
+  if (!token) {
+    return { error: "Invalid or missing reset token." }
+  }
+
+  if (!password || !confirmPassword) {
+    return { error: "Both password fields are required." }
+  }
+
+  if (password !== confirmPassword) {
+    return { error: "Passwords do not match." }
+  }
+
+  if (password.length < 8) {
+    return { error: "Password must be at least 8 characters." }
+  }
+
+  // Verify and consume the token
+  const email = await verifyAndConsumeToken(token, "password_reset")
+  if (!email) {
+    return { error: "Invalid or expired reset token. Please request a new one." }
+  }
+
+  // Hash new password and update user
+  const passwordHash = await bcrypt.hash(password, 10)
+
+  await prisma.user.update({
+    where: { email },
+    data: { passwordHash },
+  })
+
+  return { success: "Password has been reset successfully. You can now sign in.", redirect: "/signin?reset=success" }
+}
+
+/**
+ * Resend email verification - creates a new verification token and sends it
+ */
+export async function sendVerificationEmailAction(email: string): Promise<{ success: boolean; error?: string }> {
+  if (!email) {
+    return { success: false, error: "Email is required." }
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email }
+  })
+
+  // Always return success to prevent email enumeration
+  // But only actually send email if user exists and is not already verified
+  if (user && !user.emailVerified) {
+    try {
+      // Invalidate any existing unused verification tokens for this user
+      await invalidateUserTokens(email, "email_verification")
+
+      // Create new verification token (expires in 24 hours)
+      const { token } = await createVerificationToken(email, "email_verification", 24)
+      await sendVerificationEmail(email, token, "en") // TODO: Get locale from request
+    } catch (error) {
+      console.error("Failed to send verification email:", error)
+      return { success: false, error: "Failed to send verification email. Please try again." }
+    }
+  }
+
+  return { success: true }
 }

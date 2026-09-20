@@ -4,9 +4,9 @@ import { useState, useEffect } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ShieldCheck, ArrowLeft } from "lucide-react"
+import { ShieldCheck, ArrowLeft, Mail, AlertCircle } from "lucide-react"
 import { useI18n } from "@/components/i18n/LocaleProvider"
-import { format } from "@/lib/i18n/dictionaries"
+import { sendVerificationEmailAction } from "@/app/actions/auth"
 
 
 export function SignInForm() {
@@ -20,6 +20,12 @@ export function SignInForm() {
   const [shouldRedirect, setShouldRedirect] = useState(false)
   /** Set once the password is accepted and a code is outstanding. */
   const [needsCode, setNeedsCode] = useState(false)
+  /** Email not verified - show resend option */
+  const [emailNotVerified, setEmailNotVerified] = useState(false)
+  /** Resending verification email */
+  const [resending, setResending] = useState(false)
+  /** Resend success message */
+  const [resendSuccess, setResendSuccess] = useState("")
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -57,8 +63,14 @@ export function SignInForm() {
           setNeedsCode(false)
           setError(t.auth.twoFactorUnavailable)
           break
+        case "email_not_verified":
+          setNeedsCode(false)
+          setEmailNotVerified(true)
+          setError("")
+          break
         default:
           setNeedsCode(false)
+          setEmailNotVerified(false)
           setError(t.auth.invalidCredentials)
       }
     } catch {
@@ -68,12 +80,36 @@ export function SignInForm() {
     }
   }
 
+  const handleResendVerification = async () => {
+    if (!email) return
+    setResending(true)
+    setResendSuccess("")
+    try {
+      const result = await sendVerificationEmailAction(email)
+      if (result.success) {
+        setResendSuccess(t.auth.verificationEmailSent || "Verification email sent! Please check your inbox.")
+      } else {
+        setError(result.error || "Failed to send verification email")
+      }
+    } catch {
+      setError(t.auth.unexpected)
+    } finally {
+      setResending(false)
+    }
+  }
+
   useEffect(() => {
     if (shouldRedirect) {
       router.push("/dashboard")
       router.refresh()
     }
   }, [shouldRedirect, router])
+
+  // Clear email verification state when email changes
+  useEffect(() => {
+    setEmailNotVerified(false)
+    setResendSuccess("")
+  }, [email])
 
   return (
     <section className="dark relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 text-foreground">
@@ -97,12 +133,19 @@ export function SignInForm() {
           </div>
         )}
 
+        {resendSuccess && (
+          <div className="mb-4 p-3 rounded-xl bg-[#36bfae]/10 border border-[#36bfae]/20 text-[#36bfae] text-sm flex items-center gap-2">
+            <Mail className="h-4 w-4" />
+            {resendSuccess}
+          </div>
+        )}
+
         {needsCode ? (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex items-start gap-3 rounded-xl border border-[#36bfae]/25 bg-[#36bfae]/10 px-4 py-3">
               <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#36bfae]" />
               <p className="text-sm text-slate-300">
-                {format(t.auth.signingInAs, { email })}{" "}
+                {t.auth.signingInAs.replace("{email}", "")}{" "}
                 <span className="font-medium text-white">{email}</span>
               </p>
             </div>
@@ -148,6 +191,43 @@ export function SignInForm() {
               {t.auth.useDifferentAccount}
             </button>
           </form>
+        ) : emailNotVerified ? (
+          <div className="space-y-4">
+            <div className="flex items-start gap-3 rounded-xl border border-yellow-500/25 bg-yellow-500/10 px-4 py-3">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-yellow-400" />
+              <div>
+                <p className="text-sm text-slate-300 font-medium">
+                  {t.auth.emailNotVerifiedTitle}
+                </p>
+                <p className="text-sm text-slate-400 mt-1">
+                  {t.auth.emailNotVerifiedMessage}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={resending || !email}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-[#36bfae] to-[#ba87ff] text-[#07090E] font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {resending ? t.auth.sendingVerification : t.auth.resendVerification}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEmailNotVerified(false)
+                  setPassword("")
+                }}
+                className="flex w-full items-center justify-center gap-1.5 text-sm text-slate-400 transition-colors hover:text-white"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                {t.auth.useDifferentAccount}
+              </button>
+            </div>
+          </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -186,6 +266,11 @@ export function SignInForm() {
           {t.auth.noAccount}{" "}
           <Link href="/register" className="text-[#36bfae] hover:underline">
             {t.auth.signUp}
+          </Link>
+        </p>
+        <p className="text-sm text-slate-400 text-center mt-2">
+          <Link href="/forgot-password" className="text-[#36bfae] hover:underline">
+            {t.auth.forgotPassword || "Forgot password?"}
           </Link>
         </p>
       </div>

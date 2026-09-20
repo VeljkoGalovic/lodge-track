@@ -2,7 +2,7 @@
 
 import { useActionState } from "react"
 import { useRouter } from "next/navigation"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { registerUser } from "@/app/actions/auth"
 import Link from "next/link"
 import { useI18n } from "@/components/i18n/LocaleProvider"
@@ -12,6 +12,7 @@ export function RegisterForm() {
   const { t } = useI18n()
   const router = useRouter()
   const [state, formAction, isPending] = useActionState(registerUser, { error: "", success: "" })
+  const [termsAccepted, setTermsAccepted] = useState(false)
 
   // Handle redirect after successful registration
   useEffect(() => {
@@ -20,6 +21,8 @@ export function RegisterForm() {
       router.refresh()
     }
   }, [state?.redirect, router])
+
+  const canSubmit = termsAccepted && !isPending
 
   return (
     <section className="dark relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 text-foreground">
@@ -31,7 +34,7 @@ export function RegisterForm() {
 
       <div className="glass-card w-full max-w-md p-8 relative z-10">
         <h1 className="text-2xl font-bold text-white mb-6">{t.auth.registerTitle}</h1>
-        
+
         {state?.error && (
           <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
             {state.error}
@@ -47,36 +50,64 @@ export function RegisterForm() {
         <form action={formAction} className="space-y-4">
           <div>
             <label className="block text-sm text-slate-300 mb-1">{t.auth.nameLabel}</label>
-            <input 
-              type="text" 
-              name="name" 
-              placeholder="John Doe" 
+            <input
+              type="text"
+              name="name"
+              placeholder="John Doe"
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-[#36bfae]"
             />
           </div>
           <div>
             <label className="block text-sm text-slate-300 mb-1">{t.auth.emailLabel}</label>
-            <input 
-              type="email" 
-              name="email" 
-              required 
-              placeholder="you@example.com" 
+            <input
+              type="email"
+              name="email"
+              required
+              placeholder="you@example.com"
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-[#36bfae]"
             />
           </div>
           <div>
             <label className="block text-sm text-slate-300 mb-1">{t.auth.passwordLabel}</label>
-            <input 
-              type="password" 
-              name="password" 
-              required 
-              placeholder="••••••••" 
+            <input
+              type="password"
+              name="password"
+              required
+              placeholder="••••••••"
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-[#36bfae]"
             />
           </div>
-          <button 
-            type="submit" 
-            disabled={isPending}
+
+          {/* Terms and Privacy Policy Checkbox */}
+          <div className="space-y-2">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                name="termsAccepted"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                required
+                className="mt-1 h-4 w-4 rounded border-white/20 bg-white/5 text-primary focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
+              />
+              <span className="text-sm text-slate-300 leading-relaxed">
+                {t.auth.termsLabelPrefix}{" "}
+                <Link href="/terms" className="text-[#36bfae] hover:underline" target="_blank" rel="noopener noreferrer">
+                  {t.auth.termsLink}
+                </Link>
+                {" "}{t.auth.and}{" "}
+                <Link href="/privacy" className="text-[#36bfae] hover:underline" target="_blank" rel="noopener noreferrer">
+                  {t.auth.privacyLink}
+                </Link>
+              </span>
+            </label>
+            {!termsAccepted && (
+              <p className="text-xs text-red-400 ml-7">{t.auth.termsRequired}</p>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            disabled={!canSubmit}
             className="w-full py-3 rounded-xl bg-gradient-to-r from-[#36bfae] to-[#ba87ff] text-[#07090E] font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {isPending ? t.auth.creatingAccount : t.auth.createAccount}
