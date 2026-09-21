@@ -12,7 +12,7 @@ const features = [
 
 export function Features() {
   return (
-    <section id="features" className="relative min-h-screen flex items-center py-28 lg:py-36 overflow-hidden">
+    <section id="features" className="relative isolate min-h-screen flex items-center py-28 lg:py-36 overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 -z-20">
         <Image

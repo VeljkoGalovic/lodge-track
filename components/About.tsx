@@ -3,7 +3,7 @@ import { GlassCard } from "@/components/ui/GlassCard";
 
 export function About() {
   return (
-    <section id="about" className="relative py-24 md:py-32 overflow-hidden">
+    <section id="about" className="relative isolate py-24 md:py-32 overflow-hidden">
       <div className="absolute inset-0 -z-20">
         <Image
           src="/images/backgrounds/4th.jpg"
