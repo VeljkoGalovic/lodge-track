@@ -780,6 +780,69 @@ export const en = {
         invitationsHelp: "Send and track team invitations",
       },
     },
+
+    features: {
+      title: "Features",
+      subtitle: "Everything you need to run your rental business.",
+      sections: [
+        {
+          title: "Property Management",
+          description:
+            "Organize properties, units, and beds in one place. Support for whole-property and bed-level bookings.",
+        },
+        {
+          title: "Revenue Tracking",
+          description:
+            "Log rates per stay, track monthly revenue, and see occupancy trends at a glance.",
+        },
+        {
+          title: "Team Collaboration",
+          description:
+            "Invite managers and maintenance staff with role-based permissions. Everyone sees what they need.",
+        },
+        {
+          title: "Expense Logging",
+          description:
+            "Attach receipts, categorize costs, and keep a complete financial picture per property.",
+        },
+      ],
+    },
+
+    about: {
+      title: "About LodgeTrack",
+      subtitle: "Built by property managers, for property managers.",
+      sections: [
+        {
+          title: "Our Story",
+          description:
+            "LodgeTrack started as an internal tool for a small portfolio and grew into a platform used by rental businesses across Europe.",
+        },
+        {
+          title: "Our Mission",
+          description:
+            "To give small and medium rental operators the same caliber of software that enterprise chains use — without the complexity or cost.",
+        },
+        {
+          title: "The Team",
+          description:
+            "A solo founder with a background in hospitality tech and a passion for clean, fast software.",
+        },
+      ],
+    },
+
+    notFound: {
+      title: "Page not found",
+      subtitle: "Sorry, we couldn't find the page you're looking for.",
+      cta: "Go home",
+      back: "Go back",
+    },
+
+    error: {
+      title: "Something went wrong",
+      subtitle: "An unexpected error occurred. Our team has been notified.",
+      cta: "Try again",
+    },
+
   },
 
   invite: {
@@ -827,6 +890,32 @@ export const en = {
     modeSharedHelp:
       "Each chosen bed is held for these dates. The remaining beds stay open to other guests until none are left.",
     allBedsBlocked: "Every bed is booked for these dates",
+  },
+
+  footer: {
+    columns: {
+      product: "Product",
+      company: "Company",
+      legal: "Legal",
+    },
+    links: {
+      features: "Features",
+      calendar: "Calendar",
+      financials: "Financials",
+      integrations: "Integrations",
+      about: "About",
+      privacy: "Privacy Policy",
+      terms: "Terms of Service",
+    },
+    socials: {
+      github: "GitHub",
+      x: "X (Twitter)",
+      linkedin: "LinkedIn",
+    },
+    tagline:
+      "Cutting-edge software to manage properties, bookings, and revenue in one unified platform. Built for small to medium rental businesses.",
+    status: "All systems operational",
+    copyright: "© 2026 LodgeTrack by Veljko Galović. All rights reserved.",
   },
 }
 
@@ -1594,6 +1683,69 @@ const sr: Dictionary = {
         invitationsHelp: "Šaljite i pratite pozivnice za tim",
       },
     },
+
+    features: {
+      title: "Funkcije",
+      subtitle: "Sve što vam treba za upravljanje rent poslom.",
+      sections: [
+        {
+          title: "Upravljanje objektima",
+          description:
+            "Organizujte objekte, jedinice i ležajeve na jednom mestu. Podrška za rezervacije celog objekta i po ležajevima.",
+        },
+        {
+          title: "Praćenje prihoda",
+          description:
+            "Beležite cene po boravku, pratite mesečne prihode i gledajte trendove popunjenosti jednom pogledom.",
+        },
+        {
+          title: "Timska saradnja",
+          description:
+            "Pozovite menadžere i održavanje sa ulogama baziranim na dozvolama. Svi vide šta im je potrebno.",
+        },
+        {
+          title: "Evidencija troškova",
+          description:
+            "Prilagodite račune, kategorizujte troškove i održavajte potpunu finansijsku sliku po objektu.",
+        },
+      ],
+    },
+
+    about: {
+      title: "O LodgeTrack-u",
+      subtitle: "Napravljeno od menadžera objekata, za menadžere objekata.",
+      sections: [
+        {
+          title: "Naša priča",
+          description:
+            "LodgeTrack je počeo kao interni alat za mali portfolio i porastao u platformu koju koriste rent poslovi širom Evrope.",
+        },
+        {
+          title: "Naša misija",
+          description:
+            "Da damo malim i srednjim rent operatorima isti kvalitet softvera koji koriste veliki lanovi — bez kompleksnosti i visokih troškova.",
+        },
+        {
+          title: "Tim",
+          description:
+            "Samostalni founder sa pozadinom u hospitality tech-u i strast za čistim, brzim softverom.",
+        },
+      ],
+    },
+
+    notFound: {
+      title: "Stranica nije pronađena",
+      subtitle: "Nažalost, ne možemo da pronađemo stranicu koju tražite.",
+      cta: "Idi na početnu",
+      back: "Vrati se nazad",
+    },
+
+    error: {
+      title: "Došlo je do greške",
+      subtitle: "Pojavila se neočekivana greška. Naš tim je obavešten.",
+      cta: "Pokušaj ponovo",
+    },
+
   },
 
   invite: {
@@ -1641,6 +1793,32 @@ const sr: Dictionary = {
     modeSharedHelp:
       "Svaki izabrani ležaj se drži za ove datume. Preostali ležajevi ostaju otvoreni za druge goste dok ih sve ne nestane.",
     allBedsBlocked: "Svi ležajevi su rezervisani za ove datume",
+  },
+
+  footer: {
+    columns: {
+      product: "Proizvod",
+      company: "Kompanija",
+      legal: "Pravno",
+    },
+    links: {
+      features: "Funkcije",
+      calendar: "Kalendar",
+      financials: "Finansije",
+      integrations: "Integracije",
+      about: "O nama",
+      privacy: "Politika privatnosti",
+      terms: "Uslovi korišćenja",
+    },
+    socials: {
+      github: "GitHub",
+      x: "X (Twitter)",
+      linkedin: "LinkedIn",
+    },
+    tagline:
+      "Najmoderijniji softver za upravljanje objektima, rezervacijama i prihodom na jednom mestu. Izgrađen za male i srednje rent poslove.",
+    status: "Svi sistemi su operativni",
+    copyright: "© 2026 LodgeTrack by Veljko Galović. Sva prava zadržana.",
   },
 }
 

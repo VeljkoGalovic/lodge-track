@@ -1,5 +1,7 @@
 import Image from "next/image";
 import { Activity } from "lucide-react";
+import { currentLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 function GithubIcon({ size = 15 }: { size?: number }) {
   return (
@@ -25,32 +27,45 @@ function LinkedInIcon({ size = 15 }: { size?: number }) {
   );
 }
 
-const columns = [
-  {
-    title: "Product",
-    links: ["Features", "Calendar", "Financials", "Integrations"],
-  },
-  {
-    title: "Company",
-    links: ["About Us", "Roadmap", "Careers"],
-  },
-  {
-    title: "Resources",
-    links: ["Help Center", "Documentation", "Blog"],
-  },
-  {
-    title: "Legal",
-    links: ["Privacy Policy", "Terms of Service", "Security"],
-  },
-];
+async function getFooterData() {
+  const locale = await currentLocale();
+  const t = getDictionary(locale).footer;
 
-const socials = [
-  { label: "GitHub", href: "https://github.com", icon: GithubIcon },
-  { label: "X (Twitter)", href: "https://x.com", icon: XIcon },
-  { label: "LinkedIn", href: "https://www.linkedin.com", icon: LinkedInIcon },
-];
+  const columns = [
+    {
+      title: t.columns.product,
+      links: [
+        { label: t.links.features, href: "/#features" },
+        { label: t.links.pricing, href: "/#pricing" },
+      ],
+    },
+    {
+      title: t.columns.company,
+      links: [
+        { label: t.links.about, href: "/#about" },
+      ],
+    },
+    {
+      title: t.columns.legal,
+      links: [
+        { label: t.links.privacy, href: "/privacy" },
+        { label: t.links.terms, href: "/terms" },
+      ],
+    },
+  ];
 
-export function Footer() {
+  const socials = [
+    { label: t.socials.github, href: "https://github.com", icon: GithubIcon },
+    { label: t.socials.x, href: "https://x.com", icon: XIcon },
+    { label: t.socials.linkedin, href: "https://www.linkedin.com", icon: LinkedInIcon },
+  ];
+
+  return { t, columns, socials };
+}
+
+export async function Footer() {
+  const { t, columns, socials } = await getFooterData();
+
   return (
     <footer className="relative bg-[#07090E] border-t border-white/[0.06]">
       <div className="container mx-auto px-6 md:px-10 py-16">
@@ -70,9 +85,7 @@ export function Footer() {
               </span>
             </div>
             <p className="text-sm text-slate-400 leading-relaxed mb-6 max-w-xs">
-              Cutting-edge software to manage properties, bookings, and revenue
-              in one unified platform. Built for small to medium rental
-              businesses.
+              {t.tagline}
             </p>
             <div className="flex items-center gap-2 text-xs text-[#36BFAE]">
               <Activity size={13} />
@@ -81,7 +94,7 @@ export function Footer() {
                   <span className="absolute inline-flex h-full w-full rounded-full bg-[#36BFAE] opacity-75 animate-ping" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-[#36BFAE]" />
                 </span>
-                All systems operational
+                {t.status}
               </span>
             </div>
           </div>
@@ -94,38 +107,38 @@ export function Footer() {
               </h3>
               <ul className="space-y-3">
                 {column.links.map((link) => (
-                  <li key={link}>
+                  <li key={`${column.title}-${link.label}`}>
                     <a
-                      href="#"
+                      href={link.href}
                       className="text-sm text-slate-400 hover:text-[#36BFAE] transition-colors"
                     >
-                      {link}
+                      {link.label}
                     </a>
                   </li>
                 ))}
               </ul>
             </nav>
           ))}
-        </div>
 
-        {/* Bottom bar */}
-        <div className="mt-14 pt-8 border-t border-white/[0.06] flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-slate-500">
-            © 2026 LodgeTrack by Veljko Galović. All rights reserved.
-          </p>
-          <div className="flex items-center gap-3">
-            {socials.map((social) => (
-              <a
-                key={social.label}
-                href={social.href}
-                aria-label={social.label}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="h-9 w-9 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-slate-400 hover:text-white hover:border-[#36BFAE]/40 hover:bg-[#36BFAE]/10 transition-all"
-              >
-                <social.icon size={15} />
-              </a>
-            ))}
+          {/* Bottom bar */}
+          <div className="mt-14 pt-8 border-t border-white/[0.06] flex flex-col md:flex-row items-center justify-between gap-4 lg:col-span-6">
+            <p className="text-xs text-slate-500">
+              {t.copyright}
+            </p>
+            <div className="flex items-center gap-3">
+              {socials.map((social) => (
+                <a
+                  key={social.label}
+                  href={social.href}
+                  aria-label={social.label}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="h-9 w-9 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-slate-400 hover:text-white hover:border-[#36BFAE]/40 hover:bg-[#36BFAE]/10 transition-all"
+                >
+                  <social.icon size={15} />
+                </a>
+              ))}
+            </div>
           </div>
         </div>
       </div>

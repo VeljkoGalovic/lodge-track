@@ -16,6 +16,8 @@ export const metadata = { title: "Set up your organization · LodgeTrack" }
  * but the dashboard pages name `/onboarding` as their redirect target, and a
  * dead target is worse than a page that fixes the problem.
  */
+
+
 export default async function OnboardingPage() {
   const membership = await currentMembership()
   if (!membership) redirect("/signin")
@@ -32,6 +34,8 @@ export default async function OnboardingPage() {
     select: { id: true },
   })
   if (organization) redirect("/dashboard")
+  
+    
 
   return (
     <section className="dark relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 text-foreground">
