@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { getOrgFeatures } from "@/lib/subscriptions"
+import { Prisma } from "@prisma/client"
 
 /**
  * Organization storage accounting for expense receipts.
@@ -28,9 +29,16 @@ export interface ReceiptQuota {
   limitBytes: number
 }
 
+type TxClient = Prisma.TransactionClient
+
 /** Total bytes of receipts stored for one organization. */
-export async function receiptBytesUsed(orgId: string): Promise<number> {
-  const { _sum } = await prisma.expense.aggregate({
+export async function receiptBytesUsed(orgId: string): Promise<number>
+/** Total bytes of receipts stored for one organization, within a transaction. */
+export async function receiptBytesUsed(tx: TxClient, orgId: string): Promise<number>
+export async function receiptBytesUsed(arg1: string | TxClient, arg2?: string): Promise<number> {
+  const orgId = typeof arg1 === "string" ? arg1 : arg2!
+  const client = typeof arg1 === "string" ? prisma : arg1
+  const { _sum } = await client.expense.aggregate({
     where: { orgId },
     _sum: { receiptSize: true },
   })
@@ -50,15 +58,22 @@ export async function receiptBytesUsed(orgId: string): Promise<number> {
  * to *display*. Deriving the cap any other way would let the storage limit
  * disagree with the plan shown on screen.
  */
-export async function receiptQuota(orgId: string): Promise<ReceiptQuota | null> {
-  const organization = await prisma.organization.findUnique({
+export async function receiptQuota(orgId: string): Promise<ReceiptQuota | null>
+/**
+ * What an organization is using, and what its tier allows, within a transaction.
+ */
+export async function receiptQuota(tx: TxClient, orgId: string): Promise<ReceiptQuota | null>
+export async function receiptQuota(arg1: string | TxClient, arg2?: string): Promise<ReceiptQuota | null> {
+  const orgId = typeof arg1 === "string" ? arg1 : arg2!
+  const client = typeof arg1 === "string" ? prisma : arg1
+  const organization = await client.organization.findUnique({
     where: { id: orgId },
     select: { id: true, subscription: { select: { tier: true } } },
   })
   if (!organization) return null
 
   return {
-    usedBytes: await receiptBytesUsed(orgId),
+    usedBytes: await receiptBytesUsed(client, orgId),
     limitBytes: getOrgFeatures(organization.subscription?.tier ?? "STARTER").maxStorageBytes,
   }
 }

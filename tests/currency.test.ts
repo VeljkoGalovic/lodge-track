@@ -108,6 +108,19 @@ describe("parseMoneyField", () => {
   })
 })
 
+describe("formatAmount", () => {
+  it("formats zero as a currency amount, not null", () => {
+    expect(formatAmount(0, "USD")).toBe("$0.00")
+  })
+  it("returns null for null", () => {
+    expect(formatAmount(null, "USD")).toBeNull()
+  })
+  it("returns null for undefined", () => {
+    expect(formatAmount(undefined, "USD")).toBeNull()
+  })
+})
+
+
 describe("formatting", () => {
   it("shows minor units at the currency's precision", () => {
     expect(formatCurrency(15050, "USD")).toBe("$150.50")

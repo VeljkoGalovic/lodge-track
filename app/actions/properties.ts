@@ -54,13 +54,15 @@ function readProperty(formData: FormData) {
 function validate(
   name: string,
   address: string,
-  bedCount: { ok: true; count: number | null } | { ok: false }
+  bedCount: { ok: true; count: number | null } | { ok: false },
+  allowSharedBookings: boolean
 ): string | null {
   if (!name) return "Give the property a name."
   if (name.length > 120) return "Property name is too long."
   if (!address) return "Give the property an address."
   if (address.length > 300) return "Address is too long."
   if (!bedCount.ok) return "Bed count must be a whole number from 1 to 200."
+  if (allowSharedBookings && bedCount.count === null) return "Bed count is required when shared bookings are enabled."
   return null
 }
 
@@ -98,11 +100,11 @@ export async function createProperty(
   if (!membership) return { error: "Your session has expired. Please sign in again." }
   if (!canManage(membership.user.role)) {
     return { error: "You do not have permission to add properties." }
-  }  const { name, address, icalUrl, currency, allowSharedBookings } = readProperty(formData)
+  }
+  const { name, address, icalUrl, currency, allowSharedBookings } = readProperty(formData)
   const bedCount = readBedCount(formData)
-  const problem = validate(name, address, bedCount)
+  const problem = validate(name, address, bedCount, allowSharedBookings)
   if (problem) return { error: problem }
-
 
   const { maxProperties } = getOrgFeatures(
     membership.subscription?.tier ?? "STARTER",
@@ -131,7 +133,7 @@ export async function createProperty(
    * of the shared inventory UI. The bed-count field is likewise only shown for
    * opted-in properties, so an unticked form means no units at all.
    */
-  const property = await prisma.$transaction(async tx => {
+  const property = await serializable(async (tx) => {
     const created = await tx.property.create({
       data: { name, address, icalUrl, currency, allowSharedBookings, orgId: membership.organization.id },
     })
@@ -166,7 +168,7 @@ export async function updateProperty(
   const id = field(formData, "id")
   const { name, address, icalUrl, currency, allowSharedBookings } = readProperty(formData)
   const bedCount = readBedCount(formData)
-  const problem = validate(name, address, bedCount)
+  const problem = validate(name, address, bedCount, allowSharedBookings)
   if (problem) return { error: problem }
 
   try {
@@ -213,25 +215,26 @@ export async function deleteProperty(
 
   const id = field(formData, "id")
 
-  // Bookings cascade with the property, so the count is reported back rather
-  // than the deletion being a surprise about how much went with it.
-  const bookings = await prisma.booking.count({
-    where: { propertyId: id, property: { orgId: membership.organization.id } },
-  })
+  const result = await serializable(async (tx) => {
+    // Bookings cascade with the property, so the count is reported back rather
+    // than the deletion being a surprise about how much went with it.
+    const bookings = await tx.booking.count({
+      where: { propertyId: id, property: { orgId: membership.organization.id } },
+    })
 
-  const { count } = await prisma.property.deleteMany({
-    where: { id, orgId: membership.organization.id },
+    const { count } = await tx.property.deleteMany({
+      where: { id, orgId: membership.organization.id },
+    })
+    if (count === 0) return { error: "That property no longer exists." }
+
+    return { success:
+      bookings > 0
+        ? `Property deleted, along with ${bookings} booking${bookings === 1 ? "" : "s"}.`
+        : "Property deleted.", redirect: "/dashboard/properties", bookings }
   })
-  if (count === 0) return { error: "That property no longer exists." }
 
   revalidatePath("/dashboard")
   revalidatePath("/dashboard/properties")
   revalidatePath("/dashboard/bookings")
-  return {
-    success:
-      bookings > 0
-        ? `Property deleted, along with ${bookings} booking${bookings === 1 ? "" : "s"}.`
-        : "Property deleted.",
-    redirect: "/dashboard/properties",
-  }
+  return result
 }

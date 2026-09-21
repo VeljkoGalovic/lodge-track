@@ -14,6 +14,7 @@ import {
 import { isExpenseCategory } from "@/lib/expense-category"
 import { deleteReceipt, saveReceipt } from "@/lib/storage"
 import { receiptQuota } from "@/lib/receipt-quota"
+import { serializable } from "@/lib/transaction"
 
 const MAX_DESCRIPTION_LENGTH = 300
 
@@ -77,42 +78,47 @@ export async function createExpense(
   if (!money.ok) return { error: "The amount must be a number." }
   if (money.minorUnits === null) return { error: "Enter the amount spent." }
   if (money.minorUnits <= 0) return { error: "The amount must be greater than zero." }
+  // After the checks above, minorUnits is guaranteed to be a positive number
+  const minorUnits = money.minorUnits
 
-  // Confirms the property is ours, and is where the denormalised `orgId` below
-  // comes from — a property row that was itself fetched by `orgId`.
-  const property = await prisma.property.findFirst({
-    where: { id: input.propertyId, orgId: organization.id },
-    select: { id: true },
-  })
-  if (!property) return { error: "Choose a property in your organization." }
-
-  let receipt = null
   const file = receiptFile(formData)
-  if (file) {
-    const quota = await receiptQuota(organization.id)
-    if (!quota) return { error: "Your organization could not be found." }
-    const stored = await saveReceipt(file, organization.id, quota)
-    if (!stored.ok) return { error: stored.error }
-    receipt = stored.receipt
-  }
 
-  const expense = await prisma.expense.create({
-    data: {
-      amount: money.minorUnits,
-      category: input.category as ExpenseCategory,
-      date: input.date!,
-      description: input.description,
-      propertyId: property.id,
-      orgId: organization.id,
-      receiptPath: receipt?.path ?? null,
-      receiptName: receipt?.name ?? null,
-      receiptType: receipt?.type ?? null,
-      receiptSize: receipt?.size ?? null,
-    },
+  // Wrap the entire operation in a serializable transaction to prevent
+  // race conditions on receipt quota checks.
+  return serializable(async (tx) => {
+    // Confirms the property is ours, and is where the denormalised `orgId` below
+    // comes from — a property row that was itself fetched by `orgId`.
+    const property = await tx.property.findFirst({
+      where: { id: input.propertyId, orgId: organization.id },
+      select: { id: true },
+    })
+    if (!property) return { error: "Choose a property in your organization." }
+
+    let receipt = null
+    if (file) {
+      const stored = await saveReceipt(file, organization.id, tx)
+      if (!stored.ok) return { error: stored.error }
+      receipt = stored.receipt
+    }
+
+    const expense = await tx.expense.create({
+      data: {
+        amount: minorUnits,
+        category: input.category as ExpenseCategory,
+        date: input.date!,
+        description: input.description,
+        propertyId: property.id,
+        orgId: organization.id,
+        receiptPath: receipt?.path ?? null,
+        receiptName: receipt?.name ?? null,
+        receiptType: receipt?.type ?? null,
+        receiptSize: receipt?.size ?? null,
+      },
+    })
+
+    revalidateExpense(property.id)
+    return { success: "Expense logged.", redirect: `/dashboard/expenses/${expense.id}/edit` }
   })
-
-  revalidateExpense(property.id)
-  return { success: "Expense logged.", redirect: `/dashboard/expenses/${expense.id}/edit` }
 }
 
 export async function updateExpense(
@@ -135,6 +141,8 @@ export async function updateExpense(
   if (!money.ok) return { error: "The amount must be a number." }
   if (money.minorUnits === null) return { error: "Enter the amount spent." }
   if (money.minorUnits <= 0) return { error: "The amount must be greater than zero." }
+  // After the checks above, minorUnits is guaranteed to be a positive number
+  const minorUnits = money.minorUnits
 
   // Scoped by `orgId`, so another tenant's expense id matches nothing here.
   const existing = await prisma.expense.findFirst({
@@ -157,50 +165,57 @@ export async function updateExpense(
    * it. The old file is deleted only *after* the row has been updated to stop
    * pointing at it: if the unlink happened first and the write then failed, the
    * expense would reference a file that no longer exists.
+   *
+   * Wrap the entire operation in a serializable transaction to prevent
+   * race conditions on receipt quota checks and ensure atomicity.
    */
-  let receipt = null
-  if (file) {
-    /*
-     * The replaced receipt still counts toward the total here, even though it is
-     * deleted moments from now. That is the conservative direction: it can only
-     * refuse an upload that would have fitted, never accept one that would not.
-     * Reading the total *after* the unlink instead would open a window where a
-     * failed update leaves the row pointing at a file that is already gone.
-     */
-    const quota = await receiptQuota(organization.id)
-    if (!quota) return { error: "Your organization could not be found." }
-    const stored = await saveReceipt(file, organization.id, quota)
-    if (!stored.ok) return { error: stored.error }
-    receipt = stored.receipt
-  }
+  const result = await serializable(async (tx): Promise<ActionState> => {
+    let receipt = null
+    if (file) {
+      /*
+       * The replaced receipt still counts toward the total here, even though it is
+       * deleted moments from now. That is the conservative direction: it can only
+       * refuse an upload that would have fitted, never accept one that would not.
+       * Reading the total *after* the unlink instead would open a window where a
+       * failed update leaves the row pointing at a file that is already gone.
+       */
+      const quota = await receiptQuota(tx, organization.id)
+      if (!quota) return { error: "Your organization could not be found." }
+      const stored = await saveReceipt(file, organization.id, quota)
+      if (!stored.ok) return { error: stored.error }
+      receipt = stored.receipt
+    }
 
-  const keepExisting = !file && !removeReceipt
+    const keepExisting = !file && !removeReceipt
 
-  await prisma.expense.updateMany({
-    where: { id, orgId: organization.id },
-    data: {
-      amount: money.minorUnits,
-      category: input.category as ExpenseCategory,
-      date: input.date!,
-      description: input.description,
-      propertyId: property.id,
-      receiptPath: keepExisting ? existing.receiptPath : (receipt?.path ?? null),
-      receiptName: keepExisting ? undefined : (receipt?.name ?? null),
-      receiptType: keepExisting ? undefined : (receipt?.type ?? null),
-      receiptSize: keepExisting ? undefined : (receipt?.size ?? null),
-    },
+    await tx.expense.updateMany({
+      where: { id, orgId: organization.id },
+      data: {
+        amount: minorUnits,
+        category: input.category as ExpenseCategory,
+        date: input.date!,
+        description: input.description,
+        propertyId: property.id,
+        receiptPath: keepExisting ? existing.receiptPath : (receipt?.path ?? null),
+        receiptName: keepExisting ? undefined : (receipt?.name ?? null),
+        receiptType: keepExisting ? undefined : (receipt?.type ?? null),
+        receiptSize: keepExisting ? undefined : (receipt?.size ?? null),
+      },
+    })
+
+    if (!keepExisting && existing.receiptPath) {
+      await deleteReceipt(existing.receiptPath)
+    }
+
+    revalidateExpense(property.id)
+    // The expense may have been moved to a different property, which leaves the
+    // old one's page showing a cost it no longer carries.
+    if (existing.propertyId !== property.id) revalidateExpense(existing.propertyId)
+    revalidatePath(`/dashboard/expenses/${id}/edit`)
+    return { success: "Expense updated." }
   })
 
-  if (!keepExisting && existing.receiptPath) {
-    await deleteReceipt(existing.receiptPath)
-  }
-
-  revalidateExpense(property.id)
-  // The expense may have been moved to a different property, which leaves the
-  // old one's page showing a cost it no longer carries.
-  if (existing.propertyId !== property.id) revalidateExpense(existing.propertyId)
-  revalidatePath(`/dashboard/expenses/${id}/edit`)
-  return { success: "Expense updated." }
+  return result
 }
 
 export async function deleteExpense(
@@ -223,13 +238,17 @@ export async function deleteExpense(
   })
   if (!expense) return { error: "That expense no longer exists." }
 
-  const { count } = await prisma.expense.deleteMany({
-    where: { id, orgId: membership.organization.id },
+  const result = await serializable(async (tx): Promise<{ error?: string; success?: string; redirect?: string; propertyId: string }> => {
+    const { count } = await tx.expense.deleteMany({
+      where: { id, orgId: membership.organization.id },
+    })
+    if (count === 0) return { error: "That expense no longer exists.", propertyId: "" }
+
+    if (expense.receiptPath) await deleteReceipt(expense.receiptPath)
+
+    return { success: "Expense deleted.", redirect: "/dashboard/expenses", propertyId: expense.propertyId }
   })
-  if (count === 0) return { error: "That expense no longer exists." }
 
-  if (expense.receiptPath) await deleteReceipt(expense.receiptPath)
-
-  revalidateExpense(expense.propertyId)
-  return { success: "Expense deleted.", redirect: "/dashboard/expenses" }
+  if (result.propertyId) revalidateExpense(result.propertyId)
+  return { success: result.success, redirect: result.redirect }
 }

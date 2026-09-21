@@ -7,6 +7,7 @@ import type { Role } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { decryptSecret } from "@/lib/crypto"
 import { verifyCode } from "@/lib/totp"
+import { checkRateLimit, getRateLimitIdentifier, RATE_LIMIT_CONFIGS } from "@/lib/rate-limit"
 
 /**
  * A hash of a throwaway password. When no account matches the submitted email we
@@ -55,7 +56,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         const email = typeof credentials?.email === "string" ? credentials.email : ""
         const password = typeof credentials?.password === "string" ? credentials.password : ""
+        const code = typeof credentials?.code === "string" ? credentials.code.trim() : ""
         if (!email || !password) return null
+
+        // Rate limiting for login attempts (by email)
+        const loginIdentifier = getRateLimitIdentifier(null, email)
+        const loginRateLimit = await checkRateLimit(loginIdentifier, RATE_LIMIT_CONFIGS.login)
+        if (!loginRateLimit.allowed) {
+          // Return null to fail authentication - error will be shown on sign-in page
+          return null
+        }
 
         const user = await prisma.user.findUnique({ where: { email } })
 
@@ -82,7 +92,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
            */
           if (!secret) throw new SecondFactorUnavailable()
 
-          const code = typeof credentials?.code === "string" ? credentials.code.trim() : ""
+          // Rate limiting for 2FA attempts (by email)
+          const twoFactorIdentifier = getRateLimitIdentifier(null, email)
+          const twoFactorRateLimit = await checkRateLimit(twoFactorIdentifier, RATE_LIMIT_CONFIGS.two_factor)
+          if (!twoFactorRateLimit.allowed) {
+            throw new SecondFactorInvalid()
+          }
+
           if (!code) throw new SecondFactorRequired()
           if (!verifyCode(secret, code)) throw new SecondFactorInvalid()
         }

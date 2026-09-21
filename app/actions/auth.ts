@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import bcrypt from "bcrypt"
 import { createVerificationToken, verifyAndConsumeToken, invalidateUserTokens } from "@/lib/tokens"
 import { sendVerificationEmail, sendPasswordResetEmail, buildResetLink } from "@/lib/email"
+import { checkRateLimit, getRateLimitIdentifier, RATE_LIMIT_CONFIGS } from "@/lib/rate-limit"
 
 export async function registerUser(prevState: { error?: string; success?: string }, formData: FormData): Promise<{ error?: string; success?: string; redirect?: string }> {
   const email = formData.get("email") as string
@@ -18,6 +19,13 @@ export async function registerUser(prevState: { error?: string; success?: string
 
   if (!termsAccepted) {
     return { error: "You must accept the Terms of Service and Privacy Policy to register." }
+  }
+
+  // Rate limiting for registration
+  const identifier = getRateLimitIdentifier(null, email)
+  const rateLimitResult = await checkRateLimit(identifier, RATE_LIMIT_CONFIGS.register)
+  if (!rateLimitResult.allowed) {
+    return { error: `Too many registration attempts. Please try again in ${rateLimitResult.retryAfterSeconds} seconds.` }
   }
 
   const existingUser = await prisma.user.findUnique({
@@ -81,6 +89,13 @@ export async function sendPasswordReset(prevState: { error?: string; success?: s
 
   if (!email) {
     return { error: "Email is required." }
+  }
+
+  // Rate limiting for password reset requests
+  const identifier = getRateLimitIdentifier(null, email)
+  const rateLimitResult = await checkRateLimit(identifier, RATE_LIMIT_CONFIGS.password_reset)
+  if (!rateLimitResult.allowed) {
+    return { error: `Too many password reset requests. Please try again in ${rateLimitResult.retryAfterSeconds} seconds.` }
   }
 
   const user = await prisma.user.findUnique({
@@ -153,6 +168,13 @@ export async function resetPassword(prevState: { error?: string; success?: strin
 export async function sendVerificationEmailAction(email: string): Promise<{ success: boolean; error?: string }> {
   if (!email) {
     return { success: false, error: "Email is required." }
+  }
+
+  // Rate limiting for email verification resend
+  const identifier = getRateLimitIdentifier(null, email)
+  const rateLimitResult = await checkRateLimit(identifier, RATE_LIMIT_CONFIGS.email_verification)
+  if (!rateLimitResult.allowed) {
+    return { success: false, error: `Too many verification email requests. Please try again in ${rateLimitResult.retryAfterSeconds} seconds.` }
   }
 
   const user = await prisma.user.findUnique({

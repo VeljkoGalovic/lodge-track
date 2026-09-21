@@ -2,6 +2,9 @@ import { randomUUID } from "crypto"
 import { mkdir, readFile, unlink, writeFile } from "fs/promises"
 import path from "path"
 import { formatBytes } from "@/lib/subscriptions"
+import { Prisma } from "@prisma/client"
+
+type TxClient = Prisma.TransactionClient
 
 /**
  * Private storage for receipt images and PDFs.
@@ -127,7 +130,25 @@ export async function saveReceipt(
   file: File,
   orgId: string,
   quota: { usedBytes: number; limitBytes: number }
+): Promise<SaveReceiptResult>
+/**
+ * Writes an uploaded receipt under its organization's own directory, using a
+ * transaction client for atomic quota checking.
+ */
+export async function saveReceipt(
+  file: File,
+  orgId: string,
+  tx: TxClient
+): Promise<SaveReceiptResult>
+export async function saveReceipt(
+  file: File,
+  orgId: string,
+  quotaOrTx: { usedBytes: number; limitBytes: number } | TxClient
 ): Promise<SaveReceiptResult> {
+  // Determine if we're using a transaction client
+  const isTx = typeof quotaOrTx === "object" && "expense" in quotaOrTx
+  const tx = isTx ? (quotaOrTx as TxClient) : null
+
   if (file.size === 0) return { ok: false, error: "That file is empty." }
   if (file.size > MAX_RECEIPT_BYTES) {
     return {
@@ -140,13 +161,18 @@ export async function saveReceipt(
    * The per-file cap is reported first, above, because "this file is too big" is
    * actionable on its own, whereas a quota message is only useful once the file
    * itself is known to be acceptable.
-   *
-   * Not transactional: two uploads submitted at the same instant can each see
-   * room for one and both write. That is acceptable for what this cap is — a
-   * guard against runaway disk usage, not a billing boundary — and closing it
-   * would mean serializing every upload for an organization behind a lock to
-   * protect against a few megabytes of overshoot.
    */
+  let quota: { usedBytes: number; limitBytes: number }
+  if (isTx && tx) {
+    // When using a transaction, fetch quota inside the transaction
+    const { receiptQuota } = await import("@/lib/receipt-quota")
+    const q = await receiptQuota(tx, orgId)
+    if (!q) return { ok: false, error: "Your organization could not be found." }
+    quota = q
+  } else {
+    quota = quotaOrTx as { usedBytes: number; limitBytes: number }
+  }
+
   if (quota.usedBytes + file.size > quota.limitBytes) {
     return { ok: false, error: overQuotaMessage(quota) }
   }

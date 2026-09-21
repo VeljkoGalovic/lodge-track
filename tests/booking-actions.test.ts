@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   db: {
     user: { findUnique: vi.fn() },
     property: { findFirst: vi.fn(), count: vi.fn(), create: vi.fn(), updateMany: vi.fn() },
-    propertyUnit: { findFirst: vi.fn(), findMany: vi.fn(), createMany: vi.fn(), deleteMany: vi.fn() },
+    propertyUnit: { findFirst: vi.fn(), findMany: vi.fn(), createMany: vi.fn(), deleteMany: vi.fn(), count: vi.fn() },
     booking: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), updateMany: vi.fn(), deleteMany: vi.fn(), count: vi.fn() },
     $transaction: vi.fn(),
   },
@@ -34,6 +34,7 @@ beforeEach(() => {
   db.$transaction.mockImplementation(work => work(db))
   db.property.findFirst.mockResolvedValue({ id: "home", allowSharedBookings: true })
   db.propertyUnit.findFirst.mockResolvedValue({ id: "bed-1", propertyId: "home", name: "Bed 1" })
+  db.propertyUnit.count.mockResolvedValue(5)
   db.booking.findFirst.mockResolvedValue(stay)
   db.booking.findMany.mockResolvedValue([])
   db.booking.create.mockResolvedValue({ id: "new-stay" })

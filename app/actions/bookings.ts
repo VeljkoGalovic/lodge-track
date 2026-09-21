@@ -77,17 +77,24 @@ function validate(input: BookingInput): string | null {
  * simply by guessing its id, since ids are the only thing the form carries.
  * Returns the row (not a boolean) so the caller can branch on
  * `allowSharedBookings` — the flag that decides what a submitted claim may look
- * like — without a second query.
+ * like — and `bedCount` — the number of beds on the property, which bounds how
+ * many beds a single shared stay may claim — without a second query.
  */
 async function ourProperty(
   tx: Prisma.TransactionClient,
   propertyId: string,
   orgId: string
-): Promise<{ id: string; allowSharedBookings: boolean } | null> {
-  return tx.property.findFirst({
+): Promise<{ id: string; allowSharedBookings: boolean; bedCount: number } | null> {
+  const property = await tx.property.findFirst({
     where: { id: propertyId, orgId },
     select: { id: true, allowSharedBookings: true },
   })
+  if (!property) return null
+
+  const bedCount = await tx.propertyUnit.count({
+    where: { propertyId: property.id, orgId, kind: "Bed" },
+  })
+  return { ...property, bedCount }
 }
 
 /** The resolved claim a booking row will store. */
@@ -109,7 +116,7 @@ const CLAIM_MESSAGES: Record<ClaimProblem, string> = {
   "unit-not-ours": "Choose a unit that belongs to this property.",
   "shared-off": "This property does not accept individual bed bookings.",
   "no-beds": "Choose at least one bed.",
-  "too-many-beds": `A stay can hold at most ${MAX_BEDS_PER_BOOKING} beds.`,
+  "too-many-beds": "A stay cannot claim more beds than the property has.",
   "duplicate-beds": "Each bed can only be chosen once.",
   "bed-not-ours": "Choose beds that belong to this property.",
 }
@@ -127,7 +134,7 @@ const CLAIM_MESSAGES: Record<ClaimProblem, string> = {
 async function resolveClaim(
   tx: Prisma.TransactionClient,
   input: OwnedBookingInput,
-  property: { id: string; allowSharedBookings: boolean }
+  property: { id: string; allowSharedBookings: boolean; bedCount: number }
 ): Promise<{ ok: true; claim: ResolvedClaim } | { ok: false; problem: ClaimProblem }> {
   const orgId = input.orgId
 
@@ -135,7 +142,7 @@ async function resolveClaim(
   if (input.bookingMode === "beds") {
     if (!property.allowSharedBookings) return { ok: false, problem: "shared-off" }
     if (input.bedIds.length === 0) return { ok: false, problem: "no-beds" }
-    if (input.bedIds.length > MAX_BEDS_PER_BOOKING) return { ok: false, problem: "too-many-beds" }
+    if (input.bedIds.length > property.bedCount) return { ok: false, problem: "too-many-beds" }
     if (new Set(input.bedIds).size !== input.bedIds.length) {
       return { ok: false, problem: "duplicate-beds" }
     }
@@ -362,19 +369,23 @@ export async function deleteBooking(
 
   const id = field(formData, "id")
 
-  const booking = await prisma.booking.findFirst({
-    where: { id, property: { orgId: membership.organization.id } },
-    select: { propertyId: true },
+  const result = await serializable(async (tx): Promise<ActionState & { propertyId?: string }> => {
+    const booking = await tx.booking.findFirst({
+      where: { id, property: { orgId: membership.organization.id } },
+      select: { propertyId: true },
+    })
+
+    const { count } = await tx.booking.deleteMany({
+      where: { id, property: { orgId: membership.organization.id } },
+    })
+    if (count === 0) return { error: "That booking no longer exists." }
+
+    return { success: "Booking deleted.", redirect: "/dashboard/bookings", propertyId: booking?.propertyId }
   })
 
-  const { count } = await prisma.booking.deleteMany({
-    where: { id, property: { orgId: membership.organization.id } },
-  })
-  if (count === 0) return { error: "That booking no longer exists." }
-
-  if (booking) revalidateBooking(booking.propertyId)
-  else revalidatePath("/dashboard/bookings")
-  return { success: "Booking deleted.", redirect: "/dashboard/bookings" }
+  if (result.success && result.propertyId) revalidateBooking(result.propertyId)
+  else if (result.success) revalidatePath("/dashboard/bookings")
+  return { error: result.error, success: result.success, redirect: result.redirect }
 }
 
 /** A one-tap status change from the bookings list. */

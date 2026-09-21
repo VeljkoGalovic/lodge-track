@@ -243,6 +243,21 @@ model WebhookEvent {
   receivedAt DateTime @default(now())
 }
 
+/**
+ * Rate limiting for auth endpoints.
+ * Tracks attempts per identifier (IP/email) and action.
+ * Used to prevent brute-force and enumeration attacks.
+ */
+model RateLimit {
+  id        String   @id @default(cuid())
+  identifier String  // IP address or "email:user@example.com"
+  action    String   // "register", "login", "password_reset", "email_verification", "two_factor"
+  createdAt DateTime @default(now())
+
+  @@index([identifier, action])
+  @@index([createdAt])
+}
+
 model Property {
   id        String    @id @default(cuid())
   name      String

@@ -108,7 +108,9 @@ export function formatAmount(
   minorUnits: number | null | undefined,
   currency: string
 ): string | null {
-  return minorUnits == null ? null : formatCurrency(minorUnits, currency)
+  return minorUnits === null || minorUnits === undefined
+  ? null
+  : formatCurrency(minorUnits, currency)
 }
 
 /**

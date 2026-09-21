@@ -50,26 +50,30 @@ export async function createUnit(
     return { error: "Beds on this property are managed with the bed count on the property form." }
   }
 
-  try {
-    await prisma.propertyUnit.create({
-      data: {
-        name,
-        kind: kind || null,
-        propertyId: property.id,
-        orgId: membership.organization.id,
-      },
-    })
-  } catch (error) {
-    // Two units of one property cannot share a name, which is what keeps the
-    // booking form's picker from offering an ambiguous choice.
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return { error: `This property already has a unit called "${name}".` }
+  const result = await serializable(async (tx) => {
+    try {
+      await tx.propertyUnit.create({
+        data: {
+          name,
+          kind: kind || null,
+          propertyId: property.id,
+          orgId: membership.organization.id,
+        },
+      })
+    } catch (error) {
+      // Two units of one property cannot share a name, which is what keeps the
+      // booking form's picker from offering an ambiguous choice.
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+        return { error: `This property already has a unit called "${name}".` }
+      }
+      throw error
     }
-    throw error
-  }
 
-  revalidateProperty(property.id)
-  return { success: `${name} added.` }
+    return { success: `${name} added.`, propertyId: property.id }
+  })
+
+  if (result.success) revalidateProperty(result.propertyId)
+  return { success: result.success, error: result.error }
 }
 
 export async function renameUnit(
