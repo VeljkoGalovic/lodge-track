@@ -781,33 +781,6 @@ export const en = {
       },
     },
 
-    features: {
-      title: "Features",
-      subtitle: "Everything you need to run your rental business.",
-      sections: [
-        {
-          title: "Property Management",
-          description:
-            "Organize properties, units, and beds in one place. Support for whole-property and bed-level bookings.",
-        },
-        {
-          title: "Revenue Tracking",
-          description:
-            "Log rates per stay, track monthly revenue, and see occupancy trends at a glance.",
-        },
-        {
-          title: "Team Collaboration",
-          description:
-            "Invite managers and maintenance staff with role-based permissions. Everyone sees what they need.",
-        },
-        {
-          title: "Expense Logging",
-          description:
-            "Attach receipts, categorize costs, and keep a complete financial picture per property.",
-        },
-      ],
-    },
-
     about: {
       title: "About LodgeTrack",
       subtitle: "Built by property managers, for property managers.",
@@ -900,9 +873,7 @@ export const en = {
     },
     links: {
       features: "Features",
-      calendar: "Calendar",
-      financials: "Financials",
-      integrations: "Integrations",
+      pricing: "Pricing",
       about: "About",
       privacy: "Privacy Policy",
       terms: "Terms of Service",
@@ -1684,33 +1655,6 @@ const sr: Dictionary = {
       },
     },
 
-    features: {
-      title: "Funkcije",
-      subtitle: "Sve što vam treba za upravljanje rent poslom.",
-      sections: [
-        {
-          title: "Upravljanje objektima",
-          description:
-            "Organizujte objekte, jedinice i ležajeve na jednom mestu. Podrška za rezervacije celog objekta i po ležajevima.",
-        },
-        {
-          title: "Praćenje prihoda",
-          description:
-            "Beležite cene po boravku, pratite mesečne prihode i gledajte trendove popunjenosti jednom pogledom.",
-        },
-        {
-          title: "Timska saradnja",
-          description:
-            "Pozovite menadžere i održavanje sa ulogama baziranim na dozvolama. Svi vide šta im je potrebno.",
-        },
-        {
-          title: "Evidencija troškova",
-          description:
-            "Prilagodite račune, kategorizujte troškove i održavajte potpunu finansijsku sliku po objektu.",
-        },
-      ],
-    },
-
     about: {
       title: "O LodgeTrack-u",
       subtitle: "Napravljeno od menadžera objekata, za menadžere objekata.",
@@ -1803,9 +1747,7 @@ const sr: Dictionary = {
     },
     links: {
       features: "Funkcije",
-      calendar: "Kalendar",
-      financials: "Finansije",
-      integrations: "Integracije",
+      pricing: "Cene",
       about: "O nama",
       privacy: "Politika privatnosti",
       terms: "Uslovi korišćenja",
