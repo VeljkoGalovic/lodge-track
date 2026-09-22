@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { BootScript } from "@/components/BootScript";
 import "./globals.css";
+import { CookieConsentProvider } from "@/components/cookie-consent/CookieConsentProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -68,6 +69,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-background font-sans text-foreground antialiased selection:bg-primary/30">
         {children}
+        <CookieConsentProvider />
       </body>
     </html>
   );

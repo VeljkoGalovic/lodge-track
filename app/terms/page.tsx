@@ -37,12 +37,12 @@ export default async function TermsPage() {
         </div>
 
         {/* Two-column layout with TOC */}
-        <div className="lg:grid lg:grid-cols-4 lg:gap-8">
+        <div className="lg:grid lg:grid-cols-[280px_1fr] lg:gap-8">
           {/* Table of Contents - right sidebar on desktop */}
           <TableOfContents items={headings} />
 
           {/* Main content */}
-          <article className="prose prose-invert max-w-none space-y-8 lg:col-span-3">
+          <article className="prose prose-invert max-w-none space-y-8">
             <LegalMarkdown content={content} />
           </article>
         </div>

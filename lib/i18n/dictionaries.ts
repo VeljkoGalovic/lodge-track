@@ -877,6 +877,7 @@ export const en = {
       about: "About",
       privacy: "Privacy Policy",
       terms: "Terms of Service",
+      cookies: "Cookie Policy",
     },
     socials: {
       github: "GitHub",
@@ -1751,6 +1752,7 @@ const sr: Dictionary = {
       about: "O nama",
       privacy: "Politika privatnosti",
       terms: "Uslovi korišćenja",
+      cookies: "Politika kolačića",
     },
     socials: {
       github: "GitHub",

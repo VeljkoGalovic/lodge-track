@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react"
 import Link from "next/link"
-import { ChevronRight } from "lucide-react"
+import { ChevronRight, Menu, X } from "lucide-react"
 
 export interface TocItem {
   id: string
@@ -16,6 +16,7 @@ interface TableOfContentsProps {
 
 export function TableOfContents({ items }: TableOfContentsProps) {
   const [activeId, setActiveId] = useState<string>("")
+  const [isOpen, setIsOpen] = useState(false)
   const observerRef = useRef<IntersectionObserver | null>(null)
   const scrollHandlerRef = useRef<(() => void) | null>(null)
 
@@ -81,54 +82,139 @@ export function TableOfContents({ items }: TableOfContentsProps) {
     if (element) {
       element.scrollIntoView({ behavior: "smooth", block: "start" })
       setActiveId(id)
+      setIsOpen(false)
     }
   }, [])
 
   // Filter to only h2 and h3 headings
   const visibleItems = items.filter((item) => item.level === 2 || item.level === 3)
 
-  if (visibleItems.length === 0) {
+  // Deduplicate items by ID (keeping first occurrence)
+  const seenIds = new Set<string>()
+  const deduplicatedItems = visibleItems.filter((item) => {
+    if (seenIds.has(item.id)) {
+      return false
+    }
+    seenIds.add(item.id)
+    return true
+  })
+
+  if (deduplicatedItems.length === 0) {
     return null
   }
 
   return (
-    <aside
-      className="hidden lg:block lg:col-span-1 sticky top-8 max-h-[calc(100vh-4rem)] overflow-y-auto px-4 py-6"
-      aria-label="Table of contents"
-    >
-      <nav className="glass-card p-4 rounded-2xl border border-white/10">
-        <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-4">
-          On this page
-        </h2>
-        <ul className="space-y-1.5" role="list" aria-label="Page sections">
-          {visibleItems.map((item, index) => (
-            <li
-              key={item.id}
-              className={`transition-all duration-200 ${
-                item.level === 3 ? "pl-4" : ""
-              }`}
-            >
-              <button
-                onClick={() => scrollToHeading(item.id)}
-                className={`w-full text-left text-sm py-1.5 px-2 rounded-lg transition-all duration-200 flex items-center gap-2 ${
-                  activeId === item.id
-                    ? "text-primary font-medium bg-primary/10"
-                    : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+    <>
+      {/* Mobile TOC toggle button */}
+      <button
+        className="lg:hidden fixed bottom-6 right-6 z-50 glass-card p-3 rounded-xl border border-white/10 shadow-lg"
+        onClick={() => setIsOpen(!isOpen)}
+        aria-label={isOpen ? "Close table of contents" : "Open table of contents"}
+        aria-expanded={isOpen}
+      >
+        {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+      </button>
+
+      {/* Desktop sidebar */}
+      <aside
+        className="hidden lg:block lg:col-span-1 sticky top-8 max-h-[calc(100vh-4rem)] overflow-y-auto px-4 py-6 min-w-[280px] w-full"
+        aria-label="Table of contents"
+      >
+        <nav className="glass-card p-4 rounded-2xl border border-white/10 w-full min-w-0">
+          <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-4">
+            On this page
+          </h2>
+          <ul className="space-y-1" role="list" aria-label="Page sections">
+            {deduplicatedItems.map((item, index) => (
+              <li
+                key={item.id}
+                className={`transition-all duration-200 ${
+                  item.level === 3 ? "pl-4" : ""
                 }`}
-                aria-current={activeId === item.id ? "location" : undefined}
               >
-                {item.level === 3 && (
-                  <ChevronRight
-                    className="w-3 h-3 flex-shrink-0 text-muted-foreground"
-                    aria-hidden="true"
-                  />
-                )}
-                <span className="truncate">{item.text}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </nav>
-    </aside>
+                <button
+                  onClick={() => scrollToHeading(item.id)}
+                  className={`w-full text-left text-sm py-2 px-3 rounded-lg transition-all duration-200 flex items-center gap-2 ${
+                    activeId === item.id
+                      ? "text-primary font-medium bg-primary/10"
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  }`}
+                  aria-current={activeId === item.id ? "location" : undefined}
+                >
+                  {item.level === 3 && (
+                    <ChevronRight
+                      className="w-3 h-3 flex-shrink-0 text-muted-foreground"
+                      aria-hidden="true"
+                    />
+                  )}
+                  <span className="whitespace-normal break-words leading-relaxed">{item.text}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </aside>
+
+      {/* Mobile drawer */}
+      <div
+        className={`fixed inset-0 z-40 lg:hidden transition-opacity duration-300 ${
+          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => setIsOpen(false)}
+        aria-hidden="true"
+      >
+        <div className="absolute right-0 top-0 h-full w-full max-w-[320px] bg-background shadow-2xl border-l border-border overflow-y-auto p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
+              On this page
+            </h2>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsOpen(false)
+              }}
+              className="p-1 rounded-lg hover:bg-white/5 transition-colors"
+              aria-label="Close table of contents"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <nav>
+            <ul className="space-y-1" role="list" aria-label="Page sections">
+              {deduplicatedItems.map((item) => (
+                <li
+                  key={item.id}
+                  className={`transition-all duration-200 ${
+                    item.level === 3 ? "pl-4" : ""
+                  }`}
+                >
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      scrollToHeading(item.id)
+                    }}
+                    className={`w-full text-left text-sm py-2 px-3 rounded-lg transition-all duration-200 flex items-center gap-2 ${
+                      activeId === item.id
+                        ? "text-primary font-medium bg-primary/10"
+                        : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                    }`}
+                    aria-current={activeId === item.id ? "location" : undefined}
+                  >
+                    {item.level === 3 && (
+                      <ChevronRight
+                        className="w-3 h-3 flex-shrink-0 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                    )}
+                    <span className="whitespace-normal break-words leading-relaxed">{item.text}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
+        <div className="absolute inset-0 bg-black/50" aria-hidden="true" />
+      </div>
+    </>
   )
 }

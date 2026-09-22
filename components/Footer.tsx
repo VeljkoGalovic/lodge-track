@@ -50,6 +50,7 @@ async function getFooterData() {
       links: [
         { label: t.links.privacy, href: "/privacy" },
         { label: t.links.terms, href: "/terms" },
+        { label: t.links.cookies, href: "/cookies" },
       ],
     },
   ];
