@@ -1,8 +1,7 @@
 import { Metadata } from "next"
 import Link from "next/link"
-import ReactMarkdown from "react-markdown"
-import remarkGfm from "remark-gfm"
-import { readLegalMarkdown, getLegalVersionDate } from "@/lib/markdown"
+import { readLegalMarkdown, getLegalVersionDate, extractHeadings, LegalMarkdown } from "@/lib/markdown"
+import { TableOfContents } from "@/components/legal/TableOfContents"
 
 export const metadata: Metadata = {
   title: "Privacy Policy · LodgeTrack",
@@ -12,6 +11,7 @@ export const metadata: Metadata = {
 export default async function PrivacyPage() {
   const { content } = readLegalMarkdown("privacy-policy.md")
   const lastUpdated = getLegalVersionDate("privacy-policy.md")
+  const headings = extractHeadings(content)
 
   return (
     <section className="dark min-h-screen bg-background text-foreground px-4 py-12 md:py-20">
@@ -36,44 +36,16 @@ export default async function PrivacyPage() {
           </Link>
         </div>
 
-        {/* Content */}
-        <article className="prose prose-invert max-w-none space-y-8">
-          <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
-            a: ({ href, children, ...props }) => {
-              const isExternal = href?.startsWith("http") ?? false
-              return (
-                <a
-                  {...props}
-                  href={href ?? "#"}
-                  target={isExternal ? "_blank" : undefined}
-                  rel={isExternal ? "noopener noreferrer" : undefined}
-                  className="text-primary hover:underline"
-                >
-                  {children}
-                </a>
-              )
-            },
-            table: ({ children, ...props }) => (
-              <div className="overflow-x-auto">
-                <table {...props} className="w-full border-collapse">
-                  {children}
-                </table>
-              </div>
-            ),
-            th: ({ children, ...props }) => (
-              <th {...props} className="border border-border px-4 py-2 text-left font-semibold bg-muted">
-                {children}
-              </th>
-            ),
-            td: ({ children, ...props }) => (
-              <td {...props} className="border border-border px-4 py-2">
-                {children}
-              </td>
-            ),
-          }}>
-            {content}
-          </ReactMarkdown>
-        </article>
+        {/* Two-column layout with TOC */}
+        <div className="lg:grid lg:grid-cols-4 lg:gap-8">
+          {/* Table of Contents - right sidebar on desktop */}
+          <TableOfContents items={headings} />
+
+          {/* Main content */}
+          <article className="prose prose-invert max-w-none space-y-8 lg:col-span-3">
+            <LegalMarkdown content={content} />
+          </article>
+        </div>
 
         {/* Footer */}
         <footer className="border-t border-border pt-8 text-center text-sm text-muted-foreground">
