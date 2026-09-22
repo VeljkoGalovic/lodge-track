@@ -6,6 +6,8 @@ import bcrypt from "bcrypt"
 import { createVerificationToken, verifyAndConsumeToken, invalidateUserTokens } from "@/lib/tokens"
 import { sendVerificationEmail, sendPasswordResetEmail, buildResetLink } from "@/lib/email"
 import { checkRateLimit, getRateLimitIdentifier, RATE_LIMIT_CONFIGS } from "@/lib/rate-limit"
+import { getLegalVersionDate } from "@/lib/markdown"
+import { headers } from "next/headers"
 
 export async function registerUser(prevState: { error?: string; success?: string }, formData: FormData): Promise<{ error?: string; success?: string; redirect?: string }> {
   const email = formData.get("email") as string
@@ -38,7 +40,18 @@ export async function registerUser(prevState: { error?: string; success?: string
 
   const passwordHash = await bcrypt.hash(password, 10)
 
-  // Use a Prisma transaction to create the Organization, User, and default Starter Subscription atomically
+  // Get IP address and user agent for legal consent logging
+  const headersList = await headers()
+  const ipAddress = headersList.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || headersList.get("x-real-ip")
+    || "unknown"
+  const userAgent = headersList.get("user-agent") || "unknown"
+
+  // Get version dates from markdown files
+  const tosVersion = getLegalVersionDate("terms-of-service.md")
+  const privacyPolicyVersion = getLegalVersionDate("privacy-policy.md")
+
+  // Use a Prisma transaction to create the Organization, User, LegalConsent, and default Starter Subscription atomically
   await prisma.$transaction(async (tx) => {
     // 1. Create the firm/organization
     const organization = await tx.organization.create({
@@ -59,7 +72,18 @@ export async function registerUser(prevState: { error?: string; success?: string
       },
     })
 
-    // 3. Create a default Trial/Starter subscription for the organization
+    // 3. Create LegalConsent record for compliance
+    await tx.legalConsent.create({
+      data: {
+        userId: user.id,
+        tosVersion,
+        privacyPolicyVersion,
+        ipAddress,
+        userAgent,
+      },
+    })
+
+    // 4. Create a default Trial/Starter subscription for the organization
     await tx.subscription.create({
       data: {
         orgId: organization.id,

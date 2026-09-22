@@ -156,6 +156,26 @@ model User {
 
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+
+  legalConsents  LegalConsent[]
+}
+
+/**
+ * Records a user's acceptance of legal documents for compliance.
+ * Created when a user registers and accepts the Terms of Service and Privacy Policy.
+ */
+model LegalConsent {
+  id                   String   @id @default(cuid())
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tosVersion           String
+  privacyPolicyVersion String
+  consentTimestamp     DateTime @default(now())
+  ipAddress            String
+  userAgent            String
+  createdAt            DateTime @default(now())
+
+  @@index([userId])
 }
 
 /**

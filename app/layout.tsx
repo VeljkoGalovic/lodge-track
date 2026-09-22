@@ -55,6 +55,16 @@ export default function RootLayout({
     >
       <head>
         <BootScript />
+        {/* Termly CMP - Cookie Consent Management Platform */}
+        <script
+          type="text/javascript"
+          id="termly-cmp"
+          data-domain="YOUR_DOMAIN.termly.io"
+          src="https://app.termly.io/embed.min.js"
+          async
+          crossOrigin="anonymous"
+          integrity="sha384-YOUR_SRI_HASH_HERE"
+        ></script>
       </head>
       <body className="min-h-screen bg-background font-sans text-foreground antialiased selection:bg-primary/30">
         {children}
