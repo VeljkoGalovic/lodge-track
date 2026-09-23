@@ -1,59 +1,49 @@
 import { randomUUID } from "crypto"
-import { mkdir, readFile, unlink, writeFile } from "fs/promises"
-import path from "path"
+import { createHash } from "crypto"
+import { getSupabaseServerClient } from "@/lib/supabase/server"
 import { formatBytes } from "@/lib/subscriptions"
 import { Prisma } from "@prisma/client"
 
 type TxClient = Prisma.TransactionClient
 
 /**
- * Private storage for receipt images and PDFs.
+ * Supabase Storage for receipt images and PDFs.
  *
- * Receipts are stored *outside* the served tree. A file under `public/` is
- * readable by anyone who can reach the path — no session, no tenant check — and
- * the paths are guessable, so one leaked URL would expose another organization's
- * supplier and pricing. Instead each file is written to a directory nothing
- * serves directly, and `receiptPath` (the key stored on the expense) is only ever
- * resolved by /api/receipts/[id], which authenticates the caller and confirms the
- * expense belongs to their organization before reading a byte.
+ * Receipts are stored in a private Supabase Storage bucket. The object path
+ * follows the convention: {orgId}/{module}/{uuid}.{ext}
+ *
+ * Access is controlled by:
+ *   1. RLS policies on storage.objects that validate orgId from JWT claim
+ *   2. Application-level checks in every API route and server action
+ *   3. Signed URLs for time-limited download access
  *
  * Nothing about the upload is trusted:
- *   - the filename is generated here, never taken from the upload, so a name like
- *     `../../app/page.tsx` has nothing to traverse;
- *   - the content type is sniffed from the file's own leading bytes, because the
- *     browser's Content-Type is attacker-controlled and a mislabelled file would
- *     otherwise be handed back with a type of the uploader's choosing;
- *   - the size is capped, and the cap is also raised in next.config.ts so the
- *     request is rejected before the body is buffered.
- *
- * The filesystem calls below carry `turbopackIgnore`. They are reaching into a
- * directory the application writes at runtime — receipts are uploaded data, not
- * build input — and without the opt-out the bundler's file tracer sees a path it
- * cannot resolve statically and copies the entire project, `public/` included,
- * into the server output.
+ *   - the filename is generated here, never taken from the upload
+ *   - the content type is sniffed from the file's own leading bytes
+ *   - the size is capped, and the cap is also raised in next.config.ts
+ *   - SHA256 checksum is computed for integrity verification
  */
 
-/** Receipts are photographs and scans; 5 MB is generous for both. */
-export const MAX_RECEIPT_BYTES = 5 * 1024 * 1024
+/** Attachments are photographs, scans, and documents; 5 MB is generous for both. */
+export const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024
 
-/**
- * Kept beside the app rather than in `public/`, and overridable so a deployment
- * can point it at a mounted volume.
- */
-const STORAGE_ROOT =
-  process.env.RECEIPT_STORAGE_DIR ?? path.join(process.cwd(), ".data", "receipts")
+const BUCKET_NAME = "attachments"
 
-export interface StoredReceipt {
-  /** Storage key, relative to STORAGE_ROOT. This is what the expense row keeps. */
+export interface StoredAttachment {
+  /** Storage object path, relative to bucket root. This is what the attachment row keeps. */
   path: string
   /** The uploader's filename, for the download prompt only. */
   name: string
   /** Sniffed from the file, never from the upload's own claim. */
   type: string
   size: number
+  /** SHA256 checksum for integrity verification. */
+  checksum: string
+  /** Supabase object ID (returned on upload). */
+  supabaseId?: string
 }
 
-export type SaveReceiptResult = { ok: true; receipt: StoredReceipt } | { ok: false; error: string }
+export type SaveAttachmentResult = { ok: true; attachment: StoredAttachment } | { ok: false; error: string }
 
 /**
  * Allowed types, by magic bytes.
@@ -95,7 +85,7 @@ const SIGNATURES: { type: string; extension: string; matches: (bytes: Buffer) =>
 ]
 
 /** The real type of these bytes, or null when it is not something we accept. */
-export function sniffReceiptType(bytes: Buffer): { type: string; extension: string } | null {
+export function sniffAttachmentType(bytes: Buffer): { type: string; extension: string } | null {
   for (const signature of SIGNATURES) {
     if (signature.matches(bytes)) {
       return { type: signature.type, extension: signature.extension }
@@ -106,18 +96,32 @@ export function sniffReceiptType(bytes: Buffer): { type: string; extension: stri
 
 /** Strips anything that could confuse a path or a header out of a display name. */
 export function safeDisplayName(raw: string): string {
-  const base = path.basename(raw).replace(/[\r\n"\\/\0]/g, "").trim()
-  return (base || "receipt").slice(0, 120)
+  const base = raw.replace(/[\r\n"\\/\0]/g, "").trim()
+  return (base || "attachment").slice(0, 120)
+}
+
+/** Computes SHA256 checksum of bytes. */
+function computeChecksum(bytes: Buffer): string {
+  return createHash("sha256").update(bytes).digest("hex")
 }
 
 /**
- * Writes an uploaded receipt under its organization's own directory.
+ * Generates the Supabase object path for an attachment.
+ * Convention: {orgId}/{module}/{uuid}.{ext}
+ */
+export function generateObjectPath(orgId: string, module: string, extension: string): string {
+  const moduleLower = module.toLowerCase()
+  return `${orgId}/${moduleLower}/${randomUUID()}.${extension}`
+}
+
+/**
+ * Uploads an attachment to Supabase Storage.
  *
  * The organization's remaining quota is a required argument rather than
  * something this function looks up. Making it required is deliberate: a caller
  * cannot reach the write below without having stated how much room is left, so a
  * new upload path is a compile error rather than a quiet way around the cap.
- * `receiptQuota()` in lib/receipt-quota.ts is where that figure comes from.
+ * `attachmentQuota()` in lib/attachment-quota.ts is where that figure comes from.
  *
  * The check runs before the body is buffered, so a request that cannot be
  * accepted is refused on the strength of its `Content-Length` rather than after
@@ -126,34 +130,20 @@ export function safeDisplayName(raw: string): string {
  * Refuses rather than substitutes on a bad type: silently storing a file as a
  * type it is not is how a mismatch reaches a Content-Type header later.
  */
-export async function saveReceipt(
+export async function saveAttachment(
   file: File,
   orgId: string,
-  quota: { usedBytes: number; limitBytes: number }
-): Promise<SaveReceiptResult>
-/**
- * Writes an uploaded receipt under its organization's own directory, using a
- * transaction client for atomic quota checking.
- */
-export async function saveReceipt(
-  file: File,
-  orgId: string,
+  module: string,
+  moduleId: string,
+  quota: { usedBytes: number; limitBytes: number },
+  uploadedById: string,
   tx: TxClient
-): Promise<SaveReceiptResult>
-export async function saveReceipt(
-  file: File,
-  orgId: string,
-  quotaOrTx: { usedBytes: number; limitBytes: number } | TxClient
-): Promise<SaveReceiptResult> {
-  // Determine if we're using a transaction client
-  const isTx = typeof quotaOrTx === "object" && "expense" in quotaOrTx
-  const tx = isTx ? (quotaOrTx as TxClient) : null
-
+): Promise<SaveAttachmentResult> {
   if (file.size === 0) return { ok: false, error: "That file is empty." }
-  if (file.size > MAX_RECEIPT_BYTES) {
+  if (file.size > MAX_ATTACHMENT_BYTES) {
     return {
       ok: false,
-      error: `Receipts must be under ${Math.round(MAX_RECEIPT_BYTES / (1024 * 1024))} MB.`,
+      error: `Attachments must be under ${Math.round(MAX_ATTACHMENT_BYTES / (1024 * 1024))} MB.`,
     }
   }
 
@@ -162,42 +152,58 @@ export async function saveReceipt(
    * actionable on its own, whereas a quota message is only useful once the file
    * itself is known to be acceptable.
    */
-  let quota: { usedBytes: number; limitBytes: number }
-  if (isTx && tx) {
-    // When using a transaction, fetch quota inside the transaction
-    const { receiptQuota } = await import("@/lib/receipt-quota")
-    const q = await receiptQuota(tx, orgId)
-    if (!q) return { ok: false, error: "Your organization could not be found." }
-    quota = q
-  } else {
-    quota = quotaOrTx as { usedBytes: number; limitBytes: number }
-  }
-
   if (quota.usedBytes + file.size > quota.limitBytes) {
     return { ok: false, error: overQuotaMessage(quota) }
   }
 
   const bytes = Buffer.from(await file.arrayBuffer())
-  const sniffed = sniffReceiptType(bytes)
+  const sniffed = sniffAttachmentType(bytes)
   if (!sniffed) {
-    return { ok: false, error: "Receipts must be a PDF, PNG, JPEG or WebP file." }
+    return { ok: false, error: "Attachments must be a PDF, PNG, JPEG or WebP file." }
   }
 
-  // The organization directory is part of the key so a file can be found — and
-  // swept — by tenant, but the key is still only ever resolved through storagePath().
-  const directory = path.join(/*turbopackIgnore: true*/ STORAGE_ROOT, orgId)
-  await mkdir(directory, { recursive: true })
+  const checksum = computeChecksum(bytes)
+  const objectPath = generateObjectPath(orgId, module, sniffed.extension)
 
-  const key = `${orgId}/${randomUUID()}.${sniffed.extension}`
-  await writeFile(path.join(/*turbopackIgnore: true*/ STORAGE_ROOT, key), bytes)
+  // Upload to Supabase Storage
+  const supabase = getSupabaseServerClient()
+  const { data: uploadData, error: uploadError } = await supabase.storage
+    .from(BUCKET_NAME)
+    .upload(objectPath, bytes, {
+      contentType: sniffed.type,
+      upsert: false,
+    })
+
+  if (uploadError) {
+    return { ok: false, error: `Upload failed: ${uploadError.message}` }
+  }
+
+  // Create Attachment record in database
+  const attachment = await tx.attachment.create({
+    data: {
+      module: module as any, // AttachmentModule enum
+      moduleId,
+      orgId,
+      bucket: BUCKET_NAME,
+      objectPath,
+      supabaseId: uploadData.id,
+      fileName: safeDisplayName(file.name),
+      mimeType: sniffed.type,
+      fileSize: bytes.length,
+      checksum,
+      uploadedById,
+    },
+  })
 
   return {
     ok: true,
-    receipt: {
-      path: key,
+    attachment: {
+      path: objectPath,
       name: safeDisplayName(file.name),
       type: sniffed.type,
       size: bytes.length,
+      checksum,
+      supabaseId: uploadData.id,
     },
   }
 }
@@ -206,7 +212,7 @@ export async function saveReceipt(
  * The refusal, as a sentence.
  *
  * Names both what is used and what is left, because the two call for different
- * responses: nearly full means "delete an old receipt", barely started means
+ * responses: nearly full means "delete an old attachment", barely started means
  * "your plan is the problem". A bare "storage limit exceeded" forces a host to
  * go and work out which of those they are in.
  */
@@ -214,44 +220,92 @@ function overQuotaMessage(quota: { usedBytes: number; limitBytes: number }): str
   const used = formatBytes(quota.usedBytes)
   const limit = formatBytes(quota.limitBytes)
   const free = formatBytes(Math.max(0, quota.limitBytes - quota.usedBytes))
-  return `Your organization has used ${used} of its ${limit} receipt storage, leaving ${free}. Remove an old receipt or upgrade the plan to add this one.`
+  return `Your organization has used ${used} of its ${limit} attachment storage, leaving ${free}. Remove an old attachment or upgrade the plan to add this one.`
 }
 
 /**
- * The absolute path of a stored receipt.
- *
- * Rejects any key that escapes the storage root. Keys are generated by
- * `saveReceipt`, so this should be unreachable — which is precisely why it is
- * checked here as well, at the one place a key becomes a filesystem path.
+ * Generates a signed URL for downloading an attachment.
+ * The URL expires after the given number of seconds (default 1 hour).
  */
-export function storagePath(key: string): string | null {
-  const resolved = path.resolve(/*turbopackIgnore: true*/ STORAGE_ROOT, key)
-  const root = path.resolve(/*turbopackIgnore: true*/ STORAGE_ROOT)
-  if (resolved !== root && !resolved.startsWith(root + path.sep)) return null
-  return resolved
-}
+export async function getAttachmentSignedUrl(
+  objectPath: string,
+  expiresIn: number = 3600
+): Promise<string | null> {
+  const supabase = getSupabaseServerClient()
+  const { data, error } = await supabase.storage
+    .from(BUCKET_NAME)
+    .createSignedUrl(objectPath, expiresIn)
 
-/** Reads a stored receipt, or null when it is gone or the key is unusable. */
-export async function readReceipt(key: string): Promise<Buffer | null> {
-  const absolute = storagePath(key)
-  if (!absolute) return null
-  try {
-    return await readFile(/*turbopackIgnore: true*/ absolute)
-  } catch {
+  if (error || !data?.signedUrl) {
     return null
   }
+
+  return data.signedUrl
 }
 
 /**
- * Best-effort removal. Called after the database row is already gone, so a
- * failure here leaks a file rather than breaking the request — logged, not thrown.
+ * Generates a signed URL for uploading an attachment directly from the browser.
+ * Useful for large files or when you want to avoid proxying through the server.
+ * The URL expires after the given number of seconds (default 1 hour).
  */
-export async function deleteReceipt(key: string): Promise<void> {
-  const absolute = storagePath(key)
-  if (!absolute) return
-  try {
-    await unlink(/*turbopackIgnore: true*/ absolute)
-  } catch (error) {
-    console.error("[storage] could not remove receipt", key, error)
+export async function getAttachmentUploadUrl(
+  objectPath: string,
+  expiresIn: number = 3600
+): Promise<string | null> {
+  const supabase = getSupabaseServerClient()
+  const { data, error } = await supabase.storage
+    .from(BUCKET_NAME)
+    .createSignedUploadUrl(objectPath)
+
+  if (error || !data?.signedUrl) {
+    return null
   }
+
+  return data.signedUrl
+}
+
+/**
+ * Deletes an attachment from Supabase Storage.
+ * Called after the database row is already gone, so a failure here leaks a file
+ * rather than breaking the request — logged, not thrown.
+ */
+export async function deleteAttachment(objectPath: string): Promise<void> {
+  const supabase = getSupabaseServerClient()
+  const { error } = await supabase.storage.from(BUCKET_NAME).remove([objectPath])
+  if (error) {
+    console.error("[storage] could not remove attachment", objectPath, error)
+  }
+}
+
+/**
+ * Lists attachments for a given module and entity.
+ */
+export async function listAttachments(
+  orgId: string,
+  module: string,
+  moduleId: string
+): Promise<StoredAttachment[]> {
+  const supabase = getSupabaseServerClient()
+  const prefix = `${orgId}/${module.toLowerCase()}/`
+
+  const { data, error } = await supabase.storage
+    .from(BUCKET_NAME)
+    .list(prefix, {
+      limit: 100,
+      sortBy: { column: "created_at", order: "desc" },
+    })
+
+  if (error) {
+    console.error("[storage] could not list attachments", error)
+    return []
+  }
+
+  return (data || []).map((file) => ({
+    path: `${prefix}${file.name}`,
+    name: file.name,
+    type: file.metadata?.mimetype || "application/octet-stream",
+    size: file.metadata?.size || 0,
+    checksum: "",
+    supabaseId: file.id ?? undefined,
+  }))
 }

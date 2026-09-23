@@ -15,6 +15,9 @@ import { SubmitButton } from "@/components/dashboard/SubmitButton"
 import { useI18n } from "@/components/i18n/LocaleProvider"
 import { format } from "@/lib/i18n/dictionaries"
 import { Paperclip, X } from "lucide-react"
+import { AttachmentUploader, type StoredAttachment } from "@/components/attachments/AttachmentUploader"
+import { useAttachmentUpload } from "@/hooks/useAttachmentUpload"
+import { useSession } from "next-auth/react"
 
 /** Mirrors MAX_RECEIPT_BYTES in lib/storage.ts — the copy and the real cap must agree. */
 const MAX_RECEIPT_MB = 5
@@ -24,6 +27,7 @@ interface ExpenseFormProps {
   properties: { id: string; name: string }[]
   /** ISO 4217 code, used to label and pre-fill the amount field. */
   currency: string
+  orgId: string
   expense?: {
     id: string
     propertyId: string
@@ -34,6 +38,7 @@ interface ExpenseFormProps {
     receiptName: string | null
     /** Drives the "remove" control; the file itself is behind /api/receipts. */
     hasReceipt: boolean
+    attachments?: StoredAttachment[]
   }
 }
 
@@ -44,17 +49,31 @@ function toDateInput(date: Date): string {
   return `${date.getFullYear()}-${month}-${day}`
 }
 
-export function ExpenseForm({ properties, currency, expense }: ExpenseFormProps) {
+export function ExpenseForm({ properties, currency, orgId, expense }: ExpenseFormProps) {
   const { t } = useI18n()
+  const { data: session } = useSession()
   const action = expense ? updateExpense : createExpense
   const [state, formAction] = useActionState(action, EMPTY_ACTION_STATE)
   useActionRedirect(state)
 
-  /**
-   * The filename is shown from state so choosing a replacement updates the label
-   * before the form is submitted — the file input itself cannot be controlled.
-   */
   const [fileName, setFileName] = useState<string | null>(null)
+  const [uploadedAttachments, setUploadedAttachments] = useState<StoredAttachment[]>(expense?.attachments || [])
+
+  const { upload: uploadAttachment, deleteAttachment: deleteAttachmentHook, uploading: attachmentUploading } = useAttachmentUpload(orgId)
+
+  const handleUploadComplete = (attachment: StoredAttachment) => {
+    setUploadedAttachments((prev) => [...prev, attachment])
+    setFileName(null)
+  }
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    const success = await deleteAttachmentHook(attachmentId)
+    if (success) {
+      setUploadedAttachments((prev) => prev.filter((a) => a.id !== attachmentId))
+    }
+  }
+
+  const existingAttachment = expense?.attachments?.[0]
 
   return (
     <form action={formAction} className="space-y-5">
@@ -151,37 +170,19 @@ export function ExpenseForm({ properties, currency, expense }: ExpenseFormProps)
           <span className="text-subtle-foreground">({t.common.optional})</span>
         </label>
 
-        {expense?.hasReceipt ? (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted px-4 py-3">
-            <a
-              href={`/api/receipts/${expense.id}`}
-              target="_blank"
-              rel="noreferrer"
-              className="flex min-w-0 items-center gap-2 text-sm text-primary hover:underline"
-            >
-              <Paperclip className="h-4 w-4 shrink-0" />
-              <span className="truncate">{expense.receiptName ?? t.forms.attachedReceipt}</span>
-            </a>
-            <label className="flex shrink-0 cursor-pointer items-center gap-2 text-xs text-subtle-foreground">
-              <input
-                type="checkbox"
-                name="removeReceipt"
-                className="h-3.5 w-3.5 accent-primary"
-              />
-              <X className="h-3.5 w-3.5" />
-              {t.common.remove}
-            </label>
-          </div>
-        ) : null}
-
-        <input
-          id="receipt"
-          name="receipt"
-          type="file"
+        <AttachmentUploader
+          module="EXPENSE"
+          moduleId={expense?.id || "new"}
+          orgId={orgId}
+          onUploadComplete={handleUploadComplete}
+          maxFiles={1}
           accept={RECEIPT_ACCEPT}
-          onChange={(event) => setFileName(event.target.files?.[0]?.name ?? null)}
-          className="block w-full cursor-pointer rounded-xl border border-border bg-card text-sm text-subtle-foreground file:mr-3 file:cursor-pointer file:rounded-l-xl file:border-0 file:bg-raised file:px-4 file:py-2.5 file:text-sm file:font-medium file:text-foreground hover:file:bg-raised-hover"
+          maxSizeMB={MAX_RECEIPT_MB}
+          disabled={attachmentUploading}
+          existingAttachments={uploadedAttachments}
+          onDelete={handleDeleteAttachment}
         />
+
         <p className="text-xs text-subtle-foreground">
           {fileName
             ? format(t.forms.willUpload, { name: fileName })
@@ -192,7 +193,7 @@ export function ExpenseForm({ properties, currency, expense }: ExpenseFormProps)
       </div>
 
       <div className="flex flex-wrap gap-3 pt-2">
-        <SubmitButton pendingLabel={t.common.saving}>
+        <SubmitButton pendingLabel={t.common.saving} disabled={attachmentUploading}>
           {expense ? t.forms.saveChanges : t.forms.logExpense}
         </SubmitButton>
       </div>

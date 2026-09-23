@@ -64,7 +64,7 @@ export default async function NewExpensePage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ExpenseForm properties={properties} currency={organization.currency} />
+          <ExpenseForm properties={properties} currency={organization.currency} orgId={organization.id} />
         </CardContent>
       </Card>
     </div>

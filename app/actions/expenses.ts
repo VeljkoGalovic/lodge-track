@@ -12,8 +12,8 @@ import {
   parseMoneyField,
 } from "@/lib/authorization"
 import { isExpenseCategory } from "@/lib/expense-category"
-import { deleteReceipt, saveReceipt } from "@/lib/storage"
-import { receiptQuota } from "@/lib/receipt-quota"
+import { deleteAttachment, saveAttachment, MAX_ATTACHMENT_BYTES } from "@/lib/storage"
+import { attachmentQuota } from "@/lib/attachment-quota"
 import { serializable } from "@/lib/transaction"
 
 const MAX_DESCRIPTION_LENGTH = 300
@@ -69,7 +69,7 @@ export async function createExpense(
     return { error: "You do not have permission to log expenses." }
   }
 
-  const { organization } = membership
+  const { organization, user } = membership
   const input = readExpense(formData)
   const problem = validate(input)
   if (problem) return { error: problem }
@@ -84,7 +84,7 @@ export async function createExpense(
   const file = receiptFile(formData)
 
   // Wrap the entire operation in a serializable transaction to prevent
-  // race conditions on receipt quota checks.
+  // race conditions on attachment quota checks.
   return serializable(async (tx) => {
     // Confirms the property is ours, and is where the denormalised `orgId` below
     // comes from — a property row that was itself fetched by `orgId`.
@@ -94,11 +94,14 @@ export async function createExpense(
     })
     if (!property) return { error: "Choose a property in your organization." }
 
-    let receipt = null
+    let attachment = null
+    let quota = null
     if (file) {
-      const stored = await saveReceipt(file, organization.id, tx)
+      quota = await attachmentQuota(tx, organization.id)
+      if (!quota) return { error: "Your organization could not be found." }
+      const stored = await saveAttachment(file, organization.id, "EXPENSE", "", quota, user.id, tx)
       if (!stored.ok) return { error: stored.error }
-      receipt = stored.receipt
+      attachment = stored.attachment
     }
 
     const expense = await tx.expense.create({
@@ -109,12 +112,38 @@ export async function createExpense(
         description: input.description,
         propertyId: property.id,
         orgId: organization.id,
-        receiptPath: receipt?.path ?? null,
-        receiptName: receipt?.name ?? null,
-        receiptType: receipt?.type ?? null,
-        receiptSize: receipt?.size ?? null,
+        // Legacy receipt fields (for backwards compatibility during migration)
+        receiptPath: attachment?.path ?? null,
+        receiptName: attachment?.name ?? null,
+        receiptType: attachment?.type ?? null,
+        receiptSize: attachment?.size ?? null,
+        // New unified attachments
+        attachments: attachment
+          ? {
+              create: {
+                module: "EXPENSE",
+                orgId: organization.id,
+                bucket: "attachments",
+                objectPath: attachment.path,
+                supabaseId: attachment.supabaseId,
+                fileName: attachment.name,
+                mimeType: attachment.type,
+                fileSize: attachment.size,
+                checksum: attachment.checksum,
+                uploadedById: user.id,
+              },
+            }
+          : undefined,
       },
     })
+
+    // Update the attachment with the actual expense ID (moduleId)
+    if (attachment) {
+      await tx.attachment.update({
+        where: { id: (await tx.attachment.findFirst({ where: { objectPath: attachment.path } }))?.id },
+        data: { moduleId: expense.id },
+      })
+    }
 
     revalidateExpense(property.id)
     return { success: "Expense logged.", redirect: `/dashboard/expenses/${expense.id}/edit` }
@@ -131,7 +160,7 @@ export async function updateExpense(
     return { error: "You do not have permission to edit expenses." }
   }
 
-  const { organization } = membership
+  const { organization, user } = membership
   const id = field(formData, "id")
   const input = readExpense(formData)
   const problem = validate(input)
@@ -147,7 +176,7 @@ export async function updateExpense(
   // Scoped by `orgId`, so another tenant's expense id matches nothing here.
   const existing = await prisma.expense.findFirst({
     where: { id, orgId: organization.id },
-    select: { id: true, propertyId: true, receiptPath: true },
+    select: { id: true, propertyId: true, receiptPath: true, attachments: { select: { id: true, objectPath: true } } },
   })
   if (!existing) return { error: "That expense no longer exists." }
 
@@ -167,27 +196,23 @@ export async function updateExpense(
    * expense would reference a file that no longer exists.
    *
    * Wrap the entire operation in a serializable transaction to prevent
-   * race conditions on receipt quota checks and ensure atomicity.
+   * race conditions on attachment quota checks and ensure atomicity.
    */
   const result = await serializable(async (tx): Promise<ActionState> => {
-    let receipt = null
+    let attachment = null
+    let quota = null
+
     if (file) {
-      /*
-       * The replaced receipt still counts toward the total here, even though it is
-       * deleted moments from now. That is the conservative direction: it can only
-       * refuse an upload that would have fitted, never accept one that would not.
-       * Reading the total *after* the unlink instead would open a window where a
-       * failed update leaves the row pointing at a file that is already gone.
-       */
-      const quota = await receiptQuota(tx, organization.id)
+      quota = await attachmentQuota(tx, organization.id)
       if (!quota) return { error: "Your organization could not be found." }
-      const stored = await saveReceipt(file, organization.id, quota)
+      const stored = await saveAttachment(file, organization.id, "EXPENSE", id, quota, user.id, tx)
       if (!stored.ok) return { error: stored.error }
-      receipt = stored.receipt
+      attachment = stored.attachment
     }
 
     const keepExisting = !file && !removeReceipt
 
+    // Update expense with legacy fields (for backwards compatibility)
     await tx.expense.updateMany({
       where: { id, orgId: organization.id },
       data: {
@@ -196,15 +221,63 @@ export async function updateExpense(
         date: input.date!,
         description: input.description,
         propertyId: property.id,
-        receiptPath: keepExisting ? existing.receiptPath : (receipt?.path ?? null),
-        receiptName: keepExisting ? undefined : (receipt?.name ?? null),
-        receiptType: keepExisting ? undefined : (receipt?.type ?? null),
-        receiptSize: keepExisting ? undefined : (receipt?.size ?? null),
+        receiptPath: keepExisting ? existing.receiptPath : (attachment?.path ?? null),
+        receiptName: keepExisting ? undefined : (attachment?.name ?? null),
+        receiptType: keepExisting ? undefined : (attachment?.type ?? null),
+        receiptSize: keepExisting ? undefined : (attachment?.size ?? null),
       },
     })
 
+    // Handle new attachment record
+    if (attachment) {
+      // Delete old attachment records for this expense
+      const oldAttachments = await tx.attachment.findMany({
+        where: { orgId: organization.id, module: "EXPENSE", moduleId: id },
+        select: { id: true, objectPath: true },
+      })
+
+      for (const oldAtt of oldAttachments) {
+        await deleteAttachment(oldAtt.objectPath)
+      }
+
+      await tx.attachment.deleteMany({
+        where: { orgId: organization.id, module: "EXPENSE", moduleId: id },
+      })
+
+      // Create new attachment record
+      await tx.attachment.create({
+        data: {
+          module: "EXPENSE",
+          moduleId: id,
+          orgId: organization.id,
+          bucket: "attachments",
+          objectPath: attachment.path,
+          supabaseId: attachment.supabaseId,
+          fileName: attachment.name,
+          mimeType: attachment.type,
+          fileSize: attachment.size,
+          checksum: attachment.checksum,
+          uploadedById: user.id,
+        },
+      })
+    } else if (removeReceipt) {
+      // Remove all attachments for this expense
+      const oldAttachments = await tx.attachment.findMany({
+        where: { orgId: organization.id, module: "EXPENSE", moduleId: id },
+        select: { id: true, objectPath: true },
+      })
+
+      for (const oldAtt of oldAttachments) {
+        await deleteAttachment(oldAtt.objectPath)
+      }
+
+      await tx.attachment.deleteMany({
+        where: { orgId: organization.id, module: "EXPENSE", moduleId: id },
+      })
+    }
+
     if (!keepExisting && existing.receiptPath) {
-      await deleteReceipt(existing.receiptPath)
+      await deleteAttachment(existing.receiptPath)
     }
 
     revalidateExpense(property.id)
@@ -234,17 +307,27 @@ export async function deleteExpense(
   // `orgId`, so this read never authorises anything on its own.
   const expense = await prisma.expense.findFirst({
     where: { id, orgId: membership.organization.id },
-    select: { id: true, propertyId: true, receiptPath: true },
+    select: { id: true, propertyId: true, receiptPath: true, attachments: { select: { id: true, objectPath: true } } },
   })
   if (!expense) return { error: "That expense no longer exists." }
 
   const result = await serializable(async (tx): Promise<{ error?: string; success?: string; redirect?: string; propertyId: string }> => {
+    // Delete attachment records and files
+    if (expense.attachments && expense.attachments.length > 0) {
+      for (const att of expense.attachments) {
+        await deleteAttachment(att.objectPath)
+      }
+      await tx.attachment.deleteMany({
+        where: { orgId: membership.organization.id, module: "EXPENSE", moduleId: id },
+      })
+    }
+
     const { count } = await tx.expense.deleteMany({
       where: { id, orgId: membership.organization.id },
     })
     if (count === 0) return { error: "That expense no longer exists.", propertyId: "" }
 
-    if (expense.receiptPath) await deleteReceipt(expense.receiptPath)
+    if (expense.receiptPath) await deleteAttachment(expense.receiptPath)
 
     return { success: "Expense deleted.", redirect: "/dashboard/expenses", propertyId: expense.propertyId }
   })

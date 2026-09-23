@@ -108,16 +108,23 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
-    // Carries the role onto the token so the session can expose it for RBAC.
+    // Carries the role and orgId onto the token so the session can expose it for RBAC and RLS.
     async jwt({ token, user }) {
       if (user) {
         token.role = (user as { role: Role }).role
+        // Add orgId to JWT for Supabase RLS policies
+        const u = await prisma.user.findUnique({
+          where: { email: user.email! },
+          select: { orgId: true },
+        })
+        token.orgId = u?.orgId
       }
       return token
     },
     async session({ session, token }) {
       if (session.user) {
         ;(session.user as { role?: Role }).role = token.role as Role
+        ;(session.user as { orgId?: string }).orgId = token.orgId as string
       }
       return session
     },

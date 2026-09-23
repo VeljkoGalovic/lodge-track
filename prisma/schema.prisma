@@ -52,6 +52,17 @@ enum BookingType {
 }
 
 /**
+ * Module that owns an attachment. Used for polymorphic relations and bucket organization.
+ */
+enum AttachmentModule {
+  EXPENSE
+  BOOKING
+  PROPERTY
+  UNIT
+  USER_AVATAR
+}
+
+/**
  * What an expense was for. A closed enum rather than free text so the expense
  * list can group and total by category without the totals fragmenting across
  * "utilities", "Utilities" and "utility".
@@ -85,6 +96,7 @@ model Organization {
   expenses     Expense[]
   subscription Subscription?
   invitations  Invitation[]
+  attachments  Attachment[]
 }
 
 /**
@@ -158,6 +170,9 @@ model User {
   updatedAt    DateTime      @updatedAt
 
   legalConsents  LegalConsent[]
+  uploadedAttachments Attachment[] @relation("AttachmentUploader")
+
+  @@index([orgId])
 }
 
 /**
@@ -470,4 +485,52 @@ model Expense {
   /// before accepting an upload. Leading `orgId` scopes it; `receiptSize` makes
   /// it an index-only scan, so the check costs no heap reads.
   @@index([orgId, receiptSize])
+
+  // Legacy receipt fields (kept for migration period, already defined above)
+  // receiptPath String?
+  // receiptName String?
+  // receiptType String?
+  // receiptSize Int?
+
+  // New unified attachments
+  attachments Attachment[] @relation("ExpenseAttachments")
+}
+
+/**
+ * Unified attachment record for all file uploads across modules.
+ * Replaces the legacy per-model receipt fields with a polymorphic relation.
+ */
+model Attachment {
+  id            String           @id @default(cuid())
+  module        AttachmentModule
+  moduleId      String           // References expense.id, booking.id, property.id, etc.
+
+  orgId         String
+  organization  Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  // Supabase Storage metadata
+  bucket        String           @default("attachments")
+  objectPath    String           // e.g., "org_abc/expenses/uuid.pdf"
+  supabaseId    String?          // Supabase object ID for management API
+
+  // File metadata (mirrors current receipt fields)
+  fileName      String           // Original filename (sanitized)
+  mimeType      String           // Sniffed from magic bytes
+  fileSize      Int              // Bytes
+  checksum      String?          // SHA256 for deduplication/integrity
+
+  // Optional context
+  description   String?
+  uploadedById  String
+  uploadedBy    User             @relation("AttachmentUploader", fields: [uploadedById], references: [id])
+
+  // Inverse relations for polymorphic attachments
+  expense       Expense?         @relation("ExpenseAttachments", fields: [moduleId], references: [id])
+
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([orgId, module, moduleId])
+  @@index([orgId, createdAt])
+  @@index([orgId, fileSize])     // For quota sums (index-only scan)
 }

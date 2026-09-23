@@ -1,23 +1,14 @@
 import { NextResponse } from "next/server"
 import { currentMembership } from "@/lib/authorization"
 import { prisma } from "@/lib/prisma"
-import { readReceipt } from "@/lib/storage"
+import { getAttachmentSignedUrl } from "@/lib/storage"
 
 /**
- * Serves an expense receipt.
+ * Serves an expense receipt (legacy endpoint).
  *
- * The only way a stored receipt ever leaves the server, and the reason receipts
- * are not written under `public/`. Three checks stand between the request and the
- * bytes, and all three are load-bearing:
- *
- *   1. a session — an anonymous request never reaches the query;
- *   2. the expense is found by `{ id, orgId }` together, so an id belonging to
- *      another tenant matches nothing rather than being fetched and then judged;
- *   3. the stored file exists and its key resolves inside the storage root.
- *
- * The response is marked `nosniff` and `no-store`: the content type comes from
- * the bytes verified at upload rather than the browser's claim, and a receipt is
- * tenant data that should not sit in a shared cache.
+ * Redirects to the new attachments API which serves files via signed URLs
+ * from the unified Attachment table. Maintains backward compatibility for
+ * existing links during the migration period.
  */
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const membership = await currentMembership()
@@ -27,29 +18,42 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
   const { id } = await params
 
-  const expense = await prisma.expense.findFirst({
-    // Both terms together: `orgId` is not a check performed after the fetch, it
-    // is part of what makes the row findable at all.
-    where: { id, orgId: membership.organization.id },
-    select: { receiptPath: true, receiptName: true, receiptType: true },
+  // First try to find the attachment in the new unified table
+  const attachment = await prisma.attachment.findFirst({
+    where: {
+      module: "EXPENSE",
+      moduleId: id,
+      orgId: membership.organization.id,
+    },
+    select: { objectPath: true, fileName: true, mimeType: true, fileSize: true },
+    orderBy: { createdAt: "desc" },
   })
 
-  if (!expense?.receiptPath) {
-    return NextResponse.json({ error: "No receipt" }, { status: 404 })
+  if (!attachment) {
+    // Fallback to legacy receipt fields for backward compatibility
+    const expense = await prisma.expense.findFirst({
+      where: { id, orgId: membership.organization.id },
+      select: { receiptPath: true, receiptName: true, receiptType: true },
+    })
+
+    if (!expense?.receiptPath) {
+      return NextResponse.json({ error: "No receipt" }, { status: 404 })
+    }
+
+    // For legacy receipts, generate a signed URL from the stored path
+    const signedUrl = await getAttachmentSignedUrl(expense.receiptPath)
+    if (!signedUrl) {
+      return NextResponse.json({ error: "Could not generate download link." }, { status: 500 })
+    }
+
+    return NextResponse.redirect(signedUrl)
   }
 
-  const bytes = await readReceipt(expense.receiptPath)
-  if (!bytes) {
-    return NextResponse.json({ error: "Receipt file is missing" }, { status: 404 })
+  // New attachment system: generate signed URL
+  const signedUrl = await getAttachmentSignedUrl(attachment.objectPath)
+  if (!signedUrl) {
+    return NextResponse.json({ error: "Could not generate download link." }, { status: 500 })
   }
 
-  const headers = new Headers({
-    "Content-Type": expense.receiptType ?? "application/octet-stream",
-    "Content-Length": String(bytes.length),
-    "Content-Disposition": `inline; filename="${encodeURIComponent(expense.receiptName ?? "receipt")}"`,
-    "X-Content-Type-Options": "nosniff",
-    "Cache-Control": "private, no-store",
-  })
-
-  return new NextResponse(new Uint8Array(bytes), { headers })
+  return NextResponse.redirect(signedUrl)
 }
