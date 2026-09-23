@@ -1,3 +1,4 @@
+import Script from "next/script"
 import { LOCALE_COOKIE } from "@/lib/i18n/server"
 import { THEME_COOKIE } from "@/lib/theme"
 
@@ -42,5 +43,11 @@ if(l)r.lang=decodeURIComponent(l[1]);
 }catch(e){}})()`
 
 export function BootScript() {
-  return <script dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }} />
+  return (
+    <Script
+      id="boot-script"
+      strategy="beforeInteractive"
+      dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }}
+    />
+  )
 }

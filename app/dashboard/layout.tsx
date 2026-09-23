@@ -6,6 +6,7 @@ import { currentLocale } from "@/lib/i18n/server"
 import { currentThemePreference } from "@/lib/theme-server"
 import { redirect } from "next/navigation"
 import { DashboardShell } from "@/components/dashboard/DashboardShell"
+import { hasValidAccess } from "@/lib/billing"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -39,6 +40,12 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
 
   const org = user.organization
   const subscription = org.subscription
+
+  // Billing guard: redirect to billing page if subscription is expired/inactive and trial has ended
+  const hasAccess = hasValidAccess(subscription?.status ?? "CANCELED", subscription?.trialEndsAt ?? null)
+  if (!hasAccess) {
+    redirect("/dashboard/billing?reason=access_revoked")
+  }
 
   const features = getOrgFeatures(
     subscription?.tier || "STARTER",

@@ -262,6 +262,7 @@ model Subscription {
   isLifetimeFree        Boolean            @default(false)
 
   currentPeriodEnd     DateTime?
+  trialEndsAt          DateTime?
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 }

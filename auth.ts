@@ -2,7 +2,7 @@
 import NextAuth, { CredentialsSignin } from "next-auth"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import CredentialsProvider from "next-auth/providers/credentials"
-import bcrypt from "bcrypt"
+import bcrypt from "bcryptjs" // Change from "bcrypt" to "bcryptjs"
 import type { Role } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { decryptSecret } from "@/lib/crypto"

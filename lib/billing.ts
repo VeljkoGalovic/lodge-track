@@ -175,6 +175,23 @@ export function statusForProviderStatus(status: string): SubscriptionStatus | nu
   return STATUS_MAP[status] ?? null
 }
 
+/**
+ * Determines if a subscription has valid access.
+ * Returns true for ACTIVE, TRIALING (if trial hasn't expired), PAUSED.
+ * Returns false for CANCELED, PAST_DUE, or expired TRIALING.
+ */
+export function hasValidAccess(
+  status: SubscriptionStatus,
+  trialEndsAt: Date | null | undefined
+): boolean {
+  if (status === "ACTIVE" || status === "PAUSED") return true
+  if (status === "TRIALING") {
+    if (!trialEndsAt) return true // No expiry set = valid
+    return new Date() < trialEndsAt
+  }
+  return false // CANCELED, PAST_DUE, etc.
+}
+
 /** The subscription object inside a Lemon Squeezy webhook payload. */
 export interface SubscriptionWebhookData {
   type: string

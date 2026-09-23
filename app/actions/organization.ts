@@ -44,8 +44,9 @@ export async function createOrganization(
 
   await prisma.$transaction(async (tx) => {
     const organization = await tx.organization.create({ data: { name, currency } })
+    const trialEndsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
     await tx.subscription.create({
-      data: { orgId: organization.id, tier: "STARTER", status: "ACTIVE" },
+      data: { orgId: organization.id, tier: "STARTER", status: "TRIALING", trialEndsAt },
     })
     await tx.user.update({
       where: { id: membership.user.id },
