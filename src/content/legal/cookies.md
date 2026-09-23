@@ -65,6 +65,6 @@ We may update this Cookie Policy to reflect changes in our practices or legal re
 
 ## 7. Contact
 
-If you have questions about our use of cookies, contact us at privacy@lodgetrack.app or use the contact form in the app.
+If you have questions about our use of cookies, contact us at support@lodgetrack.com or use the contact form in the app.
 
 © 2026 LodgeTrack. All rights reserved.

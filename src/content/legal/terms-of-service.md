@@ -180,7 +180,7 @@ I reserve the right, but not the obligation, to: (1) monitor the Services for vi
 
 ## 12. PRIVACY POLICY
 
-I care about data privacy and security. Please review my Privacy Policy: [https://www.lodgetrack.com/privacypolicy](https://www.lodgetrack.com/privacypolicy). By using the Services, you agree to be bound by my Privacy Policy, which is incorporated into these Legal Terms. Please be advised the Services are hosted on third-party hosting providers, reference the Privacy Policy for additional information.
+I care about data privacy and security. Please review my Privacy Policy: [https://www.lodgetrack.com/privacy](https://www.lodgetrack.com/privacy). By using the Services, you agree to be bound by my Privacy Policy, which is incorporated into these Legal Terms. Please be advised the Services are hosted on third-party hosting providers, reference the Privacy Policy for additional information.
 
 Where I process personal data on your behalf as a data processor, such processing is governed by my Data Processing Agreement, available at [https://www.lodgetrack.com/dpa](https://www.lodgetrack.com/dpa).
 
