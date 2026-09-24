@@ -5,8 +5,10 @@ import "@testing-library/jest-dom/vitest"
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar"
 import { getDictionary } from "@/lib/i18n/dictionaries"
 
+const usePathnameMock = vi.hoisted(() => ({ value: "/dashboard" }))
+
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/dashboard",
+  usePathname: () => usePathnameMock.value,
 }))
 vi.mock("@/components/i18n/LocaleProvider", () => ({
   useI18n: () => ({ locale: "en", t: getDictionary("en") }),
@@ -66,10 +68,9 @@ describe("DashboardSidebar - no usage meter", () => {
   })
 
   it("highlights active navigation item", () => {
-    vi.mock("next/navigation", () => ({
-      usePathname: () => "/dashboard/properties",
-    }))
+    usePathnameMock.value = "/dashboard/properties"
     render(<DashboardSidebar {...defaultProps} />)
+    // The aria-current is on the Link element inside the SidebarMenuButton
     const propertiesLink = screen.getByRole("link", { name: /properties/i })
     expect(propertiesLink).toHaveAttribute("aria-current", "page")
   })
