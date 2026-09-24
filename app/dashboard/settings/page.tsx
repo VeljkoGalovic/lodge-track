@@ -17,6 +17,7 @@ import { currentLocale } from "@/lib/i18n/server"
 import { format, getDictionary } from "@/lib/i18n/dictionaries"
 import { User, Building2, Bell, Palette, Shield, KeyRound, Mail, ArrowUpRight, Lock } from "lucide-react"
 import { canManageRoles, canConfigureSSO, canAccessEnterpriseSettings } from "@/lib/permissions"
+import { UsageMeter } from "@/components/dashboard/UsageMeter"
 
 export default async function SettingsPage() {
   const { user, organization, subscription } = await requireMembership()
@@ -30,6 +31,12 @@ export default async function SettingsPage() {
     subscription?.maxPropertiesOverride,
     subscription?.hasApiAccessOverride
   )
+
+  // Get property count for usage meter
+  const properties = await prisma.property.findMany({
+    where: { orgId: organization.id },
+    select: { id: true },
+  })
 
   // Only what the counts need, and only for this organization.
   const bookings = await prisma.booking.findMany({
@@ -190,6 +197,15 @@ export default async function SettingsPage() {
           <CardDescription>{t.pages.settings.planHelp}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Usage Meter - Property Usage */}
+          <UsageMeter
+            used={properties.length}
+            max={features.maxProperties}
+            label={t.pages.dashboard.metrics.totalProperties}
+            showPercentage={true}
+            action={{ label: t.pages.dashboard.metrics.upgradePlan, href: "/dashboard/billing" }}
+          />
+
           <div className="flex flex-wrap items-center gap-3">
             <Badge variant="secondary" className={getTierBadgeColor(features.tier)}>
               {getTierLabel(features.tier)}
