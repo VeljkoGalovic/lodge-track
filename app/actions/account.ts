@@ -1,7 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import bcrypt from "bcrypt"
+import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 import { type ActionState, currentMembership, field } from "@/lib/authorization"
 import { decryptSecret, encryptSecret } from "@/lib/crypto"

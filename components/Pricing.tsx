@@ -22,7 +22,7 @@ const TIERS: PricingTier[] = [
     description: "Ideal for individual hosts managing 1–3 properties.",
     features: [
       "Up to 3 properties",
-      "1 GB receipt storage",
+      "1 GB file storage",
       "Automated booking calendar",
       "Basic revenue reports",
       "Email support",
@@ -37,7 +37,7 @@ const TIERS: PricingTier[] = [
     description: "For growing managers who need deeper insight and automation.",
     features: [
       "Up to 15 properties",
-      "5 GB receipt storage",
+      "5 GB file storage",
       "Detailed financial analytics",
       "Multi-tenant tracking",
       "Data import & export",
@@ -53,7 +53,7 @@ const TIERS: PricingTier[] = [
     description: "Custom solutions for large rental portfolios and teams.",
     features: [
       "Unlimited properties",
-      "Unlimited receipt storage",
+      "Unlimited file storage",
       "Dedicated account manager",
       "Custom integrations & API",
       "SSO and role-based access",
