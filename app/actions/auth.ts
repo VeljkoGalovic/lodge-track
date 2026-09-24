@@ -2,7 +2,7 @@
 "use server"
 
 import { prisma } from "@/lib/prisma"
-import bcrypt from "bcrypt"
+import bcrypt from "bcryptjs"
 import { createVerificationToken, verifyAndConsumeToken, invalidateUserTokens } from "@/lib/tokens"
 import { sendVerificationEmail, sendPasswordResetEmail, buildResetLink } from "@/lib/email"
 import { checkRateLimit, getRateLimitIdentifier, RATE_LIMIT_CONFIGS } from "@/lib/rate-limit"
