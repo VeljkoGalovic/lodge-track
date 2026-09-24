@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState, useState } from "react"
+import { useActionState } from "react"
 import type { ExpenseCategory } from "@prisma/client"
 import { createExpense, updateExpense } from "@/app/actions/expenses"
 import { EMPTY_ACTION_STATE } from "@/lib/action-state"
@@ -14,14 +14,13 @@ import { FormMessage } from "@/components/dashboard/FormMessage"
 import { SubmitButton } from "@/components/dashboard/SubmitButton"
 import { useI18n } from "@/components/i18n/LocaleProvider"
 import { format } from "@/lib/i18n/dictionaries"
-import { Paperclip, X } from "lucide-react"
-import { AttachmentUploader, type StoredAttachment } from "@/components/attachments/AttachmentUploader"
-import { useAttachmentUpload } from "@/hooks/useAttachmentUpload"
-import { useSession } from "next-auth/react"
 
-/** Mirrors MAX_RECEIPT_BYTES in lib/storage.ts — the copy and the real cap must agree. */
-const MAX_RECEIPT_MB = 5
-const RECEIPT_ACCEPT = ".pdf,.png,.jpg,.jpeg,.webp"
+/** A `Date` as the `YYYY-MM-DD` a date input expects, in local time. */
+function toDateInput(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${date.getFullYear()}-${month}-${day}`
+}
 
 interface ExpenseFormProps {
   properties: { id: string; name: string }[]
@@ -36,44 +35,16 @@ interface ExpenseFormProps {
     date: Date
     description: string
     receiptName: string | null
-    /** Drives the "remove" control; the file itself is behind /api/receipts. */
     hasReceipt: boolean
-    attachments?: StoredAttachment[]
+    attachments?: never[]
   }
-}
-
-/** A `Date` as the `YYYY-MM-DD` a date input expects, in local time. */
-function toDateInput(date: Date): string {
-  const month = String(date.getMonth() + 1).padStart(2, "0")
-  const day = String(date.getDate()).padStart(2, "0")
-  return `${date.getFullYear()}-${month}-${day}`
 }
 
 export function ExpenseForm({ properties, currency, orgId, expense }: ExpenseFormProps) {
   const { t } = useI18n()
-  const { data: session } = useSession()
   const action = expense ? updateExpense : createExpense
   const [state, formAction] = useActionState(action, EMPTY_ACTION_STATE)
   useActionRedirect(state)
-
-  const [fileName, setFileName] = useState<string | null>(null)
-  const [uploadedAttachments, setUploadedAttachments] = useState<StoredAttachment[]>(expense?.attachments || [])
-
-  const { upload: uploadAttachment, deleteAttachment: deleteAttachmentHook, uploading: attachmentUploading } = useAttachmentUpload(orgId)
-
-  const handleUploadComplete = (attachment: StoredAttachment) => {
-    setUploadedAttachments((prev) => [...prev, attachment])
-    setFileName(null)
-  }
-
-  const handleDeleteAttachment = async (attachmentId: string) => {
-    const success = await deleteAttachmentHook(attachmentId)
-    if (success) {
-      setUploadedAttachments((prev) => prev.filter((a) => a.id !== attachmentId))
-    }
-  }
-
-  const existingAttachment = expense?.attachments?.[0]
 
   return (
     <form action={formAction} className="space-y-5">
@@ -164,36 +135,8 @@ export function ExpenseForm({ properties, currency, orgId, expense }: ExpenseFor
         />
       </div>
 
-      <div className="space-y-2">
-        <label htmlFor="receipt" className="text-sm font-medium text-muted-foreground">
-          {t.forms.receipt}{" "}
-          <span className="text-subtle-foreground">({t.common.optional})</span>
-        </label>
-
-        <AttachmentUploader
-          module="EXPENSE"
-          moduleId={expense?.id || "new"}
-          orgId={orgId}
-          onUploadComplete={handleUploadComplete}
-          maxFiles={1}
-          accept={RECEIPT_ACCEPT}
-          maxSizeMB={MAX_RECEIPT_MB}
-          disabled={attachmentUploading}
-          existingAttachments={uploadedAttachments}
-          onDelete={handleDeleteAttachment}
-        />
-
-        <p className="text-xs text-subtle-foreground">
-          {fileName
-            ? format(t.forms.willUpload, { name: fileName })
-            : expense?.hasReceipt
-              ? t.forms.receiptReplace
-              : format(t.forms.receiptHelp, { max: MAX_RECEIPT_MB })}
-        </p>
-      </div>
-
       <div className="flex flex-wrap gap-3 pt-2">
-        <SubmitButton pendingLabel={t.common.saving} disabled={attachmentUploading}>
+        <SubmitButton pendingLabel={t.common.saving}>
           {expense ? t.forms.saveChanges : t.forms.logExpense}
         </SubmitButton>
       </div>

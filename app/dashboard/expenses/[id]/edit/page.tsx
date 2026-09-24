@@ -9,7 +9,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ArrowLeft } from "lucide-react"
 import { currentLocale } from "@/lib/i18n/server"
 import { getDictionary } from "@/lib/i18n/dictionaries"
-import type { StoredAttachment } from "@/components/attachments/AttachmentUploader"
 
 export default async function EditExpensePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -55,18 +54,6 @@ export default async function EditExpensePage({ params }: { params: Promise<{ id
         description: true,
         receiptName: true,
         receiptPath: true,
-        attachments: {
-          select: {
-            id: true,
-            objectPath: true,
-            fileName: true,
-            mimeType: true,
-            fileSize: true,
-            checksum: true,
-            supabaseId: true,
-            createdAt: true,
-          },
-        },
       },
     }),
     prisma.property.findMany({
@@ -79,18 +66,6 @@ export default async function EditExpensePage({ params }: { params: Promise<{ id
   if (!expense) notFound()
 
   const hasReceipt = expense.receiptPath !== null
-
-  // Convert Prisma attachments to StoredAttachment format
-  const attachments: StoredAttachment[] = (expense.attachments || []).map((att) => ({
-    id: att.id,
-    path: att.objectPath,
-    name: att.fileName,
-    type: att.mimeType,
-    size: att.fileSize,
-    checksum: att.checksum ?? "",
-    supabaseId: att.supabaseId ?? undefined,
-    createdAt: att.createdAt.toISOString(),
-  }))
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -134,7 +109,7 @@ export default async function EditExpensePage({ params }: { params: Promise<{ id
               description: expense.description,
               receiptName: expense.receiptName,
               hasReceipt,
-              attachments,
+              attachments: [],
             }}
           />
         </CardContent>

@@ -56,9 +56,6 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
     subscription?.hasApiAccessOverride
   )
 
-  // Property count for usage meter in sidebar
-  const propertyCount = org._count?.properties ?? 0
-
   // The bell's count obeys the same preferences as the feed itself, so the two
   // can never disagree about how much is waiting.
   const preferences = {
@@ -97,7 +94,6 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
     <DashboardShell
       orgName={org.name}
       features={features}
-      propertyCount={propertyCount}
       userName={user.name || undefined}
       userEmail={user.email}
       attentionCount={attentionCount}

@@ -34,12 +34,10 @@ import { Badge } from "@/components/ui/badge"
 import { useI18n } from "@/components/i18n/LocaleProvider"
 import type { Dictionary } from "@/lib/i18n/dictionaries"
 import { OrgFeatures } from "@/lib/subscriptions"
-import { UsageMeter } from "@/components/dashboard/UsageMeter"
 
 interface DashboardSidebarProps {
   features: OrgFeatures;
   orgName: string;
-  propertyCount: number;
   /** Desktop icon-only state. */
   collapsed: boolean;
   onToggleCollapse: () => void;
@@ -74,7 +72,6 @@ const navigation: NavItem[] = [
 export function DashboardSidebar({
   features,
   orgName,
-  propertyCount,
   collapsed,
   onToggleCollapse,
   onCloseMobile,
@@ -152,18 +149,6 @@ export function DashboardSidebar({
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-
-          {/* Usage Meter in sidebar - compact mode */}
-          <div className="px-2 py-2 group-data-[collapsible=icon]:hidden">
-            <UsageMeter
-              used={propertyCount}
-              max={features.maxProperties}
-              label={t.nav.properties}
-              compact
-              showPercentage={true}
-              action={{ label: t.pages.dashboard.metrics.upgradePlan, href: "/dashboard/billing" }}
-            />
-          </div>
 
         </SidebarContent>
 

@@ -14,7 +14,6 @@ interface DashboardShellProps {
   children: React.ReactNode
   orgName: string
   features: OrgFeatures
-  propertyCount: number
   userName?: string
   userEmail?: string
   /** Items in the member's activity feed, shown on the header bell. */
@@ -38,7 +37,6 @@ export function DashboardShell({
   children,
   orgName,
   features,
-  propertyCount,
   userName,
   userEmail,
   attentionCount,
@@ -81,7 +79,6 @@ export function DashboardShell({
             <DashboardSidebar
               features={features}
               orgName={orgName}
-              propertyCount={propertyCount}
               collapsed={collapsed}
               onToggleCollapse={() => setCollapsed((value) => !value)}
               onCloseMobile={() => setMobileOpen(false)}
