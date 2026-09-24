@@ -4,6 +4,7 @@ import { getOrgFeatures } from "@/lib/subscriptions"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/Button"
+import { Badge } from "@/components/ui/badge"
 import { PageHeader } from "@/components/dashboard/PageHeader"
 import { MemberRow } from "@/components/team/MemberRow"
 import { canModifyMember, isOwner } from "@/lib/authorization"
@@ -16,6 +17,7 @@ import {
   MEMBER_COUNT_FORMS,
   plural,
 } from "@/lib/i18n/dictionaries"
+import { canManageRoles, canConfigureSSO } from "@/lib/permissions"
 
 export default async function TeamPage() {
   const session = await auth()
@@ -76,6 +78,9 @@ export default async function TeamPage() {
     subscription?.maxPropertiesOverride ?? undefined,
     subscription?.hasApiAccessOverride
   )
+
+  const canManageRbac = canManageRoles(features.tier)
+  const canConfigureSso = canConfigureSSO(features.tier)
 
   if (!features.hasTeamRoles) {
     return (
@@ -186,6 +191,47 @@ export default async function TeamPage() {
           </Button>
         </CardContent>
       </Card>
+
+      {canManageRbac || canConfigureSso ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" />
+              {t.pages.team.enterpriseSettings}
+            </CardTitle>
+            <CardDescription>{t.pages.team.enterpriseSettingsHelp}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {canManageRbac && (
+              <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl border border-border bg-muted">
+                <div>
+                  <p className="font-medium text-foreground">{t.pages.team.roleManagement}</p>
+                  <p className="text-sm text-subtle-foreground">{t.pages.team.roleManagementHelp}</p>
+                </div>
+                <Badge variant="secondary" className="border-brand-purple/25 bg-brand-purple/10 text-brand-purple">
+                  {t.pages.team.enterpriseOnly}
+                </Badge>
+              </div>
+            )}
+            {canConfigureSso && (
+              <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl border border-border bg-muted">
+                <div>
+                  <p className="font-medium text-foreground">{t.pages.team.ssoConfiguration}</p>
+                  <p className="text-sm text-subtle-foreground">{t.pages.team.ssoConfigurationHelp}</p>
+                </div>
+                <Badge variant="secondary" className="border-brand-purple/25 bg-brand-purple/10 text-brand-purple">
+                  {t.pages.team.enterpriseOnly}
+                </Badge>
+              </div>
+            )}
+            {(!canManageRbac || !canConfigureSso) && (
+              <p className="text-xs text-subtle-foreground">
+                {t.pages.team.enterpriseFeaturesLocked}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   )
 }

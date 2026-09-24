@@ -17,12 +17,36 @@ export interface OrgFeatures {
    * `Infinity` on ENTERPRISE, which is why every comparison against it must be
    * `>`, never `>=` — and why the remaining-space arithmetic below is written to
    * stay meaningful when the limit is unbounded.
+   *
+   * This is kept for internal quota enforcement only — it is NOT exposed to users
+   * in any UI (pricing page, billing dashboard, plan comparison).
    */
   maxStorageBytes: number;
   hasAdvancedAnalytics: boolean;
   hasTeamRoles: boolean;
   hasApiAccess: boolean;
 }
+
+/**
+ * Monthly prices in cents (minor units) for Lemon Squeezy checkout.
+ * These are the exact prices configured on the Lemon Squeezy variants.
+ * Keep in sync with the marketing page (components/Pricing.tsx) and billing dashboard.
+ */
+export const TIER_PRICES_CENTS: Record<Tier, number> = {
+  STARTER: 1999,  // $19.99
+  PRO: 4999,      // $49.99
+  ENTERPRISE: 9999, // $99.99
+};
+
+/**
+ * Human-readable price strings for display (derived from TIER_PRICES_CENTS).
+ * Used only where a formatted string is needed without Intl.NumberFormat.
+ */
+export const TIER_PRICE_STRINGS: Record<Tier, string> = {
+  STARTER: "$19.99",
+  PRO: "$49.99",
+  ENTERPRISE: "$99.99",
+};
 
 const TIER_LIMITS: Record<Tier, number> = {
   STARTER: 3,
@@ -37,6 +61,9 @@ const TIER_LIMITS: Record<Tier, number> = {
  * number a host reads in the error message has to be the number on the plan page.
  * Mixing 1000-based display with 1024-based limits turns "5 GB" into "4.7 GB used
  * of 5 GB" the moment the account is full, which reads like a billing bug.
+ *
+ * These values are for INTERNAL quota enforcement only. They are NOT shown to users
+ * in any pricing page, billing dashboard, or plan comparison.
  */
 const GB = 1_000_000_000;
 
@@ -128,4 +155,13 @@ export function getTierBadgeColor(tier: Tier): string {
 
 export function getTierLabel(tier: Tier): string {
   return tier.charAt(0) + tier.slice(1).toLowerCase();
+}
+
+/**
+ * Gets the dedicated account manager email for Business tier organizations.
+ * Returns veljko@lodgetrack.com for ENTERPRISE (Business) tier, null for other tiers.
+ * This is the personal manager contact shown to Business tier users.
+ */
+export function getAccountManagerEmail(tier: Tier): string | null {
+  return tier === "ENTERPRISE" ? "veljko@lodgetrack.com" : null
 }

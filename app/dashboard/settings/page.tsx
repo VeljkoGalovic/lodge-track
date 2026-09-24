@@ -15,7 +15,8 @@ import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher"
 import { receiptBytesUsed } from "@/lib/receipt-quota"
 import { currentLocale } from "@/lib/i18n/server"
 import { format, getDictionary } from "@/lib/i18n/dictionaries"
-import { User, Building2, Bell, Palette, Shield, KeyRound, Mail, ArrowUpRight } from "lucide-react"
+import { User, Building2, Bell, Palette, Shield, KeyRound, Mail, ArrowUpRight, Lock } from "lucide-react"
+import { canManageRoles, canConfigureSSO, canAccessEnterpriseSettings } from "@/lib/permissions"
 
 export default async function SettingsPage() {
   const { user, organization, subscription } = await requireMembership()
@@ -242,6 +243,47 @@ export default async function SettingsPage() {
           </Button>
         </CardContent>
       </Card>
+
+      {canAccessEnterpriseSettings(features.tier) ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5 text-primary" />
+              {t.pages.settings.enterpriseSettings}
+            </CardTitle>
+            <CardDescription>{t.pages.settings.enterpriseSettingsHelp}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {canManageRoles(features.tier) && (
+              <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl border border-border bg-muted">
+                <div>
+                  <p className="font-medium text-foreground">{t.pages.settings.roleManagement}</p>
+                  <p className="text-sm text-subtle-foreground">{t.pages.settings.roleManagementHelp}</p>
+                </div>
+                <Badge variant="secondary" className="border-brand-purple/25 bg-brand-purple/10 text-brand-purple">
+                  {t.pages.settings.enterpriseOnly}
+                </Badge>
+              </div>
+            )}
+            {canConfigureSSO(features.tier) && (
+              <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl border border-border bg-muted">
+                <div>
+                  <p className="font-medium text-foreground">{t.pages.settings.ssoConfiguration}</p>
+                  <p className="text-sm text-subtle-foreground">{t.pages.settings.ssoConfigurationHelp}</p>
+                </div>
+                <Badge variant="secondary" className="border-brand-purple/25 bg-brand-purple/10 text-brand-purple">
+                  {t.pages.settings.enterpriseOnly}
+                </Badge>
+              </div>
+            )}
+            {(!canManageRoles(features.tier) || !canConfigureSSO(features.tier)) && (
+              <p className="text-xs text-subtle-foreground">
+                {t.pages.settings.enterpriseFeaturesLocked}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   )
 }

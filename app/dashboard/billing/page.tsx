@@ -1,7 +1,6 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { billingStatus } from "@/lib/billing"
-import { receiptBytesUsed } from "@/lib/receipt-quota"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/Button"
@@ -11,21 +10,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { CreditCard, Check, Lock, AlertTriangle, ArrowUpRight } from "lucide-react"
 import { currentLocale } from "@/lib/i18n/server"
 import { format, getDictionary, type Dictionary } from "@/lib/i18n/dictionaries"
-import { getOrgFeatures, getTierBadgeColor, formatBytes } from "@/lib/subscriptions"
+import { getOrgFeatures, getTierBadgeColor, formatBytes, TIER_PRICES_CENTS, TIER_PRICE_STRINGS, getAccountManagerEmail } from "@/lib/subscriptions"
 import type { Tier } from "@/lib/subscriptions"
 
 interface TierCopy {
   name: string
-  /** Indicative only — the amount actually charged is the one configured on the
-   *  variant in the Lemon Squeezy store, and is shown on the checkout page. */
-  price: number
+  /** Price in cents (minor units) as configured in Lemon Squeezy. */
+  priceCents: number
   popular: boolean
 }
 
 const TIER_COPY: Record<Tier, TierCopy> = {
-  STARTER: { name: "Starter", price: 0, popular: false },
-  PRO: { name: "Pro", price: 49, popular: true },
-  ENTERPRISE: { name: "Enterprise", price: 199, popular: false },
+  STARTER: { name: "Starter", priceCents: TIER_PRICES_CENTS.STARTER, popular: false },
+  PRO: { name: "Pro", priceCents: TIER_PRICES_CENTS.PRO, popular: true },
+  ENTERPRISE: { name: "Business", priceCents: TIER_PRICES_CENTS.ENTERPRISE, popular: false },
 }
 
 const TIER_ORDER: Tier[] = ["STARTER", "PRO", "ENTERPRISE"]
@@ -35,7 +33,6 @@ function tierFeatures(tier: Tier, t: Dictionary): { label: string; included: boo
   const features = getOrgFeatures(tier)
   return [
     { label: features.maxProperties === Infinity ? t.pages.billing.unlimitedProperties : format(t.pages.billing.propertyAllowance, { count: features.maxProperties }), included: true },
-    { label: features.maxStorageBytes === Infinity ? t.pages.billing.unlimitedStorage : format(t.pages.billing.storageAllowance, { amount: formatBytes(features.maxStorageBytes) }), included: true },
     ...[t.pages.billing.propertyManagement, t.pages.billing.calendar, t.pages.billing.notifications, t.pages.billing.members].map((label) => ({ label, included: true })),
     { label: features.hasAdvancedAnalytics ? t.pages.billing.analytics : t.pages.billing.noAnalytics, included: features.hasAdvancedAnalytics },
     { label: features.hasTeamRoles ? t.pages.billing.permissions : t.pages.billing.noPermissions, included: features.hasTeamRoles },
@@ -48,10 +45,6 @@ function comparisonRows(t: Dictionary): Array<{ feature: string; value: (tier: T
     { feature: t.pages.settings.propertyLimit, value: (tier) => {
       const { maxProperties } = getOrgFeatures(tier)
       return maxProperties === Infinity ? t.common.unlimited : String(maxProperties)
-    } },
-    { feature: t.pages.settings.storage, value: (tier) => {
-      const { maxStorageBytes } = getOrgFeatures(tier)
-      return maxStorageBytes === Infinity ? t.common.unlimited : formatBytes(maxStorageBytes)
     } },
     { feature: t.pages.billing.bookingManagement, value: () => true },
     { feature: t.pages.billing.calendar, value: () => true },
@@ -131,7 +124,6 @@ export default async function BillingPage({
   const org = user.organization
   const subscription = org.subscription
   const currentTier: Tier = subscription?.tier ?? "STARTER"
-  const usedBytes = await receiptBytesUsed(org.id)
 
   const features = getOrgFeatures(
     currentTier,
@@ -139,9 +131,16 @@ export default async function BillingPage({
     subscription?.hasApiAccessOverride
   )
 
+  const accountManagerEmail = getAccountManagerEmail(currentTier)
+
   const provider = billingStatus()
   const isOwner = user.role === "OWNER"
   const statusLabel = t.pages.billing.statuses[subscription?.status ?? "ACTIVE"]
+
+  // Format price in cents to locale-aware currency string
+  const formatPrice = (cents: number) => {
+    return new Intl.NumberFormat(dateLocale, { style: "currency", currency: "USD" }).format(cents / 100)
+  }
 
   return (
     <div className="space-y-6">
@@ -186,20 +185,14 @@ export default async function BillingPage({
               {
                 label: t.pages.billing.planPrice,
                 value:
-                  TIER_COPY[currentTier].price === 0
+                  TIER_COPY[currentTier].priceCents === 0
                     ? t.pages.billing.free
-                    : format(t.pages.billing.monthlyPrice, { amount: price(TIER_COPY[currentTier].price) }),
+                    : format(t.pages.billing.monthlyPrice, { amount: formatPrice(TIER_COPY[currentTier].priceCents) }),
               },
               {
                 label: t.pages.billing.propertiesUsed,
                 value: `${org._count?.properties || 0} / ${
                   features.maxProperties === Infinity ? "∞" : features.maxProperties
-                }`,
-              },
-              {
-                label: t.pages.settings.storage,
-                value: `${formatBytes(usedBytes)} / ${
-                  features.maxStorageBytes === Infinity ? "∞" : formatBytes(features.maxStorageBytes)
                 }`,
               },
               { label: t.forms.status, value: statusLabel },
@@ -246,6 +239,16 @@ export default async function BillingPage({
               {t.pages.billing.portalHelp}
             </p>
           ) : null}
+
+          {accountManagerEmail && currentTier === "ENTERPRISE" ? (
+            <div className="rounded-2xl border border-brand-purple/25 bg-brand-purple/10 p-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-brand-purple">{t.pages.billing.accountManager}</span>
+              </div>
+              <p className="mt-1 text-sm text-subtle-foreground">{t.pages.billing.accountManagerHelp}</p>
+              <p className="mt-2 font-mono text-sm text-brand-purple">{accountManagerEmail}</p>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -288,7 +291,7 @@ export default async function BillingPage({
                   <div className="text-center">
                     <div className="mb-2 flex items-baseline justify-center gap-1">
                       <span className="text-4xl font-bold tracking-tight text-foreground">
-                        {price(copy.price)}
+                        {formatPrice(copy.priceCents)}
                       </span>
                       <span className="text-subtle-foreground">{t.pages.billing.perMonth}</span>
                     </div>
@@ -381,7 +384,7 @@ export default async function BillingPage({
                 <TableHead>{t.pages.billing.feature}</TableHead>
                 <TableHead className="text-center">Starter</TableHead>
                 <TableHead className="text-center">Pro</TableHead>
-                <TableHead className="text-center">Enterprise</TableHead>
+                <TableHead className="text-center">Business</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
