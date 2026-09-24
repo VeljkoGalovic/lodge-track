@@ -17,12 +17,11 @@ interface PricingTier {
 const TIERS: PricingTier[] = [
   {
     name: "Starter",
-    price: "$19",
+    price: "$19.99",
     period: "/month",
     description: "Ideal for individual hosts managing 1–3 properties.",
     features: [
       "Up to 3 properties",
-      "1 GB file storage",
       "Automated booking calendar",
       "Basic revenue reports",
       "Email support",
@@ -32,12 +31,11 @@ const TIERS: PricingTier[] = [
   },
   {
     name: "Pro",
-    price: "$49",
+    price: "$49.99",
     period: "/month",
     description: "For growing managers who need deeper insight and automation.",
     features: [
       "Up to 15 properties",
-      "5 GB file storage",
       "Detailed financial analytics",
       "Multi-tenant tracking",
       "Data import & export",
@@ -48,16 +46,14 @@ const TIERS: PricingTier[] = [
   },
   {
     name: "Business",
-    price: "$99",
+    price: "$99.99",
     period: "",
     description: "Custom solutions for large rental portfolios and teams.",
     features: [
       "Unlimited properties",
-      "Unlimited file storage",
       "Dedicated account manager",
       "Custom integrations & API",
       "SSO and role-based access",
-      "99.9% uptime SLA",
     ],
     cta: "Contact sales",
     featured: false,
