@@ -7,6 +7,9 @@ const mocks = vi.hoisted(() => ({
     user: { findUnique: vi.fn(), create: vi.fn() },
     organization: { findUnique: vi.fn(), create: vi.fn() },
     subscription: { findUnique: vi.fn(), create: vi.fn() },
+    legalConsent: {
+      create: vi.fn(),
+    },
     rateLimit: {
       deleteMany: vi.fn(),
       count: vi.fn(),
@@ -45,6 +48,16 @@ vi.mock("@/lib/email", () => ({
   sendVerificationEmail: vi.fn().mockResolvedValue(undefined),
   sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
 }))
+vi.mock("next/headers", () => ({
+  headers: () => ({
+    get: (name: string) => {
+      if (name === "x-forwarded-for") return "192.168.1.1"
+      if (name === "x-real-ip") return "192.168.1.1"
+      if (name === "user-agent") return "test-agent"
+      return null
+    },
+  }),
+}))
 
 import { registerUser, sendPasswordReset, sendVerificationEmailAction } from "@/app/actions/auth"
 import { checkRateLimit, getRateLimitIdentifier, RATE_LIMIT_CONFIGS, enforceRateLimit } from "@/lib/rate-limit"
@@ -59,6 +72,7 @@ beforeEach(() => {
   db.organization.create.mockResolvedValue({ id: "org-1", name: "Test Org" })
   db.subscription.findUnique.mockResolvedValue({ tier: "STARTER" })
   db.subscription.create.mockResolvedValue({})
+  db.legalConsent.create.mockResolvedValue({})
   db.$transaction.mockImplementation(async (work) => work(db))
   db.rateLimit.deleteMany.mockResolvedValue({ count: 0 })
   db.rateLimit.count.mockResolvedValue(0)

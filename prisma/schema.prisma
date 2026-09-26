@@ -97,6 +97,7 @@ model Organization {
   subscription Subscription?
   invitations  Invitation[]
   attachments  Attachment[]
+  apiKeys      ApiKey[]
 }
 
 /**
@@ -171,6 +172,7 @@ model User {
 
   legalConsents  LegalConsent[]
   uploadedAttachments Attachment[] @relation("AttachmentUploader")
+  createdApiKeys    ApiKey[]
 
   @@index([orgId])
 }
@@ -277,6 +279,30 @@ model WebhookEvent {
   provider   String   @default("lemonsqueezy")
   type       String
   receivedAt DateTime @default(now())
+}
+
+/**
+ * API Key for programmatic access to the v1 API.
+ * The key itself is never stored — only its SHA-256 hash.
+ * The prefix (first 8 chars of the raw key) is stored for identification.
+ */
+model ApiKey {
+  id          String   @id @default(cuid())
+  name        String
+  keyHash     String   @unique  // SHA-256 hash of the full key
+  keyPrefix   String   @unique  // First 8 chars of raw key (e.g., "lt_live_")
+  orgId       String
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([orgId])
+  @@index([createdById])
 }
 
 /**

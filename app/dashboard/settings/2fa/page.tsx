@@ -22,25 +22,25 @@ export default async function TwoFactorPage() {
         className="inline-flex items-center gap-1 text-sm text-subtle-foreground transition-colors hover:text-foreground"
       >
         <ChevronLeft className="h-4 w-4" />
-        {t.pages.settings.title}
+        {t.settings.title}
       </Link>
 
       <PageHeader
         eyebrow={t.pages.eyebrows.security}
-        title={t.pages.settings.twoFactor}
-        description={t.pages.settings.twoFactorDescription}
+        title={t.settings.twoFactor}
+        description={t.settings.twoFactorDescription}
       />
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            {t.pages.settings.authenticator}
+            {t.settings.authenticator}
           </CardTitle>
           <CardDescription>
             {user.twoFactorEnabled
-              ? t.pages.settings.factorAlreadyEnabled
-              : t.pages.settings.factorNotEnabled}
+              ? t.settings.factorAlreadyEnabled
+              : t.settings.factorNotEnabled}
           </CardDescription>
         </CardHeader>
         <CardContent>

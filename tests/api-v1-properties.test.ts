@@ -33,13 +33,22 @@ describe("API v1 - Properties endpoint", () => {
 
   const mockUser = {
     id: userId,
+    name: "Test User",
     email: "test@example.com",
+    passwordHash: null,
+    role: "OWNER" as const,
+    locale: "en" as const,
+    theme: "SYSTEM" as const,
+    twoFactorEnabled: false,
+    twoFactorSecret: null,
+    createdAt: new Date("2026-01-01"),
+    updatedAt: new Date("2026-01-01"),
     orgId,
-    organization: {
-      id: orgId,
-      name: "Test Org",
-      subscription: null,
-    },
+    termsAcceptedAt: null,
+    emailVerified: null,
+    notifyCheckInsDue: true,
+    notifyStaysEnding: true,
+    notifyMissingRate: true,
   }
 
   const mockProperties = [
@@ -48,7 +57,9 @@ describe("API v1 - Properties endpoint", () => {
       name: "Property 1",
       address: "123 Main St",
       currency: "USD",
+      icalUrl: null,
       allowSharedBookings: false,
+      orgId,
       createdAt: new Date("2026-01-01"),
       updatedAt: new Date("2026-01-01"),
       _count: { units: 5, bookings: 10 },
@@ -58,7 +69,9 @@ describe("API v1 - Properties endpoint", () => {
       name: "Property 2",
       address: "456 Oak Ave",
       currency: "EUR",
+      icalUrl: null,
       allowSharedBookings: true,
+      orgId,
       createdAt: new Date("2026-02-01"),
       updatedAt: new Date("2026-02-01"),
       _count: { units: 3, bookings: 7 },
@@ -89,7 +102,10 @@ describe("API v1 - Properties endpoint", () => {
 
   it("returns 404 when user has no organization", async () => {
     mockAuth.mockResolvedValue({ user: { email: "test@example.com" } })
-    vi.mocked(prisma.user.findUnique).mockResolvedValue({ ...mockUser, organization: null })
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      ...mockUser,
+      orgId: "org-test-123",
+    })
 
     const response = await GET(makeRequest())
     expect(response.status).toBe(404)
@@ -99,7 +115,10 @@ describe("API v1 - Properties endpoint", () => {
 
   it("returns 403 for STARTER tier (no API access)", async () => {
     mockAuth.mockResolvedValue({ user: { email: "test@example.com" } })
-    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser)
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      ...mockUser,
+      organization: { id: "org-test-123", subscription: { tier: "STARTER" } },
+    })
     mockGetOrgFeatures.mockReturnValue({
       tier: "STARTER",
       maxProperties: 3,
@@ -117,28 +136,36 @@ describe("API v1 - Properties endpoint", () => {
     expect(json.currentTier).toBe("STARTER")
   })
 
-  it("returns 403 for PRO tier (no API access by default)", async () => {
+  it("returns 200 and properties for PRO tier (has API access by default)", async () => {
     mockAuth.mockResolvedValue({ user: { email: "test@example.com" } })
-    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser)
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      ...mockUser,
+      organization: { id: "org-test-123", subscription: { tier: "PRO" } },
+    })
     mockGetOrgFeatures.mockReturnValue({
       tier: "PRO",
       maxProperties: 15,
       maxStorageBytes: 5_000_000_000,
       hasAdvancedAnalytics: true,
       hasTeamRoles: true,
-      hasApiAccess: false, // PRO doesn't have API access by default
+      hasApiAccess: true, // PRO has API access by default
     })
+    vi.mocked(prisma.property.findMany).mockResolvedValue(mockProperties)
 
     const response = await GET(makeRequest())
-    expect(response.status).toBe(403)
+    expect(response.status).toBe(200)
     const json = await response.json()
-    expect(json.error).toBe("forbidden")
-    expect(json.currentTier).toBe("PRO")
+    expect(json.properties).toHaveLength(2)
+    expect(json.properties[0].id).toBe("prop-1")
+    expect(json.properties[1].id).toBe("prop-2")
   })
 
   it("returns 200 and properties for ENTERPRISE (Business) tier with API access", async () => {
     mockAuth.mockResolvedValue({ user: { email: "test@example.com" } })
-    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser)
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      ...mockUser,
+      organization: { id: "org-test-123", subscription: { tier: "ENTERPRISE" } },
+    })
     mockGetOrgFeatures.mockReturnValue({
       tier: "ENTERPRISE",
       maxProperties: Infinity,
@@ -173,7 +200,10 @@ describe("API v1 - Properties endpoint", () => {
 
   it("returns 200 and properties for PRO tier with hasApiAccessOverride", async () => {
     mockAuth.mockResolvedValue({ user: { email: "test@example.com" } })
-    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser)
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      ...mockUser,
+      organization: { id: "org-test-123", subscription: { tier: "PRO", hasApiAccessOverride: true } },
+    })
     mockGetOrgFeatures.mockReturnValue({
       tier: "PRO",
       maxProperties: 15,
@@ -192,7 +222,10 @@ describe("API v1 - Properties endpoint", () => {
 
   it("returns 200 and properties for STARTER tier with hasApiAccessOverride", async () => {
     mockAuth.mockResolvedValue({ user: { email: "test@example.com" } })
-    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser)
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      ...mockUser,
+      organization: { id: "org-test-123", subscription: { tier: "STARTER", hasApiAccessOverride: true } },
+    })
     mockGetOrgFeatures.mockReturnValue({
       tier: "STARTER",
       maxProperties: 3,
@@ -211,7 +244,10 @@ describe("API v1 - Properties endpoint", () => {
 
   it("returns empty array when organization has no properties", async () => {
     mockAuth.mockResolvedValue({ user: { email: "test@example.com" } })
-    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser)
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      ...mockUser,
+      organization: { id: "org-test-123", subscription: { tier: "ENTERPRISE" } },
+    })
     mockGetOrgFeatures.mockReturnValue({
       tier: "ENTERPRISE",
       maxProperties: Infinity,

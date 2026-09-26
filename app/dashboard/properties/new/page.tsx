@@ -72,7 +72,7 @@ export default async function NewPropertyPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button href="/dashboard/billing">{t.pages.settings.viewPlans}</Button>
+            <Button href="/dashboard/billing">{t.settings.viewPlans}</Button>
           </CardContent>
         </Card>
       ) : (

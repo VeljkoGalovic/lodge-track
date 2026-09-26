@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from "crypto"
+import { createCipheriv, createDecipheriv, createHash, randomBytes, scryptSync } from "crypto"
 
 /**
  * Encryption for secrets that must be recovered verbatim rather than hashed —
@@ -69,4 +69,27 @@ export function decryptSecret(stored: string): string | null {
 /** A URL-safe single-use token: 256 bits of entropy, so guessing is not a threat. */
 export function generateToken(): string {
   return randomBytes(32).toString("base64url")
+}
+
+/**
+ * Generates a full API key with prefix and random suffix.
+ * Format: lt_live_{random} or lt_test_{random}
+ * Returns { rawKey, keyHash, keyPrefix }
+ */
+export function generateApiKey(isLive: boolean = true): { rawKey: string; keyHash: string; keyPrefix: string } {
+  const prefix = isLive ? "lt_live_" : "lt_test_"
+  const randomPart = randomBytes(24).toString("base64url") // 18 chars after prefix
+  const rawKey = `${prefix}${randomPart}`
+  const keyHash = createHash("sha256").update(rawKey).digest("hex")
+  const keyPrefix = rawKey.slice(0, 8) // e.g., "lt_live_"
+  return { rawKey, keyHash, keyPrefix }
+}
+
+/**
+ * Verifies an API key against its hash.
+ * Returns true if the key matches.
+ */
+export function verifyApiKey(rawKey: string, keyHash: string): boolean {
+  const computedHash = createHash("sha256").update(rawKey).digest("hex")
+  return computedHash === keyHash
 }

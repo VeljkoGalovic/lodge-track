@@ -59,6 +59,7 @@ describe("DashboardSidebar - no usage meter", () => {
     expect(screen.getByRole("link", { name: /analytics/i })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: /team/i })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: /billing/i })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /api/i })).toBeInTheDocument()
   })
 
   it("renders org name and tier badge in footer", () => {
@@ -77,13 +78,59 @@ describe("DashboardSidebar - no usage meter", () => {
 
   it("shows lock icon for feature-gated items when feature is disabled", () => {
     render(<DashboardSidebar {...defaultProps} />)
-    // Analytics and Team require features that are disabled in mockFeatures
+    // Analytics, Team, and API require features that are disabled in mockFeatures
     // They should have the locked styling (opacity-50 cursor-not-allowed)
     const analyticsLink = screen.getByRole("link", { name: /analytics/i })
     const teamLink = screen.getByRole("link", { name: /team/i })
+    const apiLink = screen.getByRole("link", { name: /api/i })
     expect(analyticsLink).toHaveClass("opacity-50")
     expect(analyticsLink).toHaveClass("cursor-not-allowed")
     expect(teamLink).toHaveClass("opacity-50")
     expect(teamLink).toHaveClass("cursor-not-allowed")
+    expect(apiLink).toHaveClass("opacity-50")
+    expect(apiLink).toHaveClass("cursor-not-allowed")
+  })
+})
+
+describe("DashboardSidebar - PRO tier features", () => {
+  const proFeatures = {
+    tier: "PRO" as const,
+    maxProperties: 15,
+    maxUnits: 30,
+    maxStorageBytes: 5 * 1024 * 1024 * 1024, // 5GB
+    hasAdvancedAnalytics: true,
+    hasTeamRoles: true,
+    hasApiAccess: true,
+  }
+
+  const proProps = {
+    ...defaultProps,
+    features: proFeatures,
+  }
+
+  it("does not show lock for API link when hasApiAccess is true", () => {
+    render(<DashboardSidebar {...proProps} />)
+    const apiLink = screen.getByRole("link", { name: /api/i })
+    expect(apiLink).not.toHaveClass("opacity-50")
+    expect(apiLink).not.toHaveClass("cursor-not-allowed")
+  })
+
+  it("does not show lock for Analytics link when hasAdvancedAnalytics is true", () => {
+    render(<DashboardSidebar {...proProps} />)
+    const analyticsLink = screen.getByRole("link", { name: /analytics/i })
+    expect(analyticsLink).not.toHaveClass("opacity-50")
+    expect(analyticsLink).not.toHaveClass("cursor-not-allowed")
+  })
+
+  it("does not show lock for Team link when hasTeamRoles is true", () => {
+    render(<DashboardSidebar {...proProps} />)
+    const teamLink = screen.getByRole("link", { name: /team/i })
+    expect(teamLink).not.toHaveClass("opacity-50")
+    expect(teamLink).not.toHaveClass("cursor-not-allowed")
+  })
+
+  it("shows PRO tier badge", () => {
+    render(<DashboardSidebar {...proProps} />)
+    expect(screen.getByText("PRO")).toBeInTheDocument()
   })
 })

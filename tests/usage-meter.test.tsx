@@ -26,13 +26,13 @@ vi.mock("@/components/i18n/LocaleProvider", () => ({
         },
       },
     },
-    locale: "en",
+    locale: "en" as const,
     format: (template: string, values: Record<string, string | number>) =>
       template.replace(/\{(\w+)\}/g, (match, key: string) =>
         Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : match
       ),
   }),
-  LocaleProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
+  LocaleProvider: ({ children, locale }: { children: ReactNode; locale: "en" | "sr" }) => <>{children}</>,
 }))
 
 const renderWithProvider = (component: ReactNode) => {

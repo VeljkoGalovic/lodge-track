@@ -18,7 +18,7 @@ export function PasswordForm() {
 
       <div className="space-y-2">
         <label htmlFor="currentPassword" className="text-sm font-medium text-muted-foreground">
-          {t.pages.settings.currentPassword}
+          {t.settings.currentPassword}
         </label>
         <Input
           id="currentPassword"
@@ -32,7 +32,7 @@ export function PasswordForm() {
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <label htmlFor="newPassword" className="text-sm font-medium text-muted-foreground">
-            {t.pages.settings.newPassword}
+            {t.settings.newPassword}
           </label>
           <Input
             id="newPassword"
@@ -45,7 +45,7 @@ export function PasswordForm() {
         </div>
         <div className="space-y-2">
           <label htmlFor="confirmPassword" className="text-sm font-medium text-muted-foreground">
-            {t.pages.settings.confirmPassword}
+            {t.settings.confirmPassword}
           </label>
           <Input
             id="confirmPassword"
@@ -60,7 +60,7 @@ export function PasswordForm() {
 
       <p className="text-xs text-subtle-foreground">{t.auth.passwordMinLength}</p>
 
-      <SubmitButton pendingLabel={t.pages.settings.updating}>{t.pages.settings.changePassword}</SubmitButton>
+      <SubmitButton pendingLabel={t.settings.updating}>{t.settings.changePassword}</SubmitButton>
     </form>
   )
 }

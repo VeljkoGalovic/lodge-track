@@ -36,13 +36,13 @@ function tierFeatures(tier: Tier, t: Dictionary): { label: string; included: boo
     ...[t.pages.billing.propertyManagement, t.pages.billing.calendar, t.pages.billing.notifications, t.pages.billing.members].map((label) => ({ label, included: true })),
     { label: features.hasAdvancedAnalytics ? t.pages.billing.analytics : t.pages.billing.noAnalytics, included: features.hasAdvancedAnalytics },
     { label: features.hasTeamRoles ? t.pages.billing.permissions : t.pages.billing.noPermissions, included: features.hasTeamRoles },
-    { label: features.hasApiAccess ? t.pages.settings.apiAccess : t.pages.billing.noApi, included: features.hasApiAccess },
+    { label: features.hasApiAccess ? t.settings.apiAccess : t.pages.billing.noApi, included: features.hasApiAccess },
   ]
 }
 
 function comparisonRows(t: Dictionary): Array<{ feature: string; value: (tier: Tier) => string | boolean }> {
   return [
-    { feature: t.pages.settings.propertyLimit, value: (tier) => {
+    { feature: t.settings.propertyLimit, value: (tier) => {
       const { maxProperties } = getOrgFeatures(tier)
       return maxProperties === Infinity ? t.common.unlimited : String(maxProperties)
     } },
@@ -51,7 +51,7 @@ function comparisonRows(t: Dictionary): Array<{ feature: string; value: (tier: T
     { feature: t.pages.billing.activity, value: () => true },
     { feature: t.pages.billing.financialAnalytics, value: (tier) => getOrgFeatures(tier).hasAdvancedAnalytics },
     { feature: t.pages.billing.permissions, value: (tier) => getOrgFeatures(tier).hasTeamRoles },
-    { feature: t.pages.settings.apiAccess, value: (tier) => getOrgFeatures(tier).hasApiAccess },
+    { feature: t.settings.apiAccess, value: (tier) => getOrgFeatures(tier).hasApiAccess },
   ]
 }
 
@@ -63,12 +63,12 @@ function ComparisonCell({ value, t }: { value: string | boolean; t: Dictionary }
   return value ? (
     <>
       <Check className="mx-auto h-4 w-4 text-primary" />
-      <span className="sr-only">{t.pages.settings.included}</span>
+      <span className="sr-only">{t.settings.included}</span>
     </>
   ) : (
     <>
       <Lock className="mx-auto h-4 w-4 text-subtle-foreground" />
-      <span className="sr-only">{t.pages.settings.notIncluded}</span>
+      <span className="sr-only">{t.settings.notIncluded}</span>
     </>
   )
 }

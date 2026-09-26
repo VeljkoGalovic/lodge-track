@@ -52,7 +52,7 @@ export function OrganizationForm({ name, currency, canEdit }: OrganizationFormPr
             ))}
           </Select>
           <p className="text-xs text-subtle-foreground">
-            {t.pages.settings.currencyHelp}
+            {t.settings.currencyHelp}
           </p>
         </div>
       </div>
@@ -61,7 +61,7 @@ export function OrganizationForm({ name, currency, canEdit }: OrganizationFormPr
         <SubmitButton pendingLabel={t.common.saving}>{t.forms.saveChanges}</SubmitButton>
       ) : (
         <p className="text-sm text-subtle-foreground">
-          {t.pages.settings.ownerOnly}
+          {t.settings.ownerOnly}
         </p>
       )}
     </form>

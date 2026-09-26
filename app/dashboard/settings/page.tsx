@@ -66,17 +66,17 @@ export default async function SettingsPage() {
     <div className="max-w-3xl space-y-6">
       <PageHeader
         eyebrow={t.pages.eyebrows.account}
-        title={t.pages.settings.title}
-        description={t.pages.settings.description}
+        title={t.settings.title}
+        description={t.settings.description}
       />
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <User className="h-5 w-5 text-primary" />
-            {t.pages.settings.profile}
+            {t.settings.profile}
           </CardTitle>
-          <CardDescription>{t.pages.settings.profileHelp}</CardDescription>
+          <CardDescription>{t.settings.profileHelp}</CardDescription>
         </CardHeader>
         <CardContent>
           <ProfileForm name={user.name} email={user.email} />
@@ -87,10 +87,10 @@ export default async function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Palette className="h-5 w-5 text-primary" />
-            {t.pages.settings.appearance}
+            {t.settings.appearance}
           </CardTitle>
           <CardDescription>
-            {format(t.pages.settings.appearanceHelp, { org: organization.name })}
+            {format(t.settings.appearanceHelp, { org: organization.name })}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -111,9 +111,9 @@ export default async function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5 text-primary" />
-            {t.pages.settings.organization}
+            {t.settings.organization}
           </CardTitle>
-          <CardDescription>{t.pages.settings.organizationHelp}</CardDescription>
+          <CardDescription>{t.settings.organizationHelp}</CardDescription>
         </CardHeader>
         <CardContent>
           <OrganizationForm
@@ -130,7 +130,7 @@ export default async function SettingsPage() {
             <Bell className="h-5 w-5 text-primary" />
             {t.pages.notifications.title}
           </CardTitle>
-          <CardDescription>{t.pages.settings.notificationsHelp}</CardDescription>
+          <CardDescription>{t.settings.notificationsHelp}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <NotificationPreferencesForm
@@ -145,10 +145,10 @@ export default async function SettingsPage() {
           <div className="rounded-xl border border-border bg-muted px-4 py-3 text-sm text-subtle-foreground">
             <span className="flex items-center gap-2 font-medium text-muted-foreground">
               <Mail className="h-4 w-4" />
-              {t.pages.settings.delivery}
+              {t.settings.delivery}
             </span>
             <p className="mt-1">
-              {t.pages.settings.deliveryHelp}
+              {t.settings.deliveryHelp}
             </p>
           </div>
         </CardContent>
@@ -158,31 +158,31 @@ export default async function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            {t.pages.settings.security}
+            {t.settings.security}
           </CardTitle>
-          <CardDescription>{t.pages.settings.securityHelp}</CardDescription>
+          <CardDescription>{t.settings.securityHelp}</CardDescription>
         </CardHeader>
         <CardContent className="divide-y divide-border">
           <div className="flex flex-wrap items-center justify-between gap-3 pb-4">
             <div>
-              <p className="font-medium text-foreground">{t.pages.settings.changePassword}</p>
-              <p className="text-sm text-subtle-foreground">{t.pages.settings.passwordHelp}</p>
+              <p className="font-medium text-foreground">{t.settings.changePassword}</p>
+              <p className="text-sm text-subtle-foreground">{t.settings.passwordHelp}</p>
             </div>
             <Button variant="outline" size="sm" href="/dashboard/settings/password">
-              {t.pages.settings.change}
+              {t.settings.change}
             </Button>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3 pt-4">
             <div>
-              <p className="font-medium text-foreground">{t.pages.settings.twoFactor}</p>
+              <p className="font-medium text-foreground">{t.settings.twoFactor}</p>
               <p className="text-sm text-subtle-foreground">
                 {user.twoFactorEnabled
-                  ? t.pages.settings.factorEnabled
-                  : t.pages.settings.factorHelp}
+                  ? t.settings.factorEnabled
+                  : t.settings.factorHelp}
               </p>
             </div>
             <Button variant="outline" size="sm" href="/dashboard/settings/2fa">
-              {user.twoFactorEnabled ? t.pages.settings.manage : t.pages.settings.enable}
+              {user.twoFactorEnabled ? t.settings.manage : t.settings.enable}
             </Button>
           </div>
         </CardContent>
@@ -192,9 +192,9 @@ export default async function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <KeyRound className="h-5 w-5 text-primary" />
-            {t.pages.settings.planAccess}
+            {t.settings.planAccess}
           </CardTitle>
-          <CardDescription>{t.pages.settings.planHelp}</CardDescription>
+          <CardDescription>{t.settings.planHelp}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Usage Meter - Property Usage */}
@@ -210,10 +210,10 @@ export default async function SettingsPage() {
             <Badge variant="secondary" className={getTierBadgeColor(features.tier)}>
               {getTierLabel(features.tier)}
             </Badge>
-            {subscription?.isLifetimeFree ? <Badge variant="success">{t.pages.settings.lifetimeFree}</Badge> : null}
+            {subscription?.isLifetimeFree ? <Badge variant="success">{t.settings.lifetimeFree}</Badge> : null}
             {subscription?.maxPropertiesOverride != null ? (
               <Badge variant="outline">
-                {format(t.pages.settings.propertyOverride, { count: subscription.maxPropertiesOverride })}
+                {format(t.settings.propertyOverride, { count: subscription.maxPropertiesOverride })}
               </Badge>
             ) : null}
           </div>
@@ -221,17 +221,26 @@ export default async function SettingsPage() {
           <ul className="space-y-2 text-sm">
             {[
               [
-                t.pages.settings.propertyLimit,
+                t.settings.propertyLimit,
                 features.maxProperties === Infinity ? t.common.unlimited : String(features.maxProperties),
               ],
-              [t.pages.settings.analytics, features.hasAdvancedAnalytics ? t.pages.settings.included : t.pages.settings.notIncluded],
-              [t.pages.settings.teamRoles, features.hasTeamRoles ? t.pages.settings.included : t.pages.settings.notIncluded],
-              [t.pages.settings.apiAccess, features.hasApiAccess ? t.pages.settings.enabled : t.pages.settings.notIncluded],
               [
-                t.pages.settings.storage,
+                t.settings.analytics,
+                features.hasAdvancedAnalytics ? t.settings.included : t.settings.notIncluded,
+              ],
+              [
+                t.settings.teamRoles,
+                features.hasTeamRoles ? t.settings.included : t.settings.notIncluded,
+              ],
+              [
+                t.settings.apiAccess,
+                features.hasApiAccess ? t.settings.enabled : t.settings.notIncluded,
+              ],
+              [
+                t.settings.storage,
                 features.maxStorageBytes === Infinity
-                  ? format(t.pages.settings.storageUnlimited, { used: formatBytes(receiptBytes) })
-                  : format(t.pages.settings.storageUsed, { used: formatBytes(receiptBytes), total: formatBytes(features.maxStorageBytes) }),
+                  ? format(t.settings.storageUnlimited, { used: formatBytes(receiptBytes) })
+                  : format(t.settings.storageUsed, { used: formatBytes(receiptBytes), total: formatBytes(features.maxStorageBytes) }),
               ],
             ].map(([label, value]) => (
               <li key={label} className="flex items-center justify-between gap-4">
@@ -245,17 +254,17 @@ export default async function SettingsPage() {
             <p className="text-xs text-subtle-foreground">
               {subscription.hasApiAccessOverride
                 ? features.hasApiAccess === planDefaultApiAccess
-                  ? t.pages.settings.apiGrantedMatch
-                  : t.pages.settings.apiGrantedDifferent
+                  ? t.settings.apiGrantedMatch
+                  : t.settings.apiGrantedDifferent
                 : features.hasApiAccess === planDefaultApiAccess
-                  ? t.pages.settings.apiWithheldMatch
-                  : t.pages.settings.apiWithheldDifferent}
+                  ? t.settings.apiWithheldMatch
+                  : t.settings.apiWithheldDifferent}
             </p>
           ) : null}
 
           <Button variant="outline" size="sm" href="/dashboard/billing">
             <ArrowUpRight className="mr-2 h-4 w-4" />
-            {t.pages.settings.viewPlans}
+            {t.settings.viewPlans}
           </Button>
         </CardContent>
       </Card>
@@ -265,36 +274,36 @@ export default async function SettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Lock className="h-5 w-5 text-primary" />
-              {t.pages.settings.enterpriseSettings}
+              {t.settings.enterpriseSettings}
             </CardTitle>
-            <CardDescription>{t.pages.settings.enterpriseSettingsHelp}</CardDescription>
+            <CardDescription>{t.settings.enterpriseSettingsHelp}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {canManageRoles(features.tier) && (
               <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl border border-border bg-muted">
                 <div>
-                  <p className="font-medium text-foreground">{t.pages.settings.roleManagement}</p>
-                  <p className="text-sm text-subtle-foreground">{t.pages.settings.roleManagementHelp}</p>
+                  <p className="font-medium text-foreground">{t.settings.roleManagement}</p>
+                  <p className="text-sm text-subtle-foreground">{t.settings.roleManagementHelp}</p>
                 </div>
                 <Badge variant="secondary" className="border-brand-purple/25 bg-brand-purple/10 text-brand-purple">
-                  {t.pages.settings.enterpriseOnly}
+                  {t.settings.enterpriseOnly}
                 </Badge>
               </div>
             )}
             {canConfigureSSO(features.tier) && (
               <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl border border-border bg-muted">
                 <div>
-                  <p className="font-medium text-foreground">{t.pages.settings.ssoConfiguration}</p>
-                  <p className="text-sm text-subtle-foreground">{t.pages.settings.ssoConfigurationHelp}</p>
+                  <p className="font-medium text-foreground">{t.settings.ssoConfiguration}</p>
+                  <p className="text-sm text-subtle-foreground">{t.settings.ssoConfigurationHelp}</p>
                 </div>
                 <Badge variant="secondary" className="border-brand-purple/25 bg-brand-purple/10 text-brand-purple">
-                  {t.pages.settings.enterpriseOnly}
+                  {t.settings.enterpriseOnly}
                 </Badge>
               </div>
             )}
             {(!canManageRoles(features.tier) || !canConfigureSSO(features.tier)) && (
               <p className="text-xs text-subtle-foreground">
-                {t.pages.settings.enterpriseFeaturesLocked}
+                {t.settings.enterpriseFeaturesLocked}
               </p>
             )}
           </CardContent>

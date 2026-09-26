@@ -61,9 +61,9 @@ export function TwoFactorPanel({ enabled, issuer, accountName }: TwoFactorPanelP
         <div className="flex items-start gap-3 rounded-xl border border-primary/25 bg-primary/10 px-4 py-3">
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
           <div>
-            <p className="font-medium text-primary">{t.pages.settings.factorOn}</p>
+            <p className="font-medium text-primary">{t.settings.factorOn}</p>
             <p className="text-sm text-muted-foreground">
-              {t.pages.settings.factorOnHelp}
+              {t.settings.factorOnHelp}
             </p>
           </div>
         </div>
@@ -72,7 +72,7 @@ export function TwoFactorPanel({ enabled, issuer, accountName }: TwoFactorPanelP
           <FormMessage error={disableState.error} success={disableState.success} />
           <div className="space-y-2">
             <label htmlFor="disablePassword" className="text-sm font-medium text-muted-foreground">
-              {t.pages.settings.confirmDisable}
+              {t.settings.confirmDisable}
             </label>
             <Input
               id="disablePassword"
@@ -82,9 +82,9 @@ export function TwoFactorPanel({ enabled, issuer, accountName }: TwoFactorPanelP
               required
             />
           </div>
-          <SubmitButton variant="outline" pendingLabel={t.pages.settings.disabling}>
+          <SubmitButton variant="outline" pendingLabel={t.settings.disabling}>
             <ShieldOff className="mr-1.5 h-4 w-4" />
-            {t.pages.settings.disableFactor}
+            {t.settings.disableFactor}
           </SubmitButton>
         </form>
       </div>
@@ -96,10 +96,10 @@ export function TwoFactorPanel({ enabled, issuer, accountName }: TwoFactorPanelP
       <div className="space-y-4">
         <FormMessage error={startError} />
         <p className="text-sm text-subtle-foreground">
-          {t.pages.settings.setupHelp}
+          {t.settings.setupHelp}
         </p>
-        <SubmitButton onClick={begin} pendingLabel={t.pages.settings.preparing} disabled={starting}>
-          {starting ? t.pages.settings.preparing : t.pages.settings.setupFactor}
+        <SubmitButton onClick={begin} pendingLabel={t.settings.preparing} disabled={starting}>
+          {starting ? t.settings.preparing : t.settings.setupFactor}
         </SubmitButton>
       </div>
     )
@@ -117,13 +117,13 @@ export function TwoFactorPanel({ enabled, issuer, accountName }: TwoFactorPanelP
 
         <div className="min-w-0 space-y-3">
           <p className="text-sm text-muted-foreground">
-            {t.pages.settings.scanCode}
+            {t.settings.scanCode}
           </p>
           <code className="block break-all rounded-xl border border-border bg-muted px-3 py-2 font-mono text-xs text-muted-foreground">
             {setup.secret}
           </code>
           <p className="text-xs text-subtle-foreground">
-            {format(t.pages.settings.factorAccount, { issuer, account: accountName })}
+            {format(t.settings.factorAccount, { issuer, account: accountName })}
           </p>
         </div>
       </div>
@@ -131,7 +131,7 @@ export function TwoFactorPanel({ enabled, issuer, accountName }: TwoFactorPanelP
       <form action={confirmAction} className="space-y-3 border-t border-border pt-5">
         <div className="space-y-2">
           <label htmlFor="code" className="text-sm font-medium text-muted-foreground">
-            {t.pages.settings.enterCode}
+            {t.settings.enterCode}
           </label>
           <Input
             id="code"
@@ -146,7 +146,7 @@ export function TwoFactorPanel({ enabled, issuer, accountName }: TwoFactorPanelP
           />
         </div>
         <div className="flex flex-wrap gap-3">
-          <SubmitButton pendingLabel={t.auth.verifying}>{t.pages.settings.enableFactor}</SubmitButton>
+          <SubmitButton pendingLabel={t.auth.verifying}>{t.settings.enableFactor}</SubmitButton>
           <SubmitButton type="button" variant="ghost" onClick={() => setSetup(null)}>
             {t.common.cancel}
           </SubmitButton>

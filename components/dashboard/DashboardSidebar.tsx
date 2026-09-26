@@ -14,6 +14,7 @@ import {
   Users,
   CreditCard,
   Lock,
+  Key,
 } from "lucide-react"
 import { clsx } from "clsx"
 import {
@@ -67,6 +68,7 @@ const navigation: NavItem[] = [
   { labelKey: "analytics", href: "/dashboard/analytics", icon: BarChart3, requiresFeature: "hasAdvancedAnalytics" },
   { labelKey: "team", href: "/dashboard/team", icon: Users, requiresFeature: "hasTeamRoles" },
   { labelKey: "billing", href: "/dashboard/billing", icon: CreditCard },
+  { labelKey: "api", href: "/dashboard/api", icon: Key, requiresFeature: "hasApiAccess" },
 ]
 
 export function DashboardSidebar({
