@@ -8,12 +8,19 @@ import { sendVerificationEmail, sendPasswordResetEmail, buildResetLink } from "@
 import { checkRateLimit, getRateLimitIdentifier, RATE_LIMIT_CONFIGS } from "@/lib/rate-limit"
 import { getLegalVersionDate } from "@/lib/markdown"
 import { headers } from "next/headers"
+import { isLocale } from "@/lib/i18n/locales"
+import { isThemePreference } from "@/lib/theme"
+import { isSupportedCurrency, normalizeCurrency } from "@/lib/currency"
+import { validatePassword } from "@/lib/password-validation"
 
 export async function registerUser(prevState: { error?: string; success?: string }, formData: FormData): Promise<{ error?: string; success?: string; redirect?: string }> {
   const email = formData.get("email") as string
   const password = formData.get("password") as string
   const name = formData.get("name") as string
   const termsAccepted = formData.get("termsAccepted") === "on"
+  const locale = formData.get("locale") as string
+  const theme = formData.get("theme") as string
+  const currency = formData.get("currency") as string
 
   if (!email || !password) {
     return { error: "Email and password are required." }
@@ -22,6 +29,17 @@ export async function registerUser(prevState: { error?: string; success?: string
   if (!termsAccepted) {
     return { error: "You must accept the Terms of Service and Privacy Policy to register." }
   }
+
+  // Validate password strength
+  const passwordValidation = validatePassword(password)
+  if (!passwordValidation.valid) {
+    return { error: `Password requirements not met: ${passwordValidation.errors.join(", ")}` }
+  }
+
+  // Validate and normalize preferences
+  const validatedLocale = isLocale(locale) ? locale : "en"
+  const validatedTheme = isThemePreference(theme) ? theme : "SYSTEM"
+  const validatedCurrency = normalizeCurrency(currency)
 
   // Rate limiting for registration
   const identifier = getRateLimitIdentifier(null, email)
@@ -53,14 +71,15 @@ export async function registerUser(prevState: { error?: string; success?: string
 
   // Use a Prisma transaction to create the Organization, User, LegalConsent, and default Starter Subscription atomically
   await prisma.$transaction(async (tx) => {
-    // 1. Create the firm/organization
+    // 1. Create the firm/organization with currency preference
     const organization = await tx.organization.create({
       data: {
         name: name ? `${name}'s Organization` : "My Organization",
+        currency: validatedCurrency,
       },
     })
 
-    // 2. Create the user linked to this organization
+    // 2. Create the user linked to this organization with locale and theme preferences
     const user = await tx.user.create({
       data: {
         email,
@@ -69,6 +88,8 @@ export async function registerUser(prevState: { error?: string; success?: string
         role: "OWNER",
         orgId: organization.id,
         termsAcceptedAt: new Date(),
+        locale: validatedLocale,
+        theme: validatedTheme,
       },
     })
 
@@ -96,7 +117,7 @@ export async function registerUser(prevState: { error?: string; success?: string
   // Create verification token and send email (outside transaction to avoid long-running transaction)
   try {
     const { token } = await createVerificationToken(email, "email_verification", 24)
-    await sendVerificationEmail(email, token, "en") // TODO: Get locale from request
+    await sendVerificationEmail(email, token, validatedLocale)
   } catch (error) {
     console.error("Failed to send verification email:", error)
     // Don't fail registration if email fails - user can request resend later

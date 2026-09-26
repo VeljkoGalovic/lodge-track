@@ -45,7 +45,9 @@ export function isSupportedCurrency(code: string): boolean {
 
 /** Falls back to the default rather than throwing, so a bad stored value renders as USD instead of taking the page down. */
 export function normalizeCurrency(code: string | null | undefined): string {
-  return code && isSupportedCurrency(code) ? code : DEFAULT_CURRENCY
+  if (!code) return DEFAULT_CURRENCY
+  const upperCode = code.toUpperCase()
+  return isSupportedCurrency(upperCode) ? upperCode : DEFAULT_CURRENCY
 }
 
 /**

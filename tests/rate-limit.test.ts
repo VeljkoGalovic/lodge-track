@@ -159,7 +159,7 @@ describe("Fix 2: Rate limiting on auth endpoints", () => {
   it("registerUser allows registration under rate limit", async () => {
     const formData = new FormData()
     formData.set("email", "new@example.com")
-    formData.set("password", "password123")
+    formData.set("password", "ValidPass123!")
     formData.set("name", "Test User")
     formData.set("termsAccepted", "on")
 
@@ -177,7 +177,7 @@ describe("Fix 2: Rate limiting on auth endpoints", () => {
 
     const formData = new FormData()
     formData.set("email", "new@example.com")
-    formData.set("password", "password123")
+    formData.set("password", "ValidPass123!")
     formData.set("name", "Test User")
     formData.set("termsAccepted", "on")
 
@@ -241,5 +241,226 @@ describe("Fix 2: Rate limiting on auth endpoints", () => {
     const result = await sendVerificationEmailAction("test@example.com")
     expect(result.success).toBe(false)
     expect(result.error).toMatch(/Too many verification email requests/)
+  })
+})
+
+describe("registerUser with onboarding preferences", () => {
+  beforeEach(async () => {
+    vi.resetAllMocks()
+    db.user.findUnique.mockResolvedValue(null)
+    db.user.create.mockResolvedValue({ id: "user-1", email: "new@example.com", locale: "en", theme: "SYSTEM" })
+    db.organization.findUnique.mockResolvedValue({ id: "org-1" })
+    db.organization.create.mockResolvedValue({ id: "org-1", name: "Test Org", currency: "USD" })
+    db.subscription.findUnique.mockResolvedValue({ tier: "STARTER" })
+    db.subscription.create.mockResolvedValue({})
+    db.legalConsent.create.mockResolvedValue({})
+    db.$transaction.mockImplementation(async (work) => work(db))
+    db.rateLimit.deleteMany.mockResolvedValue({ count: 0 })
+    db.rateLimit.count.mockResolvedValue(0)
+    db.rateLimit.create.mockResolvedValue({})
+    const { createVerificationToken } = await import("@/lib/tokens")
+    vi.mocked(createVerificationToken).mockResolvedValue({ token: "test-token", expiresAt: new Date() })
+  })
+
+  it("registerUser accepts locale, theme, and currency preferences", async () => {
+    const formData = new FormData()
+    formData.set("email", "new@example.com")
+    formData.set("password", "SecurePass123!")
+    formData.set("name", "Test User")
+    formData.set("termsAccepted", "on")
+    formData.set("locale", "sr")
+    formData.set("theme", "DARK")
+    formData.set("currency", "EUR")
+
+    const result = await registerUser({}, formData)
+    expect(result.success).toBeTruthy()
+
+    // Verify user created with locale and theme
+    expect(db.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          locale: "sr",
+          theme: "DARK",
+        }),
+      })
+    )
+
+    // Verify organization created with currency
+    expect(db.organization.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          currency: "EUR",
+        }),
+      })
+    )
+  })
+
+  it("registerUser uses defaults when preferences not provided", async () => {
+    const formData = new FormData()
+    formData.set("email", "new@example.com")
+    formData.set("password", "SecurePass123!")
+    formData.set("name", "Test User")
+    formData.set("termsAccepted", "on")
+    // No locale, theme, currency provided
+
+    const result = await registerUser({}, formData)
+    expect(result.success).toBeTruthy()
+
+    // Verify defaults used
+    expect(db.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          locale: "en",
+          theme: "SYSTEM",
+        }),
+      })
+    )
+
+    expect(db.organization.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          currency: "USD",
+        }),
+      })
+    )
+  })
+
+  it("registerUser rejects invalid password with detailed errors", async () => {
+    const formData = new FormData()
+    formData.set("email", "new@example.com")
+    formData.set("password", "weak") // Too short, no uppercase, no number, no special char
+    formData.set("name", "Test User")
+    formData.set("termsAccepted", "on")
+    formData.set("locale", "en")
+    formData.set("theme", "SYSTEM")
+    formData.set("currency", "USD")
+
+    const result = await registerUser({}, formData)
+    expect(result.error).toBeTruthy()
+    expect(result.error).toContain("At least 8 characters")
+    expect(result.error).toContain("One uppercase letter")
+    expect(result.error).toContain("One number")
+    expect(result.error).toContain("One special character")
+
+    // Should not proceed to create user
+    expect(db.user.create).not.toHaveBeenCalled()
+  })
+
+  it("registerUser accepts valid password meeting all requirements", async () => {
+    const formData = new FormData()
+    formData.set("email", "new@example.com")
+    formData.set("password", "ValidPass123!")
+    formData.set("name", "Test User")
+    formData.set("termsAccepted", "on")
+    formData.set("locale", "en")
+    formData.set("theme", "SYSTEM")
+    formData.set("currency", "USD")
+
+    const result = await registerUser({}, formData)
+    expect(result.success).toBeTruthy()
+    expect(db.user.create).toHaveBeenCalled()
+  })
+
+  it("registerUser validates locale against supported locales", async () => {
+    const formData = new FormData()
+    formData.set("email", "new@example.com")
+    formData.set("password", "ValidPass123!")
+    formData.set("name", "Test User")
+    formData.set("termsAccepted", "on")
+    formData.set("locale", "invalid") // Invalid locale
+    formData.set("theme", "SYSTEM")
+    formData.set("currency", "USD")
+
+    const result = await registerUser({}, formData)
+    expect(result.success).toBeTruthy()
+
+    // Should fall back to default "en"
+    expect(db.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          locale: "en",
+        }),
+      })
+    )
+  })
+
+  it("registerUser validates theme against supported themes", async () => {
+    const formData = new FormData()
+    formData.set("email", "new@example.com")
+    formData.set("password", "ValidPass123!")
+    formData.set("name", "Test User")
+    formData.set("termsAccepted", "on")
+    formData.set("locale", "en")
+    formData.set("theme", "INVALID") // Invalid theme
+    formData.set("currency", "USD")
+
+    const result = await registerUser({}, formData)
+    expect(result.success).toBeTruthy()
+
+    // Should fall back to default "SYSTEM"
+    expect(db.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          theme: "SYSTEM",
+        }),
+      })
+    )
+  })
+
+  it("registerUser validates currency against supported currencies", async () => {
+    const formData = new FormData()
+    formData.set("email", "new@example.com")
+    formData.set("password", "ValidPass123!")
+    formData.set("name", "Test User")
+    formData.set("termsAccepted", "on")
+    formData.set("locale", "en")
+    formData.set("theme", "SYSTEM")
+    formData.set("currency", "INVALID") // Invalid currency
+
+    const result = await registerUser({}, formData)
+    expect(result.success).toBeTruthy()
+
+    // Should fall back to default "USD"
+    expect(db.organization.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          currency: "USD",
+        }),
+      })
+    )
+  })
+
+  it("registerUser normalizes currency code to uppercase", async () => {
+    const formData = new FormData()
+    formData.set("email", "new@example.com")
+    formData.set("password", "ValidPass123!")
+    formData.set("name", "Test User")
+    formData.set("termsAccepted", "on")
+    formData.set("locale", "en")
+    formData.set("theme", "SYSTEM")
+    formData.set("currency", "eur") // lowercase
+
+    const result = await registerUser({}, formData)
+    expect(result.success).toBeTruthy()
+
+    // Should normalize to uppercase - check the call arguments
+    expect(db.organization.create).toHaveBeenCalled()
+    const callArgs = db.organization.create.mock.calls[0][0]
+    expect(callArgs.data.currency).toBe("EUR")
+  })
+
+  it("registerUser requires terms acceptance", async () => {
+    const formData = new FormData()
+    formData.set("email", "new@example.com")
+    formData.set("password", "ValidPass123!")
+    formData.set("name", "Test User")
+    // termsAccepted not set
+    formData.set("locale", "en")
+    formData.set("theme", "SYSTEM")
+    formData.set("currency", "USD")
+
+    const result = await registerUser({}, formData)
+    expect(result.error).toBe("You must accept the Terms of Service and Privacy Policy to register.")
+    expect(db.user.create).not.toHaveBeenCalled()
   })
 })

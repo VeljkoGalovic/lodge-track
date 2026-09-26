@@ -20,14 +20,14 @@ describe("generateApiKey", () => {
   it("generates live key with correct prefix", () => {
     const { rawKey, keyHash, keyPrefix } = generateApiKey(true)
     expect(rawKey).toMatch(/^lt_live_[A-Za-z0-9_-]{32}$/)
-    expect(keyPrefix).toBe("lt_live_")
+    expect(keyPrefix).toMatch(/^lt_live_[A-Za-z0-9_-]{8}$/) // First 16 chars: "lt_live_" + 8 random chars
     expect(keyHash).toMatch(/^[a-f0-9]{64}$/) // SHA-256 hex
   })
 
   it("generates test key with correct prefix", () => {
     const { rawKey, keyHash, keyPrefix } = generateApiKey(false)
     expect(rawKey).toMatch(/^lt_test_[A-Za-z0-9_-]{32}$/)
-    expect(keyPrefix).toBe("lt_test_")
+    expect(keyPrefix).toMatch(/^lt_test_[A-Za-z0-9_-]{8}$/) // First 16 chars: "lt_test_" + 8 random chars
     expect(keyHash).toMatch(/^[a-f0-9]{64}$/)
   })
 

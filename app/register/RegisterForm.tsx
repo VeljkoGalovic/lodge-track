@@ -6,13 +6,21 @@ import { useEffect, useState } from "react"
 import { registerUser } from "@/app/actions/auth"
 import Link from "next/link"
 import { useI18n } from "@/components/i18n/LocaleProvider"
-
+import { initialOnboardingData, type OnboardingData, type OnboardingStep } from "@/lib/onboarding/types"
+import type { Locale } from "@/lib/i18n/locales"
+import type { ThemePreference } from "@/lib/theme"
+import LanguageStep from "./steps/LanguageStep"
+import ThemeStep from "./steps/ThemeStep"
+import CurrencyStep from "./steps/CurrencyStep"
+import AccountStep from "./steps/AccountStep"
+import { ChevronLeft, ChevronRight, Check } from "lucide-react"
 
 export function RegisterForm() {
   const { t } = useI18n()
   const router = useRouter()
   const [state, formAction, isPending] = useActionState(registerUser, { error: "", success: "" })
-  const [termsAccepted, setTermsAccepted] = useState(false)
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>(1)
+  const [formData, setFormData] = useState<OnboardingData>(initialOnboardingData)
 
   // Handle redirect after successful registration
   useEffect(() => {
@@ -22,7 +30,93 @@ export function RegisterForm() {
     }
   }, [state?.redirect, router])
 
-  const canSubmit = termsAccepted && !isPending
+  const handleChange = <K extends keyof OnboardingData>(field: K, value: OnboardingData[K]) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
+    // Clear error when user starts typing
+    if (state?.error) {
+      // We can't directly clear the server action state, but we can track local error
+    }
+  }
+
+  const handleLocaleChange = (locale: Locale) => handleChange("locale", locale)
+  const handleThemeChange = (theme: ThemePreference) => handleChange("theme", theme)
+
+  const nextStep = () => {
+    if (currentStep < 4) {
+      setCurrentStep((prev) => (prev + 1) as OnboardingStep)
+    }
+  }
+
+  const prevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep((prev) => (prev - 1) as OnboardingStep)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const formDataToSubmit = new FormData()
+    formDataToSubmit.set("name", formData.name)
+    formDataToSubmit.set("email", formData.email)
+    formDataToSubmit.set("password", formData.password)
+    formDataToSubmit.set("confirmPassword", formData.confirmPassword)
+    formDataToSubmit.set("termsAccepted", formData.termsAccepted ? "on" : "")
+    formDataToSubmit.set("locale", formData.locale)
+    formDataToSubmit.set("theme", formData.theme)
+    formDataToSubmit.set("currency", formData.currency)
+    await formAction(formDataToSubmit)
+  }
+
+  const steps: { step: OnboardingStep; label: string }[] = [
+    { step: 1, label: t.onboarding?.step1Title || "Language" },
+    { step: 2, label: t.onboarding?.step2Title || "Theme" },
+    { step: 3, label: t.onboarding?.step3Title || "Currency" },
+    { step: 4, label: t.onboarding?.step4Title || "Account" },
+  ]
+
+  const renderStep = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <LanguageStep
+            locale={formData.locale}
+            onChange={handleLocaleChange}
+          />
+        )
+      case 2:
+        return (
+          <ThemeStep
+            theme={formData.theme}
+            onChange={handleThemeChange}
+          />
+        )
+      case 3:
+        return (
+          <CurrencyStep
+            currency={formData.currency}
+            onChange={(currency) => handleChange("currency", currency)}
+          />
+        )
+      case 4:
+        return (
+          <AccountStep
+            name={formData.name}
+            onNameChange={(name) => handleChange("name", name)}
+            email={formData.email}
+            onEmailChange={(email) => handleChange("email", email)}
+            password={formData.password}
+            onPasswordChange={(password) => handleChange("password", password)}
+            confirmPassword={formData.confirmPassword}
+            onConfirmPasswordChange={(confirmPassword) => handleChange("confirmPassword", confirmPassword)}
+            termsAccepted={formData.termsAccepted}
+            onTermsChange={(termsAccepted) => handleChange("termsAccepted", termsAccepted)}
+            onSubmit={handleSubmit}
+            isSubmitting={isPending}
+            error={state?.error}
+          />
+        )
+    }
+  }
 
   return (
     <section className="dark relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 text-foreground">
@@ -33,13 +127,46 @@ export function RegisterForm() {
       </div>
 
       <div className="glass-card w-full max-w-md p-8 relative z-10">
-        <h1 className="text-2xl font-bold text-white mb-6">{t.auth.registerTitle}</h1>
-
-        {state?.error && (
-          <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-            {state.error}
+        {/* Progress Indicator */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            {steps.map((step, index) => (
+              <div key={step.step} className="flex flex-col items-center">
+                <div
+                  className={`relative flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium transition-all ${
+                    step.step < currentStep
+                      ? "bg-blue-600 text-white"
+                      : step.step === currentStep
+                      ? "bg-blue-600 text-white ring-4 ring-blue-600/20"
+                      : "bg-white/10 text-white/50 border border-white/20"
+                  }`}
+                >
+                  {step.step < currentStep ? (
+                    <Check className="w-5 h-5" aria-hidden="true" />
+                  ) : (
+                    step.step
+                  )}
+                </div>
+                <span className="mt-2 text-xs text-white/60 text-center max-w-[70px]">{step.label}</span>
+                {index < steps.length - 1 && (
+                  <div
+                    className={`absolute left-1/2 top-5 h-0.5 w-full -z-10 transition-colors ${
+                      step.step < currentStep ? "bg-blue-600" : "bg-white/10"
+                    }`}
+                    style={{ width: "calc(100% - 50px)" }}
+                    aria-hidden="true"
+                  />
+                )}
+              </div>
+            ))}
           </div>
-        )}
+          <p className="mt-4 text-center text-sm text-white/60">
+            {t.onboarding?.progressLabel?.replace("{current}", String(currentStep)).replace("{total}", "4") ||
+              `Step ${currentStep} of 4`}
+          </p>
+        </div>
+
+        <h1 className="text-2xl font-bold text-white mb-6 text-center">{t.auth.registerTitle}</h1>
 
         {state?.success && (
           <div className="mb-4 p-3 rounded-xl bg-[#36bfae]/10 border border-[#36bfae]/20 text-[#36bfae] text-sm">
@@ -47,74 +174,35 @@ export function RegisterForm() {
           </div>
         )}
 
-        <form action={formAction} className="space-y-4">
-          <div>
-            <label className="block text-sm text-slate-300 mb-1">{t.auth.nameLabel}</label>
-            <input
-              type="text"
-              name="name"
-              placeholder="John Doe"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-[#36bfae]"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-slate-300 mb-1">{t.auth.emailLabel}</label>
-            <input
-              type="email"
-              name="email"
-              required
-              placeholder="you@example.com"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-[#36bfae]"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-slate-300 mb-1">{t.auth.passwordLabel}</label>
-            <input
-              type="password"
-              name="password"
-              required
-              placeholder="••••••••"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-[#36bfae]"
-            />
-          </div>
+        <div className="space-y-6">
+          {renderStep()}
+        </div>
 
-          {/* Terms and Privacy Policy Checkbox */}
-          <div className="space-y-2">
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                name="termsAccepted"
-                checked={termsAccepted}
-                onChange={(e) => setTermsAccepted(e.target.checked)}
-                required
-                className="mt-1 h-4 w-4 rounded border-white/20 bg-white/5 text-primary focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
-              />
-              <span className="text-sm text-slate-300 leading-relaxed">
-                {t.auth.termsLabelPrefix}{" "}
-                <Link href="/terms" className="text-[#36bfae] hover:underline" target="_blank" rel="noopener noreferrer">
-                  {t.auth.termsLink}
-                </Link>
-                {" "}{t.auth.and}{" "}
-                <Link href="/privacy" className="text-[#36bfae] hover:underline" target="_blank" rel="noopener noreferrer">
-                  {t.auth.privacyLink}
-                </Link>
-              </span>
-            </label>
-            {!termsAccepted && (
-              <p className="text-xs text-red-400 ml-7">{t.auth.termsRequired}</p>
-            )}
-          </div>
-
+        {/* Navigation Buttons */}
+        <div className="mt-8 flex items-center justify-between">
           <button
-            type="submit"
-            disabled={!canSubmit}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-[#36bfae] to-[#ba87ff] text-[#07090E] font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+            type="button"
+            onClick={prevStep}
+            disabled={currentStep === 1}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white/70 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {isPending ? t.auth.creatingAccount : t.auth.createAccount}
+            <ChevronLeft className="w-4 h-4" aria-hidden="true" />
+            {t.onboarding?.back || "Back"}
           </button>
-        </form>
 
-        <p className="text-sm text-slate-400 text-center mt-6">
+          {currentStep < 4 ? (
+            <button
+              type="button"
+              onClick={nextStep}
+              className="flex items-center gap-2 px-6 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {t.onboarding?.next || "Next"}
+              <ChevronRight className="w-4 h-4" aria-hidden="true" />
+            </button>
+          ) : null}
+        </div>
+
+        <p className="text-sm text-white/50 text-center mt-6">
           {t.auth.alreadyHaveAccount}{" "}
           <Link href="/signin" className="text-[#36bfae] hover:underline">
             {t.auth.signIn}
