@@ -604,7 +604,7 @@ export default function ApiDashboardClient({
                 <div className="space-y-3">
                   {section.endpoints.map((ep) => (
                     <div
-                      key={ep.path}
+                      key={`${ep.method}-${ep.path}`}
                       className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg group"
                     >
                       <Badge

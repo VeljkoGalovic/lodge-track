@@ -78,10 +78,13 @@ export function generateToken(): string {
  */
 export function generateApiKey(isLive: boolean = true): { rawKey: string; keyHash: string; keyPrefix: string } {
   const prefix = isLive ? "lt_live_" : "lt_test_"
-  const randomPart = randomBytes(24).toString("base64url") // 18 chars after prefix
+  const randomPart = randomBytes(24).toString("base64url") 
   const rawKey = `${prefix}${randomPart}`
   const keyHash = createHash("sha256").update(rawKey).digest("hex")
-  const keyPrefix = rawKey.slice(0, 8) // e.g., "lt_live_"
+  
+  // Fix: Include part of the random string so prefixes are unique (e.g., first 16 characters)
+  const keyPrefix = rawKey.slice(0, 16) 
+  
   return { rawKey, keyHash, keyPrefix }
 }
 
