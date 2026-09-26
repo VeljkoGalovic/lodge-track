@@ -22,13 +22,12 @@ export function RegisterForm() {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>(1)
   const [formData, setFormData] = useState<OnboardingData>(initialOnboardingData)
 
-  // Handle redirect after successful registration
+
+  const [isMounted, setIsMounted] = useState(false)
   useEffect(() => {
-    if (state?.redirect) {
-      router.push(state.redirect)
-      router.refresh()
-    }
-  }, [state?.redirect, router])
+    setIsMounted(true)
+  }, [])
+
 
   const handleChange = <K extends keyof OnboardingData>(field: K, value: OnboardingData[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -129,37 +128,43 @@ export function RegisterForm() {
       <div className="glass-card w-full max-w-md p-8 relative z-10">
         {/* Progress Indicator */}
         <div className="mb-8">
-          <div className="flex items-center justify-between">
+          <div className="flex items-start w-full">
             {steps.map((step, index) => (
-              <div key={step.step} className="flex flex-col items-center">
-                <div
-                  className={`relative flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium transition-all ${
-                    step.step < currentStep
-                      ? "bg-blue-600 text-white"
-                      : step.step === currentStep
-                      ? "bg-blue-600 text-white ring-4 ring-blue-600/20"
-                      : "bg-white/10 text-white/50 border border-white/20"
-                  }`}
-                >
-                  {step.step < currentStep ? (
-                    <Check className="w-5 h-5" aria-hidden="true" />
-                  ) : (
-                    step.step
-                  )}
+              <div key={step.step} className="flex items-center flex-1 last:flex-initial">
+                {/* Step Circle */}
+                <div className="flex flex-col items-center shrink-0">
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium transition-all ${
+                      step.step < currentStep
+                        ? "bg-blue-600 text-white"
+                        : step.step === currentStep
+                        ? "bg-blue-600 text-white ring-4 ring-blue-600/20"
+                        : "bg-white/10 text-white/50 border border-white/20"
+                    }`}
+                  >
+                    {step.step < currentStep ? (
+                      <Check className="w-5 h-5" aria-hidden="true" />
+                    ) : (
+                      step.step
+                    )}
+                  </div>
+                  <span className="mt-2 text-xs text-white/60 text-center w-[70px]">
+                    {step.label}
+                  </span>
                 </div>
-                <span className="mt-2 text-xs text-white/60 text-center max-w-[70px]">{step.label}</span>
+
+                {/* Connecting Line */}
                 {index < steps.length - 1 && (
                   <div
-                    className={`absolute left-1/2 top-5 h-0.5 w-full -z-10 transition-colors ${
+                    className={`h-0.5 flex-1 min-w-[16px] mx-2 mt-5 transition-colors ${
                       step.step < currentStep ? "bg-blue-600" : "bg-white/10"
                     }`}
-                    style={{ width: "calc(100% - 50px)" }}
-                    aria-hidden="true"
                   />
                 )}
               </div>
             ))}
           </div>
+
           <p className="mt-4 text-center text-sm text-white/60">
             {t.onboarding?.progressLabel?.replace("{current}", String(currentStep)).replace("{total}", "4") ||
               `Step ${currentStep} of 4`}
@@ -180,10 +185,10 @@ export function RegisterForm() {
 
         {/* Navigation Buttons */}
         <div className="mt-8 flex items-center justify-between">
-          <button
+         <button
             type="button"
             onClick={prevStep}
-            disabled={currentStep === 1}
+            disabled={currentStep === 1 ? true : false}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white/70 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronLeft className="w-4 h-4" aria-hidden="true" />
