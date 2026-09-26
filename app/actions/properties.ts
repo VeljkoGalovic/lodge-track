@@ -1,6 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { redirect } from "next/navigation"
 import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { serializable } from "@/lib/transaction"
@@ -113,8 +114,6 @@ export async function createProperty(
     membership.subscription?.hasApiAccessOverride
   )
 
-  // Checked here as well as in the UI: the limit is a billing boundary, so it
-  // has to hold even if the form is posted directly.
   const current = await prisma.property.count({ where: { orgId: membership.organization.id } })
   if (current >= maxProperties) {
     return {
@@ -124,16 +123,6 @@ export async function createProperty(
 
   const wanted = bedCount.ok && bedCount.count !== null ? bedCount.count : 1
 
-  /**
-   * Property and its beds are one unit of creation: a property with a stated
-   * bed count but no bed rows would book whole and contradict its own form.
-   * Inside one transaction either both exist or neither does.
-   *
-   * Beds are only created when shared bookings are on — the whole point of the
-   * flag is that a traditional landlord never gets bed rows, bed pickers, or any
-   * of the shared inventory UI. The bed-count field is likewise only shown for
-   * opted-in properties, so an unticked form means no units at all.
-   */
   const property = await serializable(async (tx) => {
     const created = await tx.property.create({
       data: { name, address, icalUrl, currency, allowSharedBookings, orgId: membership.organization.id },
@@ -184,9 +173,6 @@ export async function updateProperty(
       })
       if (count === 0) return false
 
-      // Lowering never deletes units; UnitsCard checks bookings before removal.
-      // Shared stays already on the property keep their beds — flipping the
-      // flag off hides the bed UI, it does not rewrite anyone's booking.
       if (allowSharedBookings && bedCount.ok && bedCount.count !== null) {
         const beds = await missingBeds(tx, id, membership.organization.id, bedCount.count)
         if (beds.length > 0) await tx.propertyUnit.createMany({ data: beds })
@@ -195,7 +181,6 @@ export async function updateProperty(
     })
     if (!updated) return { error: "That property no longer exists." }
   } catch (error) {
-    // Catch outside the transaction: PostgreSQL aborts it on a unique violation.
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return { error: "Some of the new bed names are already taken by units on this property." }
     }
@@ -224,26 +209,17 @@ export async function deleteProperty(
 
   const id = field(formData, "id")
 
-  const result = await serializable(async (tx) => {
-    // Bookings cascade with the property, so the count is reported back rather
-    // than the deletion being a surprise about how much went with it.
-    const bookings = await tx.booking.count({
-      where: { propertyId: id, property: { orgId: membership.organization.id } },
-    })
-
-    const { count } = await tx.property.deleteMany({
+  const { count } = await serializable(async (tx) => {
+    return await tx.property.deleteMany({
       where: { id, orgId: membership.organization.id },
     })
-    if (count === 0) return { error: "That property no longer exists." }
-
-    return { success:
-      bookings > 0
-        ? `Property deleted, along with ${bookings} booking${bookings === 1 ? "" : "s"}.`
-        : "Property deleted.", redirect: "/dashboard/properties", bookings }
   })
+
+  if (count === 0) return { error: "That property no longer exists." }
 
   revalidatePath("/dashboard")
   revalidatePath("/dashboard/properties")
   revalidatePath("/dashboard/bookings")
-  return result
+
+  redirect("/dashboard/properties")
 }

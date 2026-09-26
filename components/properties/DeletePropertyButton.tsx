@@ -34,6 +34,7 @@ export function DeletePropertyButton({
 }: DeletePropertyButtonProps) {
   const { locale, t } = useI18n()
   const [state, formAction] = useActionState(deleteProperty, EMPTY_ACTION_STATE)
+  
   useActionRedirect(state)
 
   return (

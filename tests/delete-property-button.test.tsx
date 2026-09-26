@@ -5,15 +5,18 @@ import "@testing-library/jest-dom/vitest"
 import { DeletePropertyButton } from "@/components/properties/DeletePropertyButton"
 import { getDictionary } from "@/lib/i18n/dictionaries"
 import { EMPTY_ACTION_STATE } from "@/lib/action-state"
+import { useActionState } from "react"
 
 const mocks = vi.hoisted(() => ({
   deleteProperty: vi.fn(),
   useActionRedirect: vi.fn(),
+  useRouter: vi.fn(),
 }))
 
 vi.mock("@/app/actions/properties", () => ({ deleteProperty: mocks.deleteProperty }))
 vi.mock("@/lib/use-action-redirect", () => ({ useActionRedirect: mocks.useActionRedirect }))
 vi.mock("@/components/i18n/LocaleProvider", () => ({ useI18n: () => ({ locale: "en", t: getDictionary("en") }) }))
+vi.mock("next/navigation", () => ({ useRouter: () => mocks.useRouter() }))
 
 // Mock useActionState to return proper state shape
 vi.mock("react", async () => {
@@ -97,5 +100,58 @@ describe("DeletePropertyButton", () => {
     // This test verifies the component can be used in context
     render(<DeletePropertyButton propertyId="prop-1" propertyName="My Lodge" bookingCount={5} />)
     expect(screen.getByRole("button", { name: /delete/i })).toBeInTheDocument()
+  })
+
+  describe("redirection after successful deletion", () => {
+    it("calls useActionRedirect with redirect state after successful deletion", () => {
+      // Mock useActionState to return success state with redirect
+      const mockRedirect = "/dashboard/properties"
+      const successState = { success: "Property deleted.", redirect: mockRedirect }
+
+      vi.mocked(useActionState).mockImplementation((action, initialState) => [successState, action])
+
+      render(<DeletePropertyButton propertyId="prop-1" propertyName="Test Property" bookingCount={0} />)
+
+      // useActionRedirect should be called with the success state containing redirect
+      expect(mocks.useActionRedirect).toHaveBeenCalledWith(successState)
+    })
+
+    it("does not call useActionRedirect with redirect when deletion fails", () => {
+      // Mock useActionState to return error state
+      const errorState = { error: "Failed to delete property" }
+
+      vi.mocked(useActionState).mockImplementation((action, initialState) => [errorState, action])
+
+      render(<DeletePropertyButton propertyId="prop-1" propertyName="Test Property" bookingCount={0} />)
+
+      // useActionRedirect should be called but without a redirect
+      expect(mocks.useActionRedirect).toHaveBeenCalledWith(errorState)
+    })
+
+    it("redirects to property list after successful deletion from property detail page", () => {
+      const mockRouter = { push: vi.fn(), refresh: vi.fn() }
+      mocks.useRouter.mockReturnValue(mockRouter)
+
+      // Mock useActionState to simulate the state transition from empty to success with redirect
+      const successState = { success: "Property deleted.", redirect: "/dashboard/properties" }
+      let currentState = EMPTY_ACTION_STATE
+
+      vi.mocked(useActionState).mockImplementation((action, initialState) => {
+        // Return the current state and the action
+        return [currentState, action]
+      })
+
+      const { rerender } = render(<DeletePropertyButton propertyId="prop-1" propertyName="Test Property" bookingCount={0} />)
+
+      // Initially no redirect
+      expect(mocks.useActionRedirect).toHaveBeenCalledWith(EMPTY_ACTION_STATE)
+
+      // Simulate state change to success with redirect (as would happen after form submission)
+      currentState = successState
+      rerender(<DeletePropertyButton propertyId="prop-1" propertyName="Test Property" bookingCount={0} />)
+
+      // useActionRedirect should be called with the success state containing redirect
+      expect(mocks.useActionRedirect).toHaveBeenCalledWith(successState)
+    })
   })
 })

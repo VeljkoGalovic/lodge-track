@@ -433,7 +433,7 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
           id="guestName"
           name="guestName"
           defaultValue={booking?.guestName ?? ""}
-          placeholder="Ana Petrović"
+          placeholder="John Smith"
           required
           maxLength={120}
         />
