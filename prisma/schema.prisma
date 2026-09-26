@@ -440,23 +440,25 @@ model Booking {
    */
   bedIds     String[] @default([])
 
-  guestName  String
-  startDate  DateTime
-  endDate    DateTime
-  source     String   @default("Direct")
-  status     BookingStatus @default(PENDING)
+  guestName    String
+  startDate    DateTime
+  endDate      DateTime
+  source       String   @default("Direct")
+  status       BookingStatus @default(PENDING)
+  externalUid  String?
   /*
     Total booking value in the smallest currency unit (cents).
     Nullable on purpose: revenue metrics sum this and skip nulls rather than
     falling back to an estimate, so an unrecorded rate shows as "—" instead of
     presenting a fabricated figure as real.
   */
-  totalAmount Int?
-  createdAt  DateTime @default(now())
+  totalAmount  Int?
+  createdAt    DateTime @default(now())
 
   /// Availability scans filter one property to an overlapping date window.
   @@index([propertyId, startDate, endDate])
   @@index([unitId])
+  @@unique([propertyId, externalUid])
 }
 
 /*

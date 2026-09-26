@@ -7,6 +7,7 @@ import { serializable } from "@/lib/transaction"
 import { type ActionState, canManage, currentMembership, field } from "@/lib/authorization"
 import { getOrgFeatures } from "@/lib/subscriptions"
 import { isSupportedCurrency } from "@/lib/currency"
+import { syncPropertyIcal } from "@/lib/ical"
 
 /** A bed count the schema can hold without the picker becoming unusable. */
 const MAX_BEDS = 200
@@ -150,6 +151,10 @@ export async function createProperty(
     return created
   })
 
+  if (icalUrl) {
+    await syncPropertyIcal(property.id, membership.organization.id, icalUrl)
+  }
+
   revalidatePath("/dashboard")
   revalidatePath("/dashboard/properties")
   return { success: `${name} added.`, redirect: `/dashboard/properties/${property.id}` }
@@ -195,6 +200,10 @@ export async function updateProperty(
       return { error: "Some of the new bed names are already taken by units on this property." }
     }
     throw error
+  }
+
+  if (icalUrl) {
+    await syncPropertyIcal(id, membership.organization.id, icalUrl)
   }
 
   revalidatePath("/dashboard")
