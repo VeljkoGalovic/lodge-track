@@ -57,7 +57,7 @@ async function getFooterData() {
 
   const socials = [
     { label: t.socials.github, href: "https://github.com/VeljkoGalovic?tab=overview&from=2026-09-01&to=2026-09-26", icon: GithubIcon },
-    { label: t.socials.x, href: "https://x.com", icon: XIcon },
+    { label: t.socials.x, href: "https://x.com/LodgeTrack", icon: XIcon },
     { label: t.socials.linkedin, href: "https://www.linkedin.com/in/veljko-galovic-a7b624430/", icon: LinkedInIcon },
   ];
 
