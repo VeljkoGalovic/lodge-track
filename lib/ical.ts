@@ -37,7 +37,7 @@ export async function fetchAndParseIcal(url: string): Promise<ParsedBooking[]> {
       throw new Error("No response body")
     }
 
-    let chunks: Uint8Array[] = []
+    const chunks: Uint8Array[] = []
     let totalBytes = 0
 
     while (true) {
@@ -96,7 +96,7 @@ function parseIcalText(icsText: string): ParsedBooking[] {
 export async function syncPropertyIcal(propertyId: string, orgId: string, icalUrl: string): Promise<{ created: number; updated: number; errors: string[] }> {
   const errors: string[] = []
   let created = 0
-  let updated = 0
+  const updated = 0
 
   let parsed: ParsedBooking[]
   try {

@@ -24,12 +24,6 @@ export function RegisterForm() {
   const [formData, setFormData] = useState<OnboardingData>(initialOnboardingData)
 
 
-  const [isMounted, setIsMounted] = useState(false)
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
-
-
   const handleChange = <K extends keyof OnboardingData>(field: K, value: OnboardingData[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     // Clear error when user starts typing

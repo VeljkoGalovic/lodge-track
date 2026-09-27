@@ -90,7 +90,7 @@ function CategoryToggle({
 }
 
 export async function CookieConsentBannerServer({ locale = "en" }: CookieConsentBannerProps) {
-  const dict = getDictionary(locale as any)
+  const dict = getDictionary(locale as "en" | "sr")
   const isSr = locale === "sr"
 
   // We'll use the client-side component for the interactive part
@@ -109,7 +109,7 @@ export function CookieConsentBannerClient({ locale = "en" }: { locale: string })
   const [showPreferences, setShowPreferences] = useState(false)
   const isSr = locale === "sr"
 
-  const dict = getDictionary(locale as any)
+  const dict = getDictionary(locale as "en" | "sr")
 
   if (!isLoaded || hasConsent) {
     return null

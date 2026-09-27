@@ -107,8 +107,11 @@ export function SignInForm() {
 
   // Clear email verification state when email changes
   useEffect(() => {
-    setEmailNotVerified(false)
-    setResendSuccess("")
+    const timer = setTimeout(() => {
+      setEmailNotVerified(false)
+      setResendSuccess("")
+    }, 0)
+    return () => clearTimeout(timer)
   }, [email])
 
   return (

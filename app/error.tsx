@@ -28,7 +28,6 @@ const dict = getDictionary(locale)
 const t = dict.pages.error
 
 export default function Error({
-  error,
   reset,
 }: {
   error: Error & { digest?: string }

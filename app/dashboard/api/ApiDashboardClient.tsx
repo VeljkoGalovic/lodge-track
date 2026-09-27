@@ -12,16 +12,12 @@ import {
   EyeOff,
   ExternalLink,
   Loader2,
-  AlertCircle,
   Shield,
   Terminal,
   Globe,
   Info,
-  ChevronDown,
-  ChevronUp,
   Building2,
   Calendar,
-  CalendarDays,
   Receipt,
   BarChart3,
   Lock,
@@ -51,6 +47,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 import { formatDistanceToNow } from "date-fns"
+import { srLatn } from "date-fns/locale/sr-Latn"
 import { getOrgFeatures, Tier } from "@/lib/subscriptions"
 
 interface ApiKey {
@@ -189,21 +186,16 @@ export default function ApiDashboardClient({
 
   function formatDate(date: Date | null) {
     if (!date) return t.settings.api.never
-    
+
     let dateLocale = undefined
     if (locale === "sr") {
-      try {
-        // Load the Serbian Latin locale package to match your website script
-        const srLatnLocale = require("date-fns/locale/sr-Latn")
-        dateLocale = srLatnLocale.srLatn || srLatnLocale.default || srLatnLocale
-      } catch {
-        dateLocale = undefined
-      }
+      // Use the Serbian Latin locale from date-fns to match website script
+      dateLocale = srLatn
     }
 
-    return formatDistanceToNow(new Date(date), { 
-      addSuffix: true, 
-      locale: dateLocale 
+    return formatDistanceToNow(new Date(date), {
+      addSuffix: true,
+      locale: dateLocale
     })
   }
 
@@ -325,7 +317,7 @@ export default function ApiDashboardClient({
 
               <div className="space-y-2">
                 <Label className="text-sm font-medium">
-                  {(t.settings.api as any).keyTypeLabel || "Environment"}
+                  {t.settings.api.keyTypeLabel || "Environment"}
                 </Label>
                 <div className="flex items-center space-x-3 h-10 px-3 rounded-md border border-input bg-background shadow-sm transition-colors hover:bg-accent/50">
                   <input

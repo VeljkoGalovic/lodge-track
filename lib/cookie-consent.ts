@@ -84,13 +84,13 @@ export function saveConsent(consent: Omit<CookieConsent, "timestamp" | "version"
  * React hook for accessing and managing cookie consent
  */
 export function useCookieConsent() {
-  const [consent, setConsent] = useState<CookieConsent | null>(null)
+  const [consent, setConsent] = useState<CookieConsent | null>(() => {
+    if (typeof window === "undefined") return null
+    return getConsent()
+  })
   const [isLoaded, setIsLoaded] = useState(false)
 
   useEffect(() => {
-    // Only run on client
-    const stored = getConsent()
-    setConsent(stored)
     setIsLoaded(true)
 
     // Listen for changes from other tabs/components

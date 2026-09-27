@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { verifyApiKeyAuth } from "@/lib/api-auth"
-import { getOrgFeatures } from "@/lib/subscriptions"
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -87,7 +86,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     )
   }
 
-  const { name, address, city, country, timezone, currency, allowSharedBookings } = body
+  const { name, address, city, country, currency, allowSharedBookings } = body
 
   // Validate name if provided
   if (name !== undefined) {

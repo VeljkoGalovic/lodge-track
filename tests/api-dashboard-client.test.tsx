@@ -7,7 +7,7 @@ import ApiDashboardClient from "@/app/dashboard/api/ApiDashboardClient"
 import { getDictionary } from "@/lib/i18n/dictionaries"
 
 vi.mock("next/navigation", () => ({
-  Link: ({ children, href, ...props }: any) => <a href={href} {...props}>{children}</a>,
+  Link: ({ children, href, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => <a href={href} {...props}>{children}</a>,
 }))
 
 vi.mock("@/components/i18n/LocaleProvider", () => ({
@@ -74,10 +74,18 @@ describe("ApiDashboardClient - STARTER tier (no API access)", () => {
     expect(screen.queryByText(/your keys/i)).not.toBeInTheDocument()
   })
 
-  it("does not show key management UI", () => {
+  it("does not show key management UI (no create key button, no key list)", () => {
     render(<ApiDashboardClient initialKeys={mockKeys} orgTier="STARTER" />)
-    expect(screen.queryByText(/create.*key|create.*api/i)).not.toBeInTheDocument()
-    expect(screen.queryByText(/production key/i)).not.toBeInTheDocument()
+    // The preview features ARE shown as a teaser, but the actual key management UI is not
+    // Check that the actual key management button is not shown
+    expect(screen.queryByRole("button", { name: /create.*key|new.*key/i })).not.toBeInTheDocument()
+    // Check that the "Your API Keys" section header is not shown (it's in the actual key management UI)
+    expect(screen.queryByText(/your api keys/i)).not.toBeInTheDocument()
+    // Check that the table/grid with key details (key name, prefix, status, actions) is not shown
+    expect(screen.queryByText(/key name/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/key prefix/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/^status$/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/^actions$/i)).not.toBeInTheDocument()
   })
 })
 
@@ -260,8 +268,8 @@ describe("ApiDashboardClient - key interactions", () => {
     vi.spyOn(window, "confirm").mockReturnValue(true)
 
     // Mock the fetch for revoke - delay to catch loading state
-    let resolveFetch: (value: any) => void
-    const fetchPromise = new Promise((resolve) => {
+    let resolveFetch: (value: Response) => void
+    const fetchPromise = new Promise<Response>((resolve) => {
       resolveFetch = resolve
     })
     global.fetch = vi.fn().mockReturnValue(fetchPromise)

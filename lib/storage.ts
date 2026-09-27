@@ -2,7 +2,7 @@ import { randomUUID } from "crypto"
 import { createHash } from "crypto"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 import { formatBytes } from "@/lib/subscriptions"
-import { Prisma } from "@prisma/client"
+import { Prisma, AttachmentModule } from "@prisma/client"
 
 type TxClient = Prisma.TransactionClient
 
@@ -179,9 +179,9 @@ export async function saveAttachment(
   }
 
   // Create Attachment record in database
-  const attachment = await tx.attachment.create({
+  await tx.attachment.create({
     data: {
-      module: module as any, // AttachmentModule enum
+      module: module as AttachmentModule,
       moduleId,
       orgId,
       bucket: BUCKET_NAME,

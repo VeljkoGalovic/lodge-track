@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { verifyApiAccess } from "@/lib/api-auth"
 import { getOrgUsageMetrics } from "@/lib/usage-metrics"
 
@@ -7,8 +7,8 @@ import { getOrgUsageMetrics } from "@/lib/usage-metrics"
  * Returns organization usage metrics including property count vs limit.
  * Requires Business tier (hasApiAccess: true).
  */
-export async function GET(req: Request) {
-  const verification = await verifyApiAccess(req as any)
+export async function GET(req: NextRequest) {
+  const verification = await verifyApiAccess(req)
 
   if (!verification.ok) {
     return verification.response

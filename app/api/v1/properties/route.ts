@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const { name, address, city, country, timezone, currency, allowSharedBookings } = body
+  const { name, address, city, country, currency, allowSharedBookings } = body
 
   if (!name || typeof name !== "string" || name.trim().length === 0) {
     return NextResponse.json(
@@ -151,7 +151,6 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const propertyTimezone = (timezone as string) || "UTC"
   const propertyCurrency = (currency as string) || "USD"
   const propertyAllowSharedBookings = allowSharedBookings === true
 

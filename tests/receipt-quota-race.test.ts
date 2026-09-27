@@ -113,7 +113,7 @@ beforeEach(() => {
   db.property.findFirst.mockResolvedValue({ id: "prop-1" })
   // STARTER tier: 1GB limit - attachmentQuota uses attachment aggregate, not expense aggregate
   db.attachment.aggregate.mockResolvedValue({ _sum: { fileSize: 900_000_000 } }) // 900MB used
-  db.$transaction.mockImplementation(async (callback: any, options?: any) => {
+  db.$transaction.mockImplementation(async (callback: (tx: Prisma.TransactionClient) => Promise<unknown>, options?: Prisma.TransactionOptions) => {
     // Call the callback with a mock transaction client
     return callback(db)
   })
@@ -123,7 +123,7 @@ beforeEach(() => {
   db.attachment.update.mockResolvedValue({})
 
   // Set up mockSaveAttachment implementation in beforeEach - default success
-  mockSaveAttachment.mockImplementation(async (file: File, orgId: string, module: string, moduleId: string, quota: { usedBytes: number; limitBytes: number }, uploadedById: string, tx: any) => {
+  mockSaveAttachment.mockImplementation(async (file: File, orgId: string, module: string, moduleId: string, quota: { usedBytes: number; limitBytes: number }, uploadedById: string, tx: Prisma.TransactionClient) => {
     if (file.size === 0) return { ok: false, error: "That file is empty." }
     if (file.size > 5 * 1024 * 1024) {
       return { ok: false, error: "Attachments must be under 5 MB." }
