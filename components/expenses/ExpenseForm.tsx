@@ -115,7 +115,7 @@ export function ExpenseForm({ properties, currency, orgId, expense }: ExpenseFor
         <Select id="category" name="category" defaultValue={expense?.category ?? "MAINTENANCE"}>
           {EXPENSE_CATEGORIES.map((category) => (
             <option key={category} value={category}>
-              {EXPENSE_CATEGORY_STYLES[category].label}
+              {t.pages.expenses.categories[category]}
             </option>
           ))}
         </Select>
