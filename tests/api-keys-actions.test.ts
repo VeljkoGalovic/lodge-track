@@ -78,13 +78,13 @@ describe("createApiKey", () => {
     if (!result.ok) expect(result.error).toBe("API access requires Enterprise tier or higher")
   })
 
-  it("accepts PRO tier and returns raw key", async () => {
+  it("accepts ENTERPRISE tier and returns raw key", async () => {
     mockAuth.mockResolvedValue({ user: { email: "test@example.com" } })
     db.user.findUnique.mockResolvedValue({
       id: "user-1",
       email: "test@example.com",
       orgId: "org-1",
-      organization: { id: "org-1", subscription: { tier: "PRO" } },
+      organization: { id: "org-1", subscription: { tier: "ENTERPRISE" } },
     })
     const mockedKey = { rawKey: "lt_live_mocked_random_part_12345", keyHash: "mocked_hash", keyPrefix: "lt_live_" }
     mockGenerateApiKey.mockReturnValue(mockedKey)
@@ -120,7 +120,7 @@ describe("createApiKey", () => {
       id: "user-1",
       email: "test@example.com",
       orgId: "org-1",
-      organization: { id: "org-1", subscription: { tier: "PRO" } },
+      organization: { id: "org-1", subscription: { tier: "ENTERPRISE" } },
     })
     const mockedKey = { rawKey: "lt_test_mocked_random_part_12345", keyHash: "mocked_hash", keyPrefix: "lt_test_" }
     mockGenerateApiKey.mockReturnValue(mockedKey)
@@ -145,7 +145,7 @@ describe("createApiKey", () => {
       id: "user-1",
       email: "test@example.com",
       orgId: "org-1",
-      organization: { id: "org-1", subscription: { tier: "PRO" } },
+      organization: { id: "org-1", subscription: { tier: "ENTERPRISE" } },
     })
     // The action doesn't validate name, but let's check it passes through
     db.apiKey.create.mockResolvedValue({
@@ -165,7 +165,7 @@ describe("createApiKey", () => {
       id: "user-1",
       email: "test@example.com",
       orgId: "org-1",
-      organization: { id: "org-1", subscription: { tier: "PRO" } },
+      organization: { id: "org-1", subscription: { tier: "ENTERPRISE" } },
     })
     const { keyPrefix } = generateApiKey(true)
     db.apiKey.create.mockResolvedValue({

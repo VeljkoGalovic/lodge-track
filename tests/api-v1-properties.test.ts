@@ -147,17 +147,16 @@ describe("API v1 - Properties endpoint", () => {
       maxProperties: 15,
       maxStorageBytes: 5_000_000_000,
       hasAdvancedAnalytics: true,
-      hasTeamRoles: true,
-      hasApiAccess: true, // PRO has API access by default
+      hasTeamRoles: false,
+      hasApiAccess: false, // PRO does NOT have API access by default
     })
-    vi.mocked(prisma.property.findMany).mockResolvedValue(mockProperties)
 
     const response = await GET(makeRequest())
-    expect(response.status).toBe(200)
+    expect(response.status).toBe(403)
     const json = await response.json()
-    expect(json.properties).toHaveLength(2)
-    expect(json.properties[0].id).toBe("prop-1")
-    expect(json.properties[1].id).toBe("prop-2")
+    expect(json.error).toBe("forbidden")
+    expect(json.message).toBe("API access requires Enterprise tier or higher")
+    expect(json.currentTier).toBe("PRO")
   })
 
   it("returns 200 and properties for ENTERPRISE (Business) tier with API access", async () => {
@@ -209,7 +208,7 @@ describe("API v1 - Properties endpoint", () => {
       maxProperties: 15,
       maxStorageBytes: 5_000_000_000,
       hasAdvancedAnalytics: true,
-      hasTeamRoles: true,
+      hasTeamRoles: false,
       hasApiAccess: true, // Override enabled
     })
     vi.mocked(prisma.property.findMany).mockResolvedValue(mockProperties)

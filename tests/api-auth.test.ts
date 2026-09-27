@@ -63,7 +63,7 @@ describe("verifyApiKeyAuth", () => {
       keyPrefix,
       revokedAt: new Date(),
       expiresAt: null,
-      organization: { id: "org-1", subscription: { tier: "PRO" } },
+      organization: { id: "org-1", subscription: { tier: "ENTERPRISE" } },
     })
     const result = await verifyApiKeyAuth(makeRequest(`Bearer ${rawKey}`))
     expect(result.ok).toBe(false)
@@ -77,7 +77,7 @@ describe("verifyApiKeyAuth", () => {
       keyPrefix,
       revokedAt: null,
       expiresAt: new Date(Date.now() - 1000),
-      organization: { id: "org-1", subscription: { tier: "PRO" } },
+      organization: { id: "org-1", subscription: { tier: "ENTERPRISE" } },
     })
     const result = await verifyApiKeyAuth(makeRequest(`Bearer ${rawKey}`))
     expect(result.ok).toBe(false)
@@ -91,7 +91,7 @@ describe("verifyApiKeyAuth", () => {
       keyPrefix,
       revokedAt: null,
       expiresAt: null,
-      organization: { id: "org-1", subscription: { tier: "PRO" } },
+      organization: { id: "org-1", subscription: { tier: "ENTERPRISE" } },
     })
     const result = await verifyApiKeyAuth(makeRequest("Bearer lt_live_wrongkey123"))
     expect(result.ok).toBe(false)
@@ -116,7 +116,7 @@ describe("verifyApiKeyAuth", () => {
     }
   })
 
-  it("accepts valid key for PRO tier", async () => {
+  it("accepts valid key for ENTERPRISE tier", async () => {
     const { keyHash, keyPrefix, rawKey } = generateApiKey(true)
     db.apiKey.findUnique.mockResolvedValue({
       id: "key-1",
@@ -124,7 +124,7 @@ describe("verifyApiKeyAuth", () => {
       keyPrefix,
       revokedAt: null,
       expiresAt: null,
-      organization: { id: "org-1", subscription: { tier: "PRO" } },
+      organization: { id: "org-1", subscription: { tier: "ENTERPRISE" } },
     })
     db.apiKey.update.mockResolvedValue({})
     const result = await verifyApiKeyAuth(makeRequest(`Bearer ${rawKey}`))
@@ -140,20 +140,6 @@ describe("verifyApiKeyAuth", () => {
     )
   })
 
-  it("accepts valid key for ENTERPRISE tier", async () => {
-    const { keyHash, keyPrefix, rawKey } = generateApiKey(true)
-    db.apiKey.findUnique.mockResolvedValue({
-      keyHash,
-      keyPrefix,
-      revokedAt: null,
-      expiresAt: null,
-      organization: { id: "org-1", subscription: { tier: "ENTERPRISE" } },
-    })
-    db.apiKey.update.mockResolvedValue({})
-    const result = await verifyApiKeyAuth(makeRequest(`Bearer ${rawKey}`))
-    expect(result.ok).toBe(true)
-  })
-
   it("accepts test key", async () => {
     const { keyHash, keyPrefix, rawKey } = generateApiKey(false)
     db.apiKey.findUnique.mockResolvedValue({
@@ -161,7 +147,7 @@ describe("verifyApiKeyAuth", () => {
       keyPrefix,
       revokedAt: null,
       expiresAt: null,
-      organization: { id: "org-1", subscription: { tier: "PRO" } },
+      organization: { id: "org-1", subscription: { tier: "ENTERPRISE" } },
     })
     db.apiKey.update.mockResolvedValue({})
     const result = await verifyApiKeyAuth(makeRequest(`Bearer ${rawKey}`))
@@ -217,7 +203,7 @@ describe("verifyApiAccess (session auth)", () => {
       id: "user-1",
       email: "test@example.com",
       orgId: "org-1",
-      organization: { id: "org-1", subscription: { tier: "PRO" } },
+      organization: { id: "org-1", subscription: { tier: "PRO", hasApiAccessOverride: true } },
     })
     const result = await verifyApiAccess(makeRequest())
     expect(result.ok).toBe(true)
@@ -270,7 +256,7 @@ describe("verifyAnyAuth", () => {
       keyPrefix,
       revokedAt: null,
       expiresAt: null,
-      organization: { id: "org-from-key", subscription: { tier: "PRO" } },
+      organization: { id: "org-from-key", subscription: { tier: "ENTERPRISE" } },
     })
     db.apiKey.update.mockResolvedValue({})
 
@@ -289,7 +275,7 @@ describe("verifyAnyAuth", () => {
       id: "user-1",
       email: "test@example.com",
       orgId: "org-1",
-      organization: { id: "org-1", subscription: { tier: "PRO" } },
+      organization: { id: "org-1", subscription: { tier: "PRO", hasApiAccessOverride: true } },
     })
     db.apiKey.findUnique.mockResolvedValue(null)
 

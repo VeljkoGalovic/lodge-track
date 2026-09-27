@@ -81,8 +81,8 @@ const TIER_FEATURES: Record<Tier, Omit<OrgFeatures, "tier" | "maxProperties" | "
   },
   PRO: {
     hasAdvancedAnalytics: true,
-    hasTeamRoles: true,
-    hasApiAccess: true,
+    hasTeamRoles: false,
+    hasApiAccess: false,
   },
   ENTERPRISE: {
     hasAdvancedAnalytics: true,

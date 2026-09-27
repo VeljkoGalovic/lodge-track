@@ -21,8 +21,8 @@ vi.mock("@/lib/subscriptions", () => ({
     maxUnits: tier === "STARTER" ? 10 : tier === "PRO" ? 30 : Infinity,
     maxStorageBytes: tier === "STARTER" ? 1_000_000_000 : tier === "PRO" ? 5_000_000_000 : Infinity,
     hasAdvancedAnalytics: tier !== "STARTER",
-    hasTeamRoles: tier !== "STARTER",
-    hasApiAccess: tier !== "STARTER",
+    hasTeamRoles: tier === "ENTERPRISE",
+    hasApiAccess: tier === "ENTERPRISE",
   })),
 }))
 
@@ -81,24 +81,24 @@ describe("ApiDashboardClient - STARTER tier (no API access)", () => {
   })
 })
 
-describe("ApiDashboardClient - PRO tier (has API access)", () => {
+describe("ApiDashboardClient - ENTERPRISE tier (has API access)", () => {
   beforeEach(() => {
     vi.resetAllMocks()
   })
 
   it("renders header with title and description", () => {
-    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="PRO" />)
+    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="ENTERPRISE" />)
     expect(screen.getByText(/api.*developer|api & developer/i)).toBeInTheDocument()
     expect(screen.getByText(/manage.*api.*key|programmatic.*access/i)).toBeInTheDocument()
   })
 
   it("renders create key button", () => {
-    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="PRO" />)
+    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="ENTERPRISE" />)
     expect(screen.getByRole("button", { name: /create.*key|new.*key/i })).toBeInTheDocument()
   })
 
   it("renders existing keys with correct status badges", () => {
-    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="PRO" />)
+    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="ENTERPRISE" />)
 
     // Active key - find the badge specifically
     expect(screen.getByText("Production Key")).toBeInTheDocument()
@@ -121,14 +121,14 @@ describe("ApiDashboardClient - PRO tier (has API access)", () => {
   })
 
   it("shows key prefix with masked suffix", () => {
-    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="PRO" />)
+    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="ENTERPRISE" />)
     // Use more specific selector - the prefix appears in a span with font-mono class
     expect(screen.getAllByText(/lt_live_••••••/i).length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText(/lt_test_••••••/i).length).toBeGreaterThanOrEqual(1)
   })
 
   it("shows created and last used dates", () => {
-    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="PRO" />)
+    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="ENTERPRISE" />)
     // The text "Created" and "Last used" appear in the key details
     expect(screen.getAllByText(/created/i).length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText(/last used/i).length).toBeGreaterThanOrEqual(1)
@@ -136,7 +136,7 @@ describe("ApiDashboardClient - PRO tier (has API access)", () => {
 
   it("opens create key dialog when button clicked", async () => {
     const user = userEvent.setup()
-    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="PRO" />)
+    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="ENTERPRISE" />)
 
     const createButton = screen.getByRole("button", { name: /create.*key|new.*key/i })
     await user.click(createButton)
@@ -148,20 +148,20 @@ describe("ApiDashboardClient - PRO tier (has API access)", () => {
   })
 
   it("shows empty state when no keys exist", () => {
-    render(<ApiDashboardClient initialKeys={[]} orgTier="PRO" />)
+    render(<ApiDashboardClient initialKeys={[]} orgTier="ENTERPRISE" />)
     expect(screen.getByText(/no.*keys/i)).toBeInTheDocument()
     expect(screen.getByText(/create.*first.*key/i)).toBeInTheDocument()
   })
 
   it("renders three documentation tabs", () => {
-    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="PRO" />)
+    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="ENTERPRISE" />)
     expect(screen.getByRole("tab", { name: /authentication/i })).toBeInTheDocument()
     expect(screen.getByRole("tab", { name: /endpoints/i })).toBeInTheDocument()
     expect(screen.getByRole("tab", { name: /examples/i })).toBeInTheDocument()
   })
 
   it("shows authentication tab content by default", () => {
-    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="PRO" />)
+    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="ENTERPRISE" />)
     // Header format appears as card title - use getByRole for heading
     expect(screen.getByRole("heading", { name: /header format/i })).toBeInTheDocument()
     // Key Format is a heading (h4), not the description text
@@ -175,7 +175,7 @@ describe("ApiDashboardClient - PRO tier (has API access)", () => {
 
   it("shows endpoints when endpoints tab clicked", async () => {
     const user = userEvent.setup()
-    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="PRO" />)
+    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="ENTERPRISE" />)
 
     const endpointsTab = screen.getByRole("tab", { name: /endpoints/i })
     await user.click(endpointsTab)
@@ -193,7 +193,7 @@ describe("ApiDashboardClient - PRO tier (has API access)", () => {
 
   it("shows examples when examples tab clicked", async () => {
     const user = userEvent.setup()
-    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="PRO" />)
+    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="ENTERPRISE" />)
 
     const examplesTab = screen.getByRole("tab", { name: /examples/i })
     await user.click(examplesTab)
@@ -216,7 +216,7 @@ describe("ApiDashboardClient - key interactions", () => {
     const user = userEvent.setup()
     vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue()
 
-    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="PRO" />)
+    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="ENTERPRISE" />)
 
     // Find copy button for first key
     const copyButtons = screen.getAllByRole("button", { name: /copy.*prefix/i })
@@ -229,7 +229,7 @@ describe("ApiDashboardClient - key interactions", () => {
     const user = userEvent.setup()
     vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue()
 
-    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="PRO" />)
+    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="ENTERPRISE" />)
 
     const copyButtons = screen.getAllByRole("button", { name: /copy.*prefix/i })
     await user.click(copyButtons[0])
@@ -246,7 +246,7 @@ describe("ApiDashboardClient - key interactions", () => {
   })
 
   it("disables actions for revoked keys", () => {
-    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="PRO" />)
+    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="ENTERPRISE" />)
 
     // The revoked key (Test Key) should have disabled buttons
     // Find the revoked key container by looking for the "Test Key" text and its parent
@@ -266,7 +266,7 @@ describe("ApiDashboardClient - key interactions", () => {
     })
     global.fetch = vi.fn().mockReturnValue(fetchPromise)
 
-    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="PRO" />)
+    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="ENTERPRISE" />)
 
     // Click revoke on active key (first revoke button)
     const revokeButtons = screen.getAllByRole("button", { name: /revoke/i })
@@ -285,7 +285,7 @@ describe("ApiDashboardClient - key interactions", () => {
 
 describe("ApiDashboardClient - key status logic", () => {
   it("shows expires badge for keys with expiry", () => {
-    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="PRO" />)
+    render(<ApiDashboardClient initialKeys={mockKeys} orgTier="ENTERPRISE" />)
     expect(screen.getByText(/expires/i)).toBeInTheDocument()
   })
 
@@ -294,7 +294,7 @@ describe("ApiDashboardClient - key status logic", () => {
       ...mockKeys[1],
       lastUsedAt: null,
     }]
-    render(<ApiDashboardClient initialKeys={keysWithNever} orgTier="PRO" />)
+    render(<ApiDashboardClient initialKeys={keysWithNever} orgTier="ENTERPRISE" />)
     expect(screen.getByText(/never/i)).toBeInTheDocument()
   })
 })

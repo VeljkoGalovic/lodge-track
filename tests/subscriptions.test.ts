@@ -64,8 +64,8 @@ describe("getOrgFeatures", () => {
   it("returns correct feature flags for PRO", () => {
     const features = getOrgFeatures("PRO")
     expect(features.hasAdvancedAnalytics).toBe(true)
-    expect(features.hasTeamRoles).toBe(true)
-    expect(features.hasApiAccess).toBe(true)
+    expect(features.hasTeamRoles).toBe(false)
+    expect(features.hasApiAccess).toBe(false)
   })
 
   it("returns correct feature flags for ENTERPRISE", () => {
