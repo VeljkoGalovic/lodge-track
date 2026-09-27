@@ -965,7 +965,7 @@ export async function GET() {
           tags: ["API Keys"],
           summary: "Create an API key",
           description:
-            "Creates a new API key for the organization. Only available for organizations with Enterprise tier or higher (hasApiAccess: true). Returns the raw key only once.",
+            "Creates a new API key for the organization. Only available for organizations with Business tier or higher (hasApiAccess: true). Returns the raw key only once.",
           operationId: "createApiKey",
           security: [{ cookieAuth: [] }],
           requestBody: {
@@ -1017,7 +1017,7 @@ export async function GET() {
               },
             },
             "403": {
-              description: "Forbidden - API access requires Enterprise tier or higher",
+              description: "Forbidden - API access requires Business tier or higher",
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/Error" },

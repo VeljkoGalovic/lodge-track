@@ -9,7 +9,7 @@ import { redirect } from "next/navigation"
 
 /**
  * Creates a new API key for the current organization.
- * Only available for Enterprise tier (hasApiAccess: true).
+ * Only available for Business tier (hasApiAccess: true).
  * Returns the raw key (only shown once) and the key metadata.
  */
 export async function createApiKey(name: string, isLive: boolean = true): Promise<
@@ -48,7 +48,7 @@ export async function createApiKey(name: string, isLive: boolean = true): Promis
   )
 
   if (!features.hasApiAccess) {
-    return { ok: false, error: "API access requires Enterprise tier or higher" }
+    return { ok: false, error: "API access requires Business tier or higher" }
   }
 
   // Generate the API key

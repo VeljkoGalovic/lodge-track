@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma"
 /**
  * GET /api/v1/properties
  * Returns a list of properties for the organization.
- * Requires Enterprise tier (hasApiAccess: true).
+ * Requires Business tier (hasApiAccess: true).
  */
 export async function GET(req: Request) {
   const verification = await verifyApiAccess(req as any)

@@ -75,7 +75,7 @@ describe("createApiKey", () => {
     })
     const result = await createApiKey("Test Key")
     expect(result.ok).toBe(false)
-    if (!result.ok) expect(result.error).toBe("API access requires Enterprise tier or higher")
+    if (!result.ok) expect(result.error).toBe("API access requires Business tier or higher")
   })
 
   it("accepts ENTERPRISE tier and returns raw key", async () => {

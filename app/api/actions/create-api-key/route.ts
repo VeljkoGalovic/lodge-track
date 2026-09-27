@@ -7,7 +7,7 @@ import { generateApiKey } from "@/lib/crypto"
 /**
  * POST /api/actions/create-api-key
  * Creates a new API key for the current organization.
- * Only available for Enterprise tier (hasApiAccess: true).
+ * Only available for Business tier (hasApiAccess: true).
  * Returns the raw key (only shown once) and the key metadata.
  */
 export async function POST(req: NextRequest) {
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
 
   if (!features.hasApiAccess) {
     return NextResponse.json(
-      { ok: false, error: "API access requires Enterprise tier or higher" },
+      { ok: false, error: "API access requires Business tier or higher" },
       { status: 403 }
     )
   }

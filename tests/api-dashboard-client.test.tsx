@@ -68,9 +68,9 @@ describe("ApiDashboardClient - STARTER tier (no API access)", () => {
   it("shows upgrade card with billing link", () => {
     render(<ApiDashboardClient initialKeys={[]} orgTier="STARTER" />)
     // The upgrade title and description both match, so use getAllByText and check the first one (title)
-    expect(screen.getAllByText(/upgrade.*plan|api access.*enterprise/i)[0]).toBeInTheDocument()
-    // The link text is "Upgrade to Enterprise" not "billing"
-    expect(screen.getByRole("link", { name: /upgrade to enterprise/i })).toBeInTheDocument()
+    expect(screen.getAllByText(/upgrade.*plan|api access.*business/i)[0]).toBeInTheDocument()
+    // The link text is "Upgrade to Business" not "billing"
+    expect(screen.getByRole("link", { name: /upgrade to business/i })).toBeInTheDocument()
     expect(screen.queryByText(/your keys/i)).not.toBeInTheDocument()
   })
 

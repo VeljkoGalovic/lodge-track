@@ -5,8 +5,9 @@ import { getOrgFeatures } from "@/lib/subscriptions"
 import { verifyApiKey } from "@/lib/crypto"
 
 /**
- * Verifies that the organization has API access (Enterprise tier).
+ * Verifies that the organization has API access (Business tier).
  * Returns the membership object if valid, or a NextResponse with 403 if not.
+ * Note: Internal tier is "ENTERPRISE" but user-facing is "Business".
  */
 export async function verifyApiAccess(req: NextRequest): Promise<
   | { ok: true; membership: { user: { id: string; orgId: string }; organization: { id: string; subscription: { tier: string } | null } } }
@@ -55,7 +56,7 @@ export async function verifyApiAccess(req: NextRequest): Promise<
       response: NextResponse.json(
         {
           error: "forbidden",
-          message: "API access requires Enterprise tier or higher",
+          message: "API access requires Business tier or higher",
           requiredTier: "ENTERPRISE",
           currentTier: features.tier
         },
@@ -76,6 +77,7 @@ export async function verifyApiAccess(req: NextRequest): Promise<
 /**
  * Verifies an API key from the Authorization header (Bearer token).
  * Returns the organization if valid, or a NextResponse with 401/403 if not.
+ * Note: Internal tier is "ENTERPRISE" but user-facing is "Business".
  */
 export async function verifyApiKeyAuth(req: NextRequest): Promise<
   | { ok: true; organization: { id: string; subscription: { tier: string } | null } }
@@ -165,7 +167,7 @@ export async function verifyApiKeyAuth(req: NextRequest): Promise<
       response: NextResponse.json(
         {
           error: "forbidden",
-          message: "API access requires Enterprise tier or higher",
+          message: "API access requires Business tier or higher",
           requiredTier: "ENTERPRISE",
           currentTier: features.tier
         },
@@ -189,6 +191,7 @@ export async function verifyApiKeyAuth(req: NextRequest): Promise<
 /**
  * Unified verification that accepts either session auth or API key auth.
  * Use this for endpoints that should work with both authentication methods.
+ * Note: Internal tier is "ENTERPRISE" but user-facing is "Business".
  */
 export async function verifyAnyAuth(req: NextRequest): Promise<
   | { ok: true; membership: { user?: { id: string; orgId: string }; organization: { id: string; subscription: { tier: string } | null } } }

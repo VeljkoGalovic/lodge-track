@@ -132,7 +132,7 @@ describe("API v1 - Properties endpoint", () => {
     expect(response.status).toBe(403)
     const json = await response.json()
     expect(json.error).toBe("forbidden")
-    expect(json.message).toBe("API access requires Enterprise tier or higher")
+    expect(json.message).toBe("API access requires Business tier or higher")
     expect(json.currentTier).toBe("STARTER")
   })
 
@@ -155,7 +155,7 @@ describe("API v1 - Properties endpoint", () => {
     expect(response.status).toBe(403)
     const json = await response.json()
     expect(json.error).toBe("forbidden")
-    expect(json.message).toBe("API access requires Enterprise tier or higher")
+    expect(json.message).toBe("API access requires Business tier or higher")
     expect(json.currentTier).toBe("PRO")
   })
 
