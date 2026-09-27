@@ -44,9 +44,8 @@ if(l)r.lang=decodeURIComponent(l[1]);
 
 export function BootScript() {
   return (
-    <Script
+    <script
       id="boot-script"
-      strategy="beforeInteractive"
       dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }}
     />
   )

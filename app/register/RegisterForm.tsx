@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState } from "react"
+import { useActionState, startTransition } from "react"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { registerUser } from "@/app/actions/auth"
@@ -63,7 +63,10 @@ export function RegisterForm() {
     formDataToSubmit.set("locale", formData.locale)
     formDataToSubmit.set("theme", formData.theme)
     formDataToSubmit.set("currency", formData.currency)
-    await formAction(formDataToSubmit)
+    
+    startTransition(() => {
+      formAction(formDataToSubmit)
+    })
   }
 
   const steps: { step: OnboardingStep; label: string }[] = [
