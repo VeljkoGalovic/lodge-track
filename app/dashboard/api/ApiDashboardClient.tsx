@@ -24,6 +24,10 @@ import {
   CalendarDays,
   Receipt,
   BarChart3,
+  Lock,
+  ArrowUpRight,
+  FileCode,
+  Globe as GlobeIcon,
 } from "lucide-react"
 import { useI18n } from "@/components/i18n/LocaleProvider"
 import { Button } from "@/components/ui/Button"
@@ -211,20 +215,60 @@ export default function ApiDashboardClient({
   }
 
   if (!hasApiAccess) {
+    const previewFeatures = [
+      {
+        icon: Key,
+        title: t.settings.api.preview.apiKeys,
+        description: t.settings.api.preview.apiKeysHelp,
+      },
+      {
+        icon: FileCode,
+        title: t.settings.api.preview.documentation,
+        description: t.settings.api.preview.documentationHelp,
+      },
+      {
+        icon: GlobeIcon,
+        title: t.settings.api.preview.webhooks,
+        description: t.settings.api.preview.webhooksHelp,
+      },
+    ]
+
     return (
-      <div className="container mx-auto py-8 px-4">
-        <Card className="max-w-2xl mx-auto">
-          <CardHeader className="text-center">
-            <Shield className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <CardTitle>{t.settings.api.upgradeTitle}</CardTitle>
-            <CardDescription>{t.settings.api.upgradeDescription}</CardDescription>
-          </CardHeader>
-          <CardContent className="text-center">
-            <Button asChild>
-              <Link href="/dashboard/billing">{t.settings.api.upgradeButton}</Link>
+      <div className="space-y-6">
+        <Card className="relative overflow-hidden">
+          {/* Ambient purple wash, matching the landing page's feature cards. */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-purple/15 blur-[100px]"
+          />
+          <div className="relative p-8 text-center md:p-12">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-brand-purple/25 bg-brand-purple/10">
+              <Lock className="h-8 w-8 text-brand-purple" />
+            </div>
+            <h3 className="text-xl font-semibold text-foreground">{t.settings.api.upgradeTitle}</h3>
+            <p className="mx-auto mt-2 max-w-2xl text-sm text-subtle-foreground">
+              {t.settings.api.upgradeDescription}
+            </p>
+            <Button size="lg" href="/dashboard/billing" className="mt-6">
+              <ArrowUpRight className="mr-2 h-4 w-4" />
+              {t.settings.api.upgradeButton}
             </Button>
-          </CardContent>
+          </div>
         </Card>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          {previewFeatures.map(({ icon: Icon, title, description }) => (
+            <Card key={title} className="opacity-60">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Icon className="h-5 w-5 text-primary" />
+                  {title}
+                </CardTitle>
+                <CardDescription>{description}</CardDescription>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
       </div>
     )
   }
