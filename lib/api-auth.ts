@@ -96,7 +96,7 @@ export async function verifyApiKeyAuth(req: NextRequest): Promise<
   }
 
   const rawKey = authHeader.slice(7) // Remove "Bearer "
-  const keyPrefix = rawKey.slice(0, 8)
+  const keyPrefix = rawKey.slice(0, 16)
 
   // Find the API key by prefix
   const apiKey = await prisma.apiKey.findUnique({
