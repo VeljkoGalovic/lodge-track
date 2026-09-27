@@ -5,7 +5,7 @@ import { getOrgUsageMetrics } from "@/lib/usage-metrics"
 /**
  * GET /api/v1/usage
  * Returns organization usage metrics including property count vs limit.
- * Requires Business tier (hasApiAccess: true).
+ * Requires Enterprise tier (hasApiAccess: true).
  */
 export async function GET(req: Request) {
   const verification = await verifyApiAccess(req as any)

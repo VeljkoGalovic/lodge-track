@@ -5,7 +5,7 @@ import { getOrgFeatures } from "@/lib/subscriptions"
 import { verifyApiKey } from "@/lib/crypto"
 
 /**
- * Verifies that the organization has API access (Business/Enterprise tier).
+ * Verifies that the organization has API access (Enterprise tier).
  * Returns the membership object if valid, or a NextResponse with 403 if not.
  */
 export async function verifyApiAccess(req: NextRequest): Promise<
@@ -55,8 +55,8 @@ export async function verifyApiAccess(req: NextRequest): Promise<
       response: NextResponse.json(
         {
           error: "forbidden",
-          message: "API access requires Business tier or higher",
-          requiredTier: "BUSINESS",
+          message: "API access requires Enterprise tier or higher",
+          requiredTier: "ENTERPRISE",
           currentTier: features.tier
         },
         { status: 403 }
@@ -165,8 +165,8 @@ export async function verifyApiKeyAuth(req: NextRequest): Promise<
       response: NextResponse.json(
         {
           error: "forbidden",
-          message: "API access requires Business tier or higher",
-          requiredTier: "BUSINESS",
+          message: "API access requires Enterprise tier or higher",
+          requiredTier: "ENTERPRISE",
           currentTier: features.tier
         },
         { status: 403 }

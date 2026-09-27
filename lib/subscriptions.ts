@@ -158,9 +158,9 @@ export function getTierLabel(tier: Tier): string {
 }
 
 /**
- * Gets the dedicated account manager email for Business tier organizations.
- * Returns veljko@lodgetrack.com for ENTERPRISE (Business) tier, null for other tiers.
- * This is the personal manager contact shown to Business tier users.
+ * Gets the dedicated account manager email for Enterprise tier organizations.
+ * Returns veljko@lodgetrack.com for ENTERPRISE tier, null for other tiers.
+ * This is the personal manager contact shown to Enterprise tier users.
  */
 export function getAccountManagerEmail(tier: Tier): string | null {
   return tier === "ENTERPRISE" ? "veljko@lodgetrack.com" : null

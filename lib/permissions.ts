@@ -7,7 +7,7 @@ export interface EnterpriseFeatureFlags {
 }
 
 /**
- * Returns feature flags for enterprise-tier (Business tier) functionality.
+ * Returns feature flags for enterprise-tier functionality.
  * These features are only available on the ENTERPRISE subscription tier.
  * STARTER and PRO tiers cannot access RBAC/SSO configurations.
  */
@@ -46,7 +46,7 @@ export function canAccessEnterpriseSettings(tier: Tier): boolean {
 }
 
 /**
- * Gets the dedicated account manager email for Business tier organizations.
+ * Gets the dedicated account manager email for Enterprise tier organizations.
  * Returns veljko@lodgetrack.com for ENTERPRISE tier, null for other tiers.
  */
 export function getAccountManagerEmail(tier: Tier): string | null {
