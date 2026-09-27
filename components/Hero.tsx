@@ -24,7 +24,7 @@ export function Hero() {
 
       <div className="container mx-auto px-4 sm:px-6 md:px-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center justify-center">
-          
+
           {/* Left Column */}
           <GlassCard className="lg:col-span-7 p-6 sm:p-8 md:p-12 border-white/15 shadow-2xl space-y-5 md:space-y-6 flex flex-col justify-center" hover={false}>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md w-fit">
@@ -32,23 +32,17 @@ export function Hero() {
               <span className="text-xs font-medium text-slate-300">Next-Gen Property Operations</span>
             </div>
 
-            {/* Pre-launch status */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#BA87FF]/10 border border-[#BA87FF]/30 backdrop-blur-md w-fit">
-              <span aria-hidden="true">🚧</span>
-              <span className="text-xs font-medium text-[#D6B7FF]">Work in Progress • Launching Soon</span>
-            </div>
-
             <h1 className="text-3xl sm:text-5xl lg:text-7xl font-bold tracking-tight text-white leading-[1.15] sm:leading-[1.1]">
-              LodgeTrack is <span className="text-gradient-teal">under active development</span> — the platform that scales your rental business
+              LodgeTrack — the platform that scales your rental business
             </h1>
 
             <p className="text-slate-300 text-base sm:text-lg md:text-xl max-w-2xl leading-relaxed">
-              Manage properties, automated bookings, and unified revenue streams from a single, high-performance platform built for modern operators. <span className="text-[#36BFAE]">Public launch is coming soon.</span>
+              Manage properties, automated bookings, and unified revenue streams from a single, high-performance platform built for modern operators.
             </p>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 pt-2">
-              <Button variant="primary" disabled className="gap-2 px-6 py-3.5 sm:py-4 text-base justify-center">
-                Launching soon <ArrowRight size={18} />
+              <Button variant="primary" href="/register" className="gap-2 px-6 py-3.5 sm:py-4 text-base justify-center">
+                Start free trial <ArrowRight size={18} />
               </Button>
               <Button variant="glass" href="#features" className="px-6 py-3.5 sm:py-4 text-base justify-center">
                 Explore the platform
