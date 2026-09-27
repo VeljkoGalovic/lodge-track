@@ -5,8 +5,6 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs" // Change from "bcrypt" to "bcryptjs"
 import type { Role } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
-import { decryptSecret } from "@/lib/crypto"
-import { verifyCode } from "@/lib/totp"
 import { checkRateLimit, getRateLimitIdentifier, RATE_LIMIT_CONFIGS } from "@/lib/rate-limit"
 
 /**
@@ -54,6 +52,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         code: { label: "Authenticator code", type: "text" },
       },
       async authorize(credentials) {
+        const { verifyCode } = await import("@/lib/totp")
+        const { decryptSecret } = await import("@/lib/crypto")
         const email = typeof credentials?.email === "string" ? credentials.email : ""
         const password = typeof credentials?.password === "string" ? credentials.password : ""
         const code = typeof credentials?.code === "string" ? credentials.code.trim() : ""

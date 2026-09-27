@@ -4,12 +4,7 @@ import { enforceRateLimit, getRateLimitIdentifier, RATE_LIMIT_CONFIGS } from "@/
 import { auth } from "@/auth"
 
 /**
- * Next.js Middleware for rate limiting and auth protection.
- *
- * This middleware:
- * 1. Applies rate limiting to API routes and auth endpoints
- * 2. Protects API routes that require authentication
- * 3. Sets security headers
+ * Next.js Proxy for rate limiting and auth protection.
  */
 
 // Paths that require authentication
@@ -33,21 +28,16 @@ const AUTH_ENDPOINTS = [
   "/api/auth/two-factor",
 ]
 
-// Public API endpoints that don't need auth but may need rate limiting
-const PUBLIC_API_PREFIXES = [
-  "/api/health",
-]
-
 interface RateLimitError extends Error {
   code: string
   retryAfterSeconds: number
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? request.headers.get("x-real-ip") ?? "unknown"
 
-  // Skip middleware for static assets, Next.js internals, and public pages
+  // Skip proxy for static assets, Next.js internals, and public pages
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/static") ||
@@ -104,8 +94,7 @@ export async function middleware(request: NextRequest) {
   // Rate limiting for API routes (general)
   // =========================================================================
   if (pathname.startsWith("/api/")) {
-    // Apply general API rate limiting (more generous)
-    const apiConfig: typeof RATE_LIMIT_CONFIGS.register = {
+    const apiConfig = {
       maxAttempts: 100,
       windowMinutes: 15,
       action: "api_general",
@@ -162,7 +151,6 @@ export async function middleware(request: NextRequest) {
   // =========================================================================
   const response = NextResponse.next()
 
-  // Security headers
   response.headers.set("X-Content-Type-Options", "nosniff")
   response.headers.set("X-Frame-Options", "DENY")
   response.headers.set("X-XSS-Protection", "1; mode=block")
@@ -172,7 +160,6 @@ export async function middleware(request: NextRequest) {
     "camera=(), microphone=(), geolocation=(), payment=()"
   )
 
-  // CSP header for API routes (more permissive)
   if (pathname.startsWith("/api/")) {
     response.headers.set(
       "Content-Security-Policy",
@@ -185,13 +172,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
     "/((?!_next/static|_next/image|favicon.ico|public/).*)",
   ],
 }
