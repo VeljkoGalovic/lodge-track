@@ -133,12 +133,12 @@ export function RegisterForm() {
         <div className="absolute top-[30%] -right-[10%] w-[50%] h-[50%] rounded-full bg-gradient-to-tl from-[#ba87ff]/20 to-[#36bfae]/25 blur-[100px] animate-aurora [animation-delay:3s]" />
       </div>
 
-      <div className="glass-card w-full max-w-md p-8 relative z-10">
+      <div className="glass-card w-full max-w-2xl p-8 relative z-10">
         {/* Progress Indicator */}
         <div className="mb-8">
-          <div className="flex items-start w-full">
+          <div className="flex items-start w-full overflow-x-auto snap-x snap-mandatory -mx-2 px-2 pb-2">
             {steps.map((step, index) => (
-              <div key={step.step} className="flex items-center flex-1 last:flex-initial">
+              <div key={step.step} className="flex items-center flex-1 last:flex-initial snap-center min-w-[140px]">
                 {/* Step Circle */}
                 <div className="flex flex-col items-center shrink-0">
                   <div
@@ -156,7 +156,7 @@ export function RegisterForm() {
                       step.step
                     )}
                   </div>
-                  <span className="mt-2 text-xs text-white/60 text-center w-[70px]">
+                  <span className="mt-2 text-xs text-white/60 text-center whitespace-nowrap max-w-[120px] overflow-hidden text-ellipsis">
                     {step.label}
                   </span>
                 </div>

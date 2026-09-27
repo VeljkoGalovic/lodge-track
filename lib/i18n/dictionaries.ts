@@ -1084,6 +1084,7 @@ const booking = await api("/bookings", {
     selectPlan: "Select plan",
     continueToCheckout: "Continue to checkout",
     startingTrial: "Starting your 14-day trial...",
+    trialDaysLabel: "{days}-day free trial",
   },
 
   availability: {
@@ -2193,6 +2194,7 @@ const booking = await api("/bookings", {
     selectPlan: "Izaberi plan",
     continueToCheckout: "Nastavi na plaćanje",
     startingTrial: "Pokrećem 14-dnevni probni period...",
+    trialDaysLabel: "Besplatan probni period od {days} dana",
   },
 
   availability: {

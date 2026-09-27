@@ -14,6 +14,8 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "6mb",
     },
   },
+  // Cloudflare Pages requires output: 'standalone' for edge deployment
+  output: 'standalone',
 };
 
 export default nextConfig;

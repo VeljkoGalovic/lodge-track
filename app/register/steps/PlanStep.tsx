@@ -13,29 +13,26 @@ const PLANS = [
   {
     id: "STARTER" as SubscriptionTier,
     nameKey: "starterPlan",
-    price: "free",
-    priceKey: "free",
-    periodKey: "perMonth",
+    priceKey: "starterPrice",
     popular: false,
     featuresKey: "starterFeatures",
+    trialDays: 0,
   },
   {
     id: "PRO" as SubscriptionTier,
     nameKey: "proPlan",
-    price: "$29",
     priceKey: "proPrice",
-    periodKey: "perMonth",
     popular: true,
     featuresKey: "proFeatures",
+    trialDays: 30,
   },
   {
     id: "BUSINESS" as SubscriptionTier,
     nameKey: "businessPlan",
-    price: "$79",
     priceKey: "businessPrice",
-    periodKey: "perMonth",
     popular: false,
     featuresKey: "businessFeatures",
+    trialDays: 30,
   },
 ] as const
 
@@ -53,7 +50,7 @@ export default function PlanStep({ selectedTier, onChange }: PlanStepProps) {
           {t.onboarding?.planTitle || "Choose your plan"}
         </h3>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {t.onboarding?.planSubtitle || "All plans include a 14-day free trial. No credit card required."}
+          {t.onboarding?.planSubtitle || "Pro and Business plans include a 30-day free trial. No credit card required until trial ends."}
         </p>
       </div>
 
@@ -61,6 +58,8 @@ export default function PlanStep({ selectedTier, onChange }: PlanStepProps) {
         {PLANS.map((plan) => {
           const isSelected = selectedTier === plan.id
           const features = t.onboarding?.[plan.featuresKey as keyof typeof t.onboarding] as string[] || []
+          const priceText = t.onboarding?.[plan.priceKey as keyof typeof t.onboarding] || ""
+          const isFree = plan.id === "STARTER"
 
           return (
             <button
@@ -82,6 +81,13 @@ export default function PlanStep({ selectedTier, onChange }: PlanStepProps) {
                 </span>
               )}
 
+              {/* Trial badge for paid plans */}
+              {plan.trialDays > 0 && (
+                <span className="absolute -top-2 left-4 px-2 py-0.5 text-xs font-medium rounded-full bg-green-500 text-white">
+                  {t.onboarding?.trialDaysLabel?.replace("{days}", String(plan.trialDays)) || `${plan.trialDays}-day free trial`}
+                </span>
+              )}
+
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   {/* Radio indicator */}
@@ -97,18 +103,18 @@ export default function PlanStep({ selectedTier, onChange }: PlanStepProps) {
                     </h4>
                     <div className="flex items-baseline gap-2 mt-1">
                       <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                        {plan.price === "free"
-                          ? (t.onboarding?.[plan.priceKey as keyof typeof t.onboarding] || "Free")
-                          : plan.price}
+                        {isFree
+                          ? (t.onboarding?.free || "Free")
+                          : priceText}
                       </span>
-                      {plan.price !== "free" && (
+                      {!isFree && (
                         <span className="text-gray-500 dark:text-gray-400">
-                          {t.onboarding?.[plan.periodKey as keyof typeof t.onboarding] || "/month"}
+                          {t.onboarding?.perMonth || "/month"}
                         </span>
                       )}
-                      {plan.price === "free" && (
+                      {isFree && (
                         <span className="text-green-600 dark:text-green-400 text-sm font-medium ml-2">
-                          {t.onboarding?.[plan.priceKey as keyof typeof t.onboarding] || "Free"}
+                          {t.onboarding?.free || "Free"}
                         </span>
                       )}
                     </div>

@@ -10,11 +10,11 @@ env:
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
   AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
   RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-  LEVER_SQUEEZY_API_KEY: ${{ secrets.LEVER_SQUEEZY_API_KEY }}
-  LEVER_SQUEEZY_WEBHOOK_SECRET: ${{ secrets.LEVER_SQUEEZY_WEBHOOK_SECRET }}
-  LEVER_SQUEEZY_STORE_ID: ${{ secrets.LEVER_SQUEEZY_STORE_ID }}
-  LEVER_SQUEEZY_PRO_VARIANT_ID: ${{ secrets.LEVER_SQUEEZY_PRO_VARIANT_ID }}
-  LEVER_SQUEEZY_BUSINESS_VARIANT_ID: ${{ secrets.LEVER_SQUEEZY_BUSINESS_VARIANT_ID }}
+  LEMON_SQUEEZY_API_KEY: ${{ secrets.LEMON_SQUEEZY_API_KEY }}
+  LEMON_SQUEEZY_WEBHOOK_SECRET: ${{ secrets.LEMON_SQUEEZY_WEBHOOK_SECRET }}
+  LEMON_SQUEEZY_STORE_ID: ${{ secrets.LEMON_SQUEEZY_STORE_ID }}
+  LEMON_SQUEEZY_PRO_VARIANT_ID: ${{ secrets.LEMON_SQUEEZY_PRO_VARIANT_ID }}
+  LEMON_SQUEEZY_BUSINESS_VARIANT_ID: ${{ secrets.LEMON_SQUEEZY_BUSINESS_VARIANT_ID }}
   NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
   NODE_VERSION: '20.x'
 
@@ -53,15 +53,17 @@ jobs:
         run: npm run test
 
   # =========================================================================
-  # Deploy to Staging on merge to main
+  # Deploy to Cloudflare Pages (Preview on PR, Production on merge to main)
   # =========================================================================
-  deploy-staging:
-    name: Deploy to Staging
+  deploy:
+    name: Deploy to Cloudflare Pages
     needs: ci
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment: staging
+    permissions:
+      contents: read
+      deployments: write
 
     steps:
       - name: Checkout repository
@@ -79,67 +81,26 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
 
-      - name: Run database migrations
-        run: npx prisma migrate deploy
+      - name: Build application for Cloudflare Pages
+        run: npm run build:cf
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          LEMON_SQUEEZY_API_KEY: ${{ secrets.LEMON_SQUEEZY_API_KEY }}
+          LEMON_SQUEEZY_WEBHOOK_SECRET: ${{ secrets.LEMON_SQUEEZY_WEBHOOK_SECRET }}
+          LEMON_SQUEEZY_STORE_ID: ${{ secrets.LEMON_SQUEEZY_STORE_ID }}
+          LEMON_SQUEEZY_PRO_VARIANT_ID: ${{ secrets.LEMON_SQUEEZY_PRO_VARIANT_ID }}
+          LEMON_SQUEEZY_BUSINESS_VARIANT_ID: ${{ secrets.LEMON_SQUEEZY_BUSINESS_VARIANT_ID }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
 
-      - name: Build application
-        run: npm run build
-
-      - name: Deploy to staging
-        run: echo "Deploy to staging infrastructure here (e.g., Vercel, Railway, Fly.io, etc.)"
-        # Example for Vercel:
-        # uses: amondnet/vercel-action@v25
-        # with:
-        #   vercel-token: ${{ secrets.VERCEL_TOKEN }}
-        #   vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-        #   vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-        #   vercel-args: '--prod=false'
-        #   working-directory: ./
-
-  # =========================================================================
-  # Deploy to Production (manual approval required)
-  # =========================================================================
-  deploy-production:
-    name: Deploy to Production
-    needs: deploy-staging
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    environment: production
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@1
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate Prisma Client
-        run: npx prisma generate
-
-      - name: Run database migrations
-        run: npx prisma migrate deploy
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-
-      - name: Build application
-        run: npm run build
-
-      - name: Deploy to production
-        run: echo "Deploy to production infrastructure here"
-        # Example for Vercel:
-        # uses: amondnet/vercel-action@v25
-        # with:
-        #   vercel-token: ${{ secrets.VERCEL_TOKEN }}
-        #   vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-        #   vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-        #   vercel-args: '--prod=true'
-        #   working-directory: ./
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: lodgetrack
+          directory: .vercel/output
+          branch: ${{ github.ref == 'refs/heads/main' && 'main' || github.head_ref }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          wranglerVersion: '3'
