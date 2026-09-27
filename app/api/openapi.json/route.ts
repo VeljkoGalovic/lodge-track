@@ -26,7 +26,7 @@ export async function GET() {
     tags: [
       { name: "Authentication", description: "Authentication endpoints via NextAuth.js" },
       { name: "Properties", description: "Property management (v1)" },
-      { name: "Bookings", description: "Booking management via server actions" },
+      { name: "Bookings", description: "Booking management (v1)" },
       { name: "Usage", description: "Usage metrics and limits (v1)" },
       { name: "Billing", description: "Subscription and billing management" },
       { name: "Receipts", description: "Expense receipt upload and management" },
@@ -100,7 +100,7 @@ export async function GET() {
           description:
             "Returns a paginated list of properties for the authenticated organization. Supports filtering, sorting, and cursor-based pagination.",
           operationId: "listProperties",
-          security: [{ cookieAuth: [] }],
+          security: [{ bearerAuth: [] }],
           parameters: [
             {
               name: "cursor",
@@ -180,7 +180,7 @@ export async function GET() {
           description:
             "Creates a new property for the authenticated organization. Requires MANAGER or OWNER role.",
           operationId: "createProperty",
-          security: [{ cookieAuth: [] }],
+          security: [{ bearerAuth: [] }],
           requestBody: {
             required: true,
             content: {
@@ -233,7 +233,7 @@ export async function GET() {
           description:
             "Returns a single property with its units and booking counts. Requires organization membership.",
           operationId: "getProperty",
-          security: [{ cookieAuth: [] }],
+          security: [{ bearerAuth: [] }],
           parameters: [
             {
               name: "id",
@@ -284,7 +284,7 @@ export async function GET() {
           description:
             "Updates an existing property. Requires MANAGER or OWNER role.",
           operationId: "updateProperty",
-          security: [{ cookieAuth: [] }],
+          security: [{ bearerAuth: [] }],
           parameters: [
             {
               name: "id",
@@ -351,7 +351,7 @@ export async function GET() {
           description:
             "Deletes a property and all its associated data (units, bookings, expenses, attachments). Requires OWNER role. This action is irreversible.",
           operationId: "deleteProperty",
-          security: [{ cookieAuth: [] }],
+          security: [{ bearerAuth: [] }],
           parameters: [
             {
               name: "id",
@@ -413,6 +413,357 @@ export async function GET() {
         },
       },
 
+      "/v1/bookings": {
+        get: {
+          tags: ["Bookings"],
+          summary: "List bookings",
+          description:
+            "Returns a paginated list of bookings for the authenticated organization. Supports filtering by property, date range, status, and cursor-based pagination.",
+          operationId: "listBookings",
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: "cursor",
+              in: "query",
+              description: "Cursor for pagination (booking ID)",
+              schema: { type: "string" },
+            },
+            {
+              name: "limit",
+              in: "query",
+              description: "Maximum number of bookings to return (default: 20, max: 100)",
+              schema: { type: "integer", minimum: 1, maximum: 100, default: 20 },
+            },
+            {
+              name: "propertyId",
+              in: "query",
+              description: "Filter by property ID",
+              schema: { type: "string", format: "cuid" },
+            },
+            {
+              name: "unitId",
+              in: "query",
+              description: "Filter by unit ID",
+              schema: { type: "string", format: "cuid" },
+            },
+            {
+              name: "status",
+              in: "query",
+              description: "Filter by booking status",
+              schema: { type: "string", enum: ["PENDING", "CONFIRMED", "CHECKED_IN", "CHECKED_OUT", "CANCELLED"] },
+            },
+            {
+              name: "startDate",
+              in: "query",
+              description: "Filter bookings starting on or after this date (ISO 8601)",
+              schema: { type: "string", format: "date-time" },
+            },
+            {
+              name: "endDate",
+              in: "query",
+              description: "Filter bookings ending on or before this date (ISO 8601)",
+              schema: { type: "string", format: "date-time" },
+            },
+            {
+              name: "search",
+              in: "query",
+              description: "Search bookings by guest name",
+              schema: { type: "string" },
+            },
+            {
+              name: "sort",
+              in: "query",
+              description: "Sort field (startDate, createdAt, guestName)",
+              schema: { type: "string", enum: ["startDate", "createdAt", "guestName"] },
+            },
+            {
+              name: "order",
+              in: "query",
+              description: "Sort order",
+              schema: { type: "string", enum: ["asc", "desc"], default: "desc" },
+            },
+          ],
+          responses: {
+            "200": {
+              description: "Paginated list of bookings",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/BookingsListResponse" },
+                },
+              },
+            },
+            "401": {
+              description: "Unauthorized - valid API key required",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/Error" },
+                },
+              },
+            },
+            "403": {
+              description: "Forbidden - API access requires Business tier or higher",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/Error" },
+                },
+              },
+            },
+          },
+        },
+        post: {
+          tags: ["Bookings"],
+          summary: "Create a booking",
+          description:
+            "Creates a new booking for the authenticated organization. Requires Business tier or higher. Validates availability and prevents double-bookings.",
+          operationId: "createBooking",
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/BookingCreateInput" },
+              },
+            },
+          },
+          responses: {
+            "201": {
+              description: "Booking created successfully",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/BookingWithDetails" },
+                },
+              },
+            },
+            "400": {
+              description: "Validation error or booking conflict",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/Error" },
+                },
+              },
+            },
+            "401": {
+              description: "Unauthorized",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/Error" },
+                },
+              },
+            },
+            "403": {
+              description: "Forbidden - API access requires Business tier or higher",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/Error" },
+                },
+              },
+            },
+            "404": {
+              description: "Property or unit not found",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/Error" },
+                },
+              },
+            },
+            "409": {
+              description: "Conflict - dates not available",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/Error" },
+                },
+              },
+            },
+          },
+        },
+      },
+
+      "/v1/bookings/{id}": {
+        get: {
+          tags: ["Bookings"],
+          summary: "Get a booking by ID",
+          description:
+            "Returns a single booking with property and unit details. Requires organization membership.",
+          operationId: "getBooking",
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              required: true,
+              description: "Booking ID",
+              schema: { type: "string", format: "cuid" },
+            },
+          ],
+          responses: {
+            "200": {
+              description: "Booking details with property and unit",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/BookingWithDetails" },
+                },
+              },
+            },
+            "401": {
+              description: "Unauthorized",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/Error" },
+                },
+              },
+            },
+            "403": {
+              description: "Forbidden",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/Error" },
+                },
+              },
+            },
+            "404": {
+              description: "Booking not found",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/Error" },
+                },
+              },
+            },
+          },
+        },
+        patch: {
+          tags: ["Bookings"],
+          summary: "Update a booking",
+          description:
+            "Updates an existing booking. Validates availability for date/unit changes. Requires Business tier or higher.",
+          operationId: "updateBooking",
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              required: true,
+              description: "Booking ID",
+              schema: { type: "string", format: "cuid" },
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/BookingUpdateInput" },
+              },
+            },
+          },
+          responses: {
+            "200": {
+              description: "Booking updated successfully",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/BookingWithDetails" },
+                },
+              },
+            },
+            "400": {
+              description: "Validation error or booking conflict",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/Error" },
+                },
+              },
+            },
+            "401": {
+              description: "Unauthorized",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/Error" },
+                },
+              },
+            },
+            "403": {
+              description: "Forbidden - API access requires Business tier or higher",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/Error" },
+                },
+              },
+            },
+            "404": {
+              description: "Booking, property, or unit not found",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/Error" },
+                },
+              },
+            },
+            "409": {
+              description: "Conflict - dates not available or concurrent modification",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/Error" },
+                },
+              },
+            },
+          },
+        },
+        delete: {
+          tags: ["Bookings"],
+          summary: "Delete a booking",
+          description:
+            "Deletes a booking. Requires Business tier or higher. This action is irreversible.",
+          operationId: "deleteBooking",
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              required: true,
+              description: "Booking ID",
+              schema: { type: "string", format: "cuid" },
+            },
+          ],
+          responses: {
+            "200": {
+              description: "Booking deleted successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      ok: { type: "boolean", example: true },
+                    },
+                    required: ["ok"],
+                  },
+                },
+              },
+            },
+            "401": {
+              description: "Unauthorized",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/Error" },
+                },
+              },
+            },
+            "403": {
+              description: "Forbidden - API access requires Business tier or higher",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/Error" },
+                },
+              },
+            },
+            "404": {
+              description: "Booking not found",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/Error" },
+                },
+              },
+            },
+          },
+        },
+      },
+
       "/v1/usage": {
         get: {
           tags: ["Usage"],
@@ -420,7 +771,7 @@ export async function GET() {
           description:
             "Returns current usage statistics for the authenticated organization including property count, unit count, storage usage, and subscription tier limits.",
           operationId: "getUsage",
-          security: [{ cookieAuth: [] }],
+          security: [{ bearerAuth: [] }],
           responses: {
             "200": {
               description: "Usage metrics",
@@ -1338,6 +1689,91 @@ export async function GET() {
             revokedAt: { type: "string", format: "date-time", nullable: true },
           },
           required: ["id", "name", "keyPrefix", "createdAt"],
+        },
+        Booking: {
+          type: "object",
+          properties: {
+            id: { type: "string", format: "cuid" },
+            propertyId: { type: "string", format: "cuid" },
+            unitId: { type: "string", format: "cuid", nullable: true },
+            type: { type: "string", enum: ["WHOLE_UNIT", "SHARED_BED"] },
+            bedIds: { type: "array", items: { type: "string" } },
+            guestName: { type: "string", maxLength: 120 },
+            startDate: { type: "string", format: "date-time" },
+            endDate: { type: "string", format: "date-time" },
+            source: { type: "string", maxLength: 60 },
+            status: { type: "string", enum: ["PENDING", "CONFIRMED", "CHECKED_IN", "CHECKED_OUT", "CANCELLED"] },
+            totalAmount: { type: "integer", nullable: true, description: "Total amount in minor currency units (cents)" },
+            externalUid: { type: "string", nullable: true },
+            createdAt: { type: "string", format: "date-time" },
+            updatedAt: { type: "string", format: "date-time" },
+          },
+          required: [
+            "id",
+            "propertyId",
+            "type",
+            "bedIds",
+            "guestName",
+            "startDate",
+            "endDate",
+            "source",
+            "status",
+            "createdAt",
+            "updatedAt",
+          ],
+        },
+        BookingWithDetails: {
+          allOf: [
+            { $ref: "#/components/schemas/Booking" },
+            {
+              type: "object",
+              properties: {
+                property: { $ref: "#/components/schemas/Property" },
+                unit: { $ref: "#/components/schemas/PropertyUnit", nullable: true },
+              },
+            },
+          ],
+        },
+        BookingCreateInput: {
+          type: "object",
+          properties: {
+            propertyId: { type: "string", format: "cuid" },
+            unitId: { type: "string", format: "cuid", nullable: true },
+            type: { type: "string", enum: ["WHOLE_UNIT", "SHARED_BED"], default: "WHOLE_UNIT" },
+            bedIds: { type: "array", items: { type: "string" }, default: [] },
+            guestName: { type: "string", maxLength: 120 },
+            startDate: { type: "string", format: "date-time" },
+            endDate: { type: "string", format: "date-time" },
+            source: { type: "string", maxLength: 60, default: "Direct" },
+            status: { type: "string", enum: ["PENDING", "CONFIRMED", "CHECKED_IN", "CHECKED_OUT", "CANCELLED"], default: "PENDING" },
+            totalAmount: { type: "integer", nullable: true, description: "Total amount in minor currency units (cents)" },
+            externalUid: { type: "string", nullable: true },
+          },
+          required: ["propertyId", "guestName", "startDate", "endDate"],
+        },
+        BookingUpdateInput: {
+          type: "object",
+          properties: {
+            propertyId: { type: "string", format: "cuid" },
+            unitId: { type: "string", format: "cuid", nullable: true },
+            type: { type: "string", enum: ["WHOLE_UNIT", "SHARED_BED"] },
+            bedIds: { type: "array", items: { type: "string" } },
+            guestName: { type: "string", maxLength: 120 },
+            startDate: { type: "string", format: "date-time" },
+            endDate: { type: "string", format: "date-time" },
+            source: { type: "string", maxLength: 60 },
+            status: { type: "string", enum: ["PENDING", "CONFIRMED", "CHECKED_IN", "CHECKED_OUT", "CANCELLED"] },
+            totalAmount: { type: "integer", nullable: true, description: "Total amount in minor currency units (cents)" },
+            externalUid: { type: "string", nullable: true },
+          },
+        },
+        BookingsListResponse: {
+          type: "object",
+          properties: {
+            bookings: { type: "array", items: { $ref: "#/components/schemas/Booking" } },
+            nextCursor: { type: "string", nullable: true, description: "Cursor for next page, null if no more results" },
+          },
+          required: ["bookings", "nextCursor"],
         },
       },
     },
