@@ -47,7 +47,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 import { formatDistanceToNow } from "date-fns"
-import { getOrgFeatures } from "@/lib/subscriptions"
+import { getOrgFeatures, Tier } from "@/lib/subscriptions"
 
 interface ApiKey {
   id: string
@@ -87,7 +87,7 @@ export default function ApiDashboardClient({
   orgTier,
 }: {
   initialKeys: ApiKey[]
-  orgTier: string
+  orgTier: Tier
 }) {
   const { t, locale } = useI18n()
   const [keys, setKeys] = useState<ApiKey[]>(initialKeys)
@@ -97,8 +97,11 @@ export default function ApiDashboardClient({
   const [isRevoking, setIsRevoking] = useState<string | null>(null)
   const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null)
 
-  const features = getOrgFeatures(orgTier as "STARTER" | "PRO" | "BUSINESS")
+  const features = getOrgFeatures(orgTier)
   const hasApiAccess = features.hasApiAccess
+
+  // Add state to control the dialog open/close lifecycle
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   async function handleCreateKey(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -182,7 +185,22 @@ export default function ApiDashboardClient({
 
   function formatDate(date: Date | null) {
     if (!date) return t.settings.api.never
-    return formatDistanceToNow(new Date(date), { addSuffix: true, locale: locale === "sr" ? require("date-fns/locale/sr") : undefined })
+    
+    let dateLocale = undefined
+    if (locale === "sr") {
+      try {
+        // Load the Serbian Latin locale package to match your website script
+        const srLatnLocale = require("date-fns/locale/sr-Latn")
+        dateLocale = srLatnLocale.srLatn || srLatnLocale.default || srLatnLocale
+      } catch {
+        dateLocale = undefined
+      }
+    }
+
+    return formatDistanceToNow(new Date(date), { 
+      addSuffix: true, 
+      locale: dateLocale 
+    })
   }
 
   function getKeyStatus(key: ApiKey) {
@@ -219,90 +237,144 @@ export default function ApiDashboardClient({
           <h1 className="text-3xl font-bold tracking-tight">{t.settings.api.title}</h1>
           <p className="text-muted-foreground mt-1">{t.settings.api.description}</p>
         </div>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Key className="h-4 w-4" />
-              {t.settings.api.createKey}
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>{t.settings.api.createKey}</DialogTitle>
-              <DialogDescription>{t.settings.api.createKeyDescription}</DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleCreateKey}>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="name">{t.settings.api.keyName}</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    placeholder={t.settings.api.keyNamePlaceholder}
-                    required
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <Input type="checkbox" id="isLive" name="isLive" defaultChecked />
-                  <Label htmlFor="isLive" className="font-normal cursor-pointer">
-                    {t.settings.api.liveKey}
-                  </Label>
-                </div>
-                <p className="text-sm text-muted-foreground">{t.settings.api.keyTypeNote}</p>
-              </div>
-              <DialogFooter>
-                <Button type="button" variant="ghost" onClick={() => { }}>
-                  {t.settings.api.cancel}
-                </Button>
-                <Button type="submit" disabled={isCreating}>
-                  {isCreating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  {t.settings.api.createKey}
-                </Button>
-              </DialogFooter>
-            </form>
+      <Dialog 
+  open={isDialogOpen} 
+  onOpenChange={(open) => {
+    setIsDialogOpen(open)
+    if (!open) {
+      setShowRawKey(null)
+      setRawKeyValue("")
+    }
+  }}
+>
+  <DialogTrigger asChild>
+    <Button className="gap-2 shadow-sm">
+      <Key className="h-4 w-4" />
+      {t.settings.api.createKey}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[520px] p-6">
+        <DialogHeader className="space-y-1.5 pb-2">
+          <DialogTitle className="text-xl font-semibold tracking-tight">
+            {t.settings.api.createKey}
+          </DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
+            {t.settings.api.createKeyDescription}
+          </DialogDescription>
+        </DialogHeader>
 
-            {showRawKey && (
-              <div className="border-t pt-4 mt-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium">{t.settings.api.keyCreated}</h4>
-                  <Badge variant="outline" className="text-xs">
-                    {rawKeyValue.startsWith("lt_live_") ? t.settings.api.live : t.settings.api.test}
-                  </Badge>
-                </div>
-                <div className="relative">
-                  <Input
-                    readOnly
-                    value={rawKeyValue}
-                    className="pr-10 font-mono text-sm"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-2 top-1/2 -translate-y-1/2"
-                    onClick={() => handleCopyKey(showRawKey, rawKeyValue)}
-                  >
-                    {copiedKeyId === showRawKey ? (
-                      <Check className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-                <p className="text-sm text-destructive mt-2">{t.settings.api.keyWarning}</p>
-                <Button
-                  variant="outline"
-                  className="w-full mt-4"
-                  onClick={() => {
-                    setShowRawKey(null)
-                    setRawKeyValue("")
-                  }}
-                >
-                  {t.settings.api.gotIt}
-                </Button>
+        {!showRawKey ? (
+          <form onSubmit={handleCreateKey} className="space-y-5">
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-sm font-medium">
+                  {t.settings.api.keyName}
+                </Label>
+                <Input
+                  id="name"
+                  name="name"
+                  placeholder={t.settings.api.keyNamePlaceholder}
+                  className="h-10"
+                  required
+                />
               </div>
-            )}
-          </DialogContent>
-        </Dialog>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">
+                  {(t.settings.api as any).keyTypeLabel || "Environment"}
+                </Label>
+                <div className="flex items-center space-x-3 h-10 px-3 rounded-md border border-input bg-background shadow-sm transition-colors hover:bg-accent/50">
+                  <input
+                    type="checkbox"
+                    id="isLive"
+                    name="isLive"
+                    defaultChecked
+                    className="h-4 w-4 rounded border-input text-primary focus:ring-primary accent-primary cursor-pointer"
+                  />
+                  <div className="flex flex-col cursor-pointer select-none" onClick={() => {
+                    const cb = document.getElementById("isLive") as HTMLInputElement;
+                    if (cb) cb.checked = !cb.checked;
+                  }}>
+                    <Label htmlFor="isLive" className="font-medium cursor-pointer text-sm leading-none">
+                      {t.settings.api.liveKey}
+                    </Label>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground pt-1">
+                  {t.settings.api.keyTypeNote}
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2 sm:gap-0 pt-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setIsDialogOpen(false)}
+                className="h-10"
+              >
+                {t.settings.api.cancel}
+              </Button>
+              <Button type="submit" disabled={isCreating} className="h-10">
+                {isCreating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {t.settings.api.createKey}
+              </Button>
+            </DialogFooter>
+          </form>
+        ) : (
+          <div className="pt-2 animate-in fade-in-50 duration-200">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-semibold text-sm flex items-center gap-2">
+                <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                {t.settings.api.keyCreated}
+              </h4>
+              <Badge variant="outline" className="text-xs px-2 py-0.5 font-mono">
+                {rawKeyValue.startsWith("lt_live_") ? t.settings.api.live : t.settings.api.test}
+              </Badge>
+            </div>
+            
+            <div className="relative mb-2">
+              <Input
+                readOnly
+                value={rawKeyValue}
+                className="pr-10 font-mono text-xs bg-muted/50 h-11"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-background"
+                onClick={() => handleCopyKey(showRawKey, rawKeyValue)}
+              >
+                {copiedKeyId === showRawKey ? (
+                  <Check className="h-4 w-4 text-emerald-600" />
+                ) : (
+                  <Copy className="h-4 w-4 text-muted-foreground" />
+                )}
+              </Button>
+            </div>
+            
+            <div className="rounded-md bg-destructive/10 p-3 mb-4">
+              <p className="text-xs text-destructive font-medium leading-relaxed">
+                {t.settings.api.keyWarning}
+              </p>
+            </div>
+
+            <Button
+              type="button"
+              className="w-full h-10 shadow-sm"
+              onClick={() => {
+                setShowRawKey(null)
+                setRawKeyValue("")
+                setIsDialogOpen(false)
+              }}
+            >
+              {t.settings.api.gotIt}
+            </Button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
       </div>
 
       {/* API Keys List */}
