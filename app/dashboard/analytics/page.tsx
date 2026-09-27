@@ -171,14 +171,16 @@ export default async function AnalyticsPage({
     locale
   )
 
+  const projectionMonths = RANGE_MONTHS[range]
+
   const revenueProjection = showForecast
-    ? projectSeriesWithMeta(series.revenue, { referenceDate: new Date(), locale, fullHistory: fullHistorySeries.revenue })
+    ? projectSeriesWithMeta(series.revenue, { referenceDate: new Date(), locale, fullHistory: fullHistorySeries.revenue, months: projectionMonths })
     : undefined
   const occupancyProjection = showForecast
-    ? projectSeriesWithMeta(series.occupancy, { referenceDate: new Date(), locale, fullHistory: fullHistorySeries.occupancy })
+    ? projectSeriesWithMeta(series.occupancy, { referenceDate: new Date(), locale, fullHistory: fullHistorySeries.occupancy, months: projectionMonths })
     : undefined
   const expensesProjection = showForecast && expenses.length > 0
-    ? projectSeriesWithMeta(expenses, { referenceDate: new Date(), locale, allowNegative: true, fullHistory: fullHistoryExpenses })
+    ? projectSeriesWithMeta(expenses, { referenceDate: new Date(), locale, allowNegative: true, fullHistory: fullHistoryExpenses, months: projectionMonths })
     : undefined
 
   return (
