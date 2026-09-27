@@ -22,7 +22,7 @@ const API_BASE = "https://api.lemonsqueezy.com/v1"
  *  the free tier created at registration and is never purchased. */
 const VARIANT_ENV: Record<Exclude<SubscriptionTier, "STARTER">, string> = {
   PRO: "LEMON_SQUEEZY_VARIANT_ID_PRO",
-  ENTERPRISE: "LEMON_SQUEEZY_VARIANT_ID_ENTERPRISE",
+  BUSINESS: "LEMON_SQUEEZY_VARIANT_ID_BUSINESS",
 }
 
 export interface BillingConfig {

@@ -16,7 +16,7 @@ import { receiptBytesUsed } from "@/lib/receipt-quota"
 import { currentLocale } from "@/lib/i18n/server"
 import { format, getDictionary } from "@/lib/i18n/dictionaries"
 import { User, Building2, Bell, Palette, Shield, KeyRound, Mail, ArrowUpRight, Lock } from "lucide-react"
-import { canManageRoles, canConfigureSSO, canAccessEnterpriseSettings } from "@/lib/permissions"
+import { canManageRoles, canConfigureSSO, canAccessBusinessSettings } from "@/lib/permissions"
 import { UsageMeter } from "@/components/dashboard/UsageMeter"
 
 export default async function SettingsPage() {
@@ -269,14 +269,14 @@ export default async function SettingsPage() {
         </CardContent>
       </Card>
 
-      {canAccessEnterpriseSettings(features.tier) ? (
+      {canAccessBusinessSettings(features.tier) ? (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Lock className="h-5 w-5 text-primary" />
-              {t.settings.enterpriseSettings}
+              {t.settings.businessSettings}
             </CardTitle>
-            <CardDescription>{t.settings.enterpriseSettingsHelp}</CardDescription>
+            <CardDescription>{t.settings.businessSettingsHelp}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {canManageRoles(features.tier) && (
@@ -286,7 +286,7 @@ export default async function SettingsPage() {
                   <p className="text-sm text-subtle-foreground">{t.settings.roleManagementHelp}</p>
                 </div>
                 <Badge variant="secondary" className="border-brand-purple/25 bg-brand-purple/10 text-brand-purple">
-                  {t.settings.enterpriseOnly}
+                  {t.settings.businessOnly}
                 </Badge>
               </div>
             )}
@@ -297,13 +297,13 @@ export default async function SettingsPage() {
                   <p className="text-sm text-subtle-foreground">{t.settings.ssoConfigurationHelp}</p>
                 </div>
                 <Badge variant="secondary" className="border-brand-purple/25 bg-brand-purple/10 text-brand-purple">
-                  {t.settings.enterpriseOnly}
+                  {t.settings.businessOnly}
                 </Badge>
               </div>
             )}
             {(!canManageRoles(features.tier) || !canConfigureSSO(features.tier)) && (
               <p className="text-xs text-subtle-foreground">
-                {t.settings.enterpriseFeaturesLocked}
+                {t.settings.businessFeaturesLocked}
               </p>
             )}
           </CardContent>

@@ -24,7 +24,7 @@ export async function GET(request: Request) {
   }
 
   const tier = new URL(request.url).searchParams.get("tier")
-  if (tier !== "PRO" && tier !== "ENTERPRISE") {
+  if (tier !== "PRO" && tier !== "BUSINESS") {
     return NextResponse.redirect(absoluteUrl("/dashboard/billing?error=unknown_tier", request))
   }
 

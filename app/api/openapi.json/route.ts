@@ -1232,7 +1232,7 @@ export async function GET() {
             maxProperties: { type: "integer" },
             maxUnits: { type: "integer" },
             maxStorageBytes: { type: "integer" },
-            tier: { type: "string", enum: ["STARTER", "PRO", "ENTERPRISE"] },
+            tier: { type: "string", enum: ["STARTER", "PRO", "BUSINESS"] },
             hasAdvancedAnalytics: { type: "boolean" },
             hasTeamRoles: { type: "boolean" },
             hasApiAccess: { type: "boolean" },

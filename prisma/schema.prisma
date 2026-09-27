@@ -16,7 +16,7 @@ enum Role {
 enum SubscriptionTier {
   STARTER
   PRO
-  ENTERPRISE
+  BUSINESS
 }
 
 enum SubscriptionStatus {
@@ -258,7 +258,7 @@ model Subscription {
   tier                 SubscriptionTier   @default(STARTER)
   status               SubscriptionStatus @default(ACTIVE)
 
-  // Custom Overrides (For beta users, special enterprise deals, or free passes)
+  // Custom Overrides (For beta users, special business deals, or free passes)
   maxPropertiesOverride Int?               // Null = use tier default, e.g., 999999 for unlimited
   hasApiAccessOverride  Boolean?           // Override feature flags manually
   isLifetimeFree        Boolean            @default(false)

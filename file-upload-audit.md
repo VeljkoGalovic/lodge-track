@@ -29,7 +29,7 @@ LodgeTrack implements **receipt attachments for expenses** using a **local files
 | `app/actions/expenses.ts` | `createExpense`, `updateExpense`, `deleteExpense` — orchestrate upload, validation, quota checks, DB writes |
 | `lib/storage.ts` | Core storage layer: `saveReceipt`, `readReceipt`, `deleteReceipt`, `sniffReceiptType` |
 | `lib/receipt-quota.ts` | Quota accounting: `receiptBytesUsed`, `receiptQuota` |
-| `lib/subscriptions.ts` | Tier limits: STARTER=1 GB, PRO=5 GB, ENTERPRISE=unlimited |
+| `lib/subscriptions.ts` | Tier limits: STARTER=1 GB, PRO=5 GB, BUSINESS=unlimited |
 
 ### API Route (Serving Files)
 | File | Purpose |
@@ -119,7 +119,7 @@ serializable transaction (Prisma isolationLevel: "Serializable")
         │       ├─► receiptQuota(tx, orgId) — atomic quota check
         │       │       ├─► receiptBytesUsed(tx, orgId) — SUM(receiptSize) index-only
         │       │       └─► getOrgFeatures(tier).maxStorageBytes
-        │       │           STARTER = 1 GB, PRO = 5 GB, ENTERPRISE = Infinity
+        │       │           STARTER = 1 GB, PRO = 5 GB, BUSINESS = Infinity
         │       ├─► Buffer.from(await file.arrayBuffer())
         │       ├─► sniffReceiptType(bytes) — magic byte validation
         │       │       PDF: "%PDF" | PNG: 89504E470D0A1A0A | JPEG: FFD8FF | WebP: RIFF....WEBP
@@ -158,7 +158,7 @@ revalidatePath() — cache invalidation
 |------|--------------|------------|-------------------|------------|------------|
 | **STARTER** | **1 GB** | 3 | ❌ | ❌ | ❌ |
 | **PRO** | **5 GB** | 15 | ✅ | ✅ | ✅ |
-| **ENTERPRISE** | **Unlimited** | ∞ | ✅ | ✅ | ✅ |
+| **BUSINESS** | **Unlimited** | ∞ | ✅ | ✅ | ✅ |
 
 ### Quota Check Flow
 

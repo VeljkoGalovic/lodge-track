@@ -159,14 +159,14 @@ describe("API v1 - Properties endpoint", () => {
     expect(json.currentTier).toBe("PRO")
   })
 
-  it("returns 200 and properties for ENTERPRISE (Business) tier with API access", async () => {
+  it("returns 200 and properties for BUSINESS tier with API access", async () => {
     mockAuth.mockResolvedValue({ user: { email: "test@example.com" } })
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       ...mockUser,
-      organization: { id: "org-test-123", subscription: { tier: "ENTERPRISE" } },
+      organization: { id: "org-test-123", subscription: { tier: "BUSINESS" } },
     })
     mockGetOrgFeatures.mockReturnValue({
-      tier: "ENTERPRISE",
+      tier: "BUSINESS",
       maxProperties: Infinity,
       maxStorageBytes: Infinity,
       hasAdvancedAnalytics: true,
@@ -245,10 +245,10 @@ describe("API v1 - Properties endpoint", () => {
     mockAuth.mockResolvedValue({ user: { email: "test@example.com" } })
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       ...mockUser,
-      organization: { id: "org-test-123", subscription: { tier: "ENTERPRISE" } },
+      organization: { id: "org-test-123", subscription: { tier: "BUSINESS" } },
     })
     mockGetOrgFeatures.mockReturnValue({
-      tier: "ENTERPRISE",
+      tier: "BUSINESS",
       maxProperties: Infinity,
       maxStorageBytes: Infinity,
       hasAdvancedAnalytics: true,

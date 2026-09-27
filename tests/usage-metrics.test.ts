@@ -127,11 +127,11 @@ describe("getOrgUsageMetrics", () => {
     expect(result.properties.isUnlimited).toBe(false)
   })
 
-  it("returns metrics for ENTERPRISE tier (unlimited)", async () => {
+  it("returns metrics for BUSINESS tier (unlimited)", async () => {
     mockFindUnique.mockResolvedValue({
       id: orgId,
       subscription: {
-        tier: "ENTERPRISE",
+        tier: "BUSINESS",
         status: "ACTIVE",
         maxPropertiesOverride: null,
         hasApiAccessOverride: null,
@@ -291,12 +291,12 @@ describe("getOrgFeatures integration", () => {
   it("matches getOrgFeatures output for tier limits", () => {
     expect(getOrgFeatures("STARTER").maxProperties).toBe(3)
     expect(getOrgFeatures("PRO").maxProperties).toBe(15)
-    expect(getOrgFeatures("ENTERPRISE").maxProperties).toBe(Infinity)
+    expect(getOrgFeatures("BUSINESS").maxProperties).toBe(Infinity)
   })
 
   it("handles hasApiAccessOverride correctly", () => {
     expect(getOrgFeatures("STARTER", undefined, true).hasApiAccess).toBe(true)
     expect(getOrgFeatures("PRO", undefined, false).hasApiAccess).toBe(false)
-    expect(getOrgFeatures("ENTERPRISE").hasApiAccess).toBe(true)
+    expect(getOrgFeatures("BUSINESS").hasApiAccess).toBe(true)
   })
 })

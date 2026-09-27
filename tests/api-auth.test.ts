@@ -63,7 +63,7 @@ describe("verifyApiKeyAuth", () => {
       keyPrefix,
       revokedAt: new Date(),
       expiresAt: null,
-      organization: { id: "org-1", subscription: { tier: "ENTERPRISE" } },
+      organization: { id: "org-1", subscription: { tier: "BUSINESS" } },
     })
     const result = await verifyApiKeyAuth(makeRequest(`Bearer ${rawKey}`))
     expect(result.ok).toBe(false)
@@ -77,7 +77,7 @@ describe("verifyApiKeyAuth", () => {
       keyPrefix,
       revokedAt: null,
       expiresAt: new Date(Date.now() - 1000),
-      organization: { id: "org-1", subscription: { tier: "ENTERPRISE" } },
+      organization: { id: "org-1", subscription: { tier: "BUSINESS" } },
     })
     const result = await verifyApiKeyAuth(makeRequest(`Bearer ${rawKey}`))
     expect(result.ok).toBe(false)
@@ -91,7 +91,7 @@ describe("verifyApiKeyAuth", () => {
       keyPrefix,
       revokedAt: null,
       expiresAt: null,
-      organization: { id: "org-1", subscription: { tier: "ENTERPRISE" } },
+      organization: { id: "org-1", subscription: { tier: "BUSINESS" } },
     })
     const result = await verifyApiKeyAuth(makeRequest("Bearer lt_live_wrongkey123"))
     expect(result.ok).toBe(false)
@@ -116,7 +116,7 @@ describe("verifyApiKeyAuth", () => {
     }
   })
 
-  it("accepts valid key for ENTERPRISE tier", async () => {
+  it("accepts valid key for BUSINESS tier", async () => {
     const { keyHash, keyPrefix, rawKey } = generateApiKey(true)
     db.apiKey.findUnique.mockResolvedValue({
       id: "key-1",
@@ -124,7 +124,7 @@ describe("verifyApiKeyAuth", () => {
       keyPrefix,
       revokedAt: null,
       expiresAt: null,
-      organization: { id: "org-1", subscription: { tier: "ENTERPRISE" } },
+      organization: { id: "org-1", subscription: { tier: "BUSINESS" } },
     })
     db.apiKey.update.mockResolvedValue({})
     const result = await verifyApiKeyAuth(makeRequest(`Bearer ${rawKey}`))
@@ -147,7 +147,7 @@ describe("verifyApiKeyAuth", () => {
       keyPrefix,
       revokedAt: null,
       expiresAt: null,
-      organization: { id: "org-1", subscription: { tier: "ENTERPRISE" } },
+      organization: { id: "org-1", subscription: { tier: "BUSINESS" } },
     })
     db.apiKey.update.mockResolvedValue({})
     const result = await verifyApiKeyAuth(makeRequest(`Bearer ${rawKey}`))
@@ -213,13 +213,13 @@ describe("verifyApiAccess (session auth)", () => {
     }
   })
 
-  it("accepts ENTERPRISE tier", async () => {
+  it("accepts BUSINESS tier", async () => {
     mockAuth.mockResolvedValue({ user: { email: "test@example.com" } })
     db.user.findUnique.mockResolvedValue({
       id: "user-1",
       email: "test@example.com",
       orgId: "org-1",
-      organization: { id: "org-1", subscription: { tier: "ENTERPRISE" } },
+      organization: { id: "org-1", subscription: { tier: "BUSINESS" } },
     })
     const result = await verifyApiAccess(makeRequest())
     expect(result.ok).toBe(true)
@@ -256,7 +256,7 @@ describe("verifyAnyAuth", () => {
       keyPrefix,
       revokedAt: null,
       expiresAt: null,
-      organization: { id: "org-from-key", subscription: { tier: "ENTERPRISE" } },
+      organization: { id: "org-from-key", subscription: { tier: "BUSINESS" } },
     })
     db.apiKey.update.mockResolvedValue({})
 

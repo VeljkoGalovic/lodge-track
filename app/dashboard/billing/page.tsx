@@ -23,10 +23,10 @@ interface TierCopy {
 const TIER_COPY: Record<Tier, TierCopy> = {
   STARTER: { name: "Starter", priceCents: TIER_PRICES_CENTS.STARTER, popular: false },
   PRO: { name: "Pro", priceCents: TIER_PRICES_CENTS.PRO, popular: true },
-  ENTERPRISE: { name: "Business", priceCents: TIER_PRICES_CENTS.ENTERPRISE, popular: false },
+  BUSINESS: { name: "Business", priceCents: TIER_PRICES_CENTS.BUSINESS, popular: false },
 }
 
-const TIER_ORDER: Tier[] = ["STARTER", "PRO", "ENTERPRISE"]
+const TIER_ORDER: Tier[] = ["STARTER", "PRO", "BUSINESS"]
 
 /** Feature availability is data, never inferred from translated copy. */
 function tierFeatures(tier: Tier, t: Dictionary): { label: string; included: boolean }[] {
@@ -111,7 +111,7 @@ export default async function BillingPage({
   const taglines: Record<Tier, string> = {
     STARTER: t.pages.billing.starterTagline,
     PRO: t.pages.billing.proTagline,
-    ENTERPRISE: t.pages.billing.enterpriseTagline,
+    BUSINESS: t.pages.billing.businessTagline,
   }
   const checkoutErrors: Record<string, string> = {
     not_configured: t.pages.billing.errorNotConfigured,
@@ -240,7 +240,7 @@ export default async function BillingPage({
             </p>
           ) : null}
 
-          {accountManagerEmail && currentTier === "ENTERPRISE" ? (
+          {accountManagerEmail && currentTier === "BUSINESS" ? (
             <div className="rounded-2xl border border-brand-purple/25 bg-brand-purple/10 p-4">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-brand-purple">{t.pages.billing.accountManager}</span>

@@ -97,7 +97,7 @@ export default function ApiDashboardClient({
   const [isRevoking, setIsRevoking] = useState<string | null>(null)
   const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null)
 
-  const features = getOrgFeatures(orgTier as "STARTER" | "PRO" | "ENTERPRISE")
+  const features = getOrgFeatures(orgTier as "STARTER" | "PRO" | "BUSINESS")
   const hasApiAccess = features.hasApiAccess
 
   async function handleCreateKey(e: React.FormEvent<HTMLFormElement>) {

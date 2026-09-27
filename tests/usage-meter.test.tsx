@@ -209,7 +209,7 @@ describe("UsageMeter integration with getOrgUsageMetrics", () => {
     expect(screen.getByText("47%")).toBeInTheDocument()
   })
 
-  it("displays correct data for enterprise tier", () => {
+  it("displays correct data for business tier", () => {
     const metrics = {
       properties: {
         used: 100,

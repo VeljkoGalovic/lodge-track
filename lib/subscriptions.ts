@@ -14,7 +14,7 @@ export interface OrgFeatures {
   /**
    * Byte cap on stored receipts for the whole organization.
    *
-   * `Infinity` on ENTERPRISE, which is why every comparison against it must be
+   * `Infinity` on BUSINESS, which is why every comparison against it must be
    * `>`, never `>=` — and why the remaining-space arithmetic below is written to
    * stay meaningful when the limit is unbounded.
    *
@@ -35,7 +35,7 @@ export interface OrgFeatures {
 export const TIER_PRICES_CENTS: Record<Tier, number> = {
   STARTER: 1999,  // $19.99
   PRO: 4999,      // $49.99
-  ENTERPRISE: 9999, // $99.99
+  BUSINESS: 9999, // $99.99
 };
 
 /**
@@ -45,13 +45,13 @@ export const TIER_PRICES_CENTS: Record<Tier, number> = {
 export const TIER_PRICE_STRINGS: Record<Tier, string> = {
   STARTER: "$19.99",
   PRO: "$49.99",
-  ENTERPRISE: "$99.99",
+  BUSINESS: "$99.99",
 };
 
 const TIER_LIMITS: Record<Tier, number> = {
   STARTER: 3,
   PRO: 15,
-  ENTERPRISE: Infinity,
+  BUSINESS: Infinity,
 };
 
 /**
@@ -70,7 +70,7 @@ const GB = 1_000_000_000;
 const TIER_STORAGE_BYTES: Record<Tier, number> = {
   STARTER: 1 * GB,
   PRO: 5 * GB,
-  ENTERPRISE: Infinity,
+  BUSINESS: Infinity,
 };
 
 const TIER_FEATURES: Record<Tier, Omit<OrgFeatures, "tier" | "maxProperties" | "maxStorageBytes">> = {
@@ -84,7 +84,7 @@ const TIER_FEATURES: Record<Tier, Omit<OrgFeatures, "tier" | "maxProperties" | "
     hasTeamRoles: false,
     hasApiAccess: false,
   },
-  ENTERPRISE: {
+  BUSINESS: {
     hasAdvancedAnalytics: true,
     hasTeamRoles: true,
     hasApiAccess: true,
@@ -146,7 +146,7 @@ export function formatBytes(bytes: number): string {
 const TIER_BADGE_COLORS: Record<Tier, string> = {
   STARTER: "border-white/10 bg-white/5 text-slate-300",
   PRO: "border-[#36BFAE]/25 bg-[#36BFAE]/10 text-[#36BFAE]",
-  ENTERPRISE: "border-[#BA87FF]/25 bg-[#BA87FF]/10 text-[#BA87FF]",
+  BUSINESS: "border-[#BA87FF]/25 bg-[#BA87FF]/10 text-[#BA87FF]",
 };
 
 export function getTierBadgeColor(tier: Tier): string {
@@ -159,9 +159,9 @@ export function getTierLabel(tier: Tier): string {
 
 /**
  * Gets the dedicated account manager email for Business tier organizations.
- * Returns veljko@lodgetrack.com for ENTERPRISE tier, null for other tiers.
+ * Returns veljko@lodgetrack.com for BUSINESS tier, null for other tiers.
  * This is the personal manager contact shown to Business tier users.
  */
 export function getAccountManagerEmail(tier: Tier): string | null {
-  return tier === "ENTERPRISE" ? "veljko@lodgetrack.com" : null
+  return tier === "BUSINESS" ? "veljko@lodgetrack.com" : null
 }

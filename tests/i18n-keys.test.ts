@@ -22,8 +22,8 @@ describe("i18n billing keys - English", () => {
   it("has proTagline", () => {
     expect(t.pages.billing.proTagline).toBe("For a growing portfolio")
   })
-  it("has enterpriseTagline", () => {
-    expect(t.pages.billing.enterpriseTagline).toBe("For large or multi-site operators")
+  it("has businessTagline", () => {
+    expect(t.pages.billing.businessTagline).toBe("For large or multi-site operators")
   })
 
   // Feature labels
@@ -232,8 +232,8 @@ describe("i18n billing keys - Serbian", () => {
   it("has proTagline", () => {
     expect(t.pages.billing.proTagline).toBe("Za rastući portfolio")
   })
-  it("has enterpriseTagline", () => {
-    expect(t.pages.billing.enterpriseTagline).toBe("Za velike operatere ili više lokacija")
+  it("has businessTagline", () => {
+    expect(t.pages.billing.businessTagline).toBe("Za velike operatere ili više lokacija")
   })
 
   // Feature labels

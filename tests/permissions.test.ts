@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { canManageRoles, canConfigureSSO, canAccessEnterpriseSettings, getAccountManagerEmail } from "@/lib/permissions"
+import { canManageRoles, canConfigureSSO, canAccessBusinessSettings, getAccountManagerEmail } from "@/lib/permissions"
 import type { Tier } from "@/lib/subscriptions"
 
 describe("permissions", () => {
@@ -12,8 +12,8 @@ describe("permissions", () => {
       expect(canManageRoles("PRO")).toBe(false)
     })
 
-    it("returns true for ENTERPRISE tier", () => {
-      expect(canManageRoles("ENTERPRISE")).toBe(true)
+    it("returns true for BUSINESS tier", () => {
+      expect(canManageRoles("BUSINESS")).toBe(true)
     })
   })
 
@@ -26,28 +26,28 @@ describe("permissions", () => {
       expect(canConfigureSSO("PRO")).toBe(false)
     })
 
-    it("returns true for ENTERPRISE tier", () => {
-      expect(canConfigureSSO("ENTERPRISE")).toBe(true)
+    it("returns true for BUSINESS tier", () => {
+      expect(canConfigureSSO("BUSINESS")).toBe(true)
     })
   })
 
-  describe("canAccessEnterpriseSettings", () => {
+  describe("canAccessBusinessSettings", () => {
     it("returns false for STARTER tier", () => {
-      expect(canAccessEnterpriseSettings("STARTER")).toBe(false)
+      expect(canAccessBusinessSettings("STARTER")).toBe(false)
     })
 
     it("returns false for PRO tier", () => {
-      expect(canAccessEnterpriseSettings("PRO")).toBe(false)
+      expect(canAccessBusinessSettings("PRO")).toBe(false)
     })
 
-    it("returns true for ENTERPRISE tier", () => {
-      expect(canAccessEnterpriseSettings("ENTERPRISE")).toBe(true)
+    it("returns true for BUSINESS tier", () => {
+      expect(canAccessBusinessSettings("BUSINESS")).toBe(true)
     })
   })
 
   describe("getAccountManagerEmail", () => {
-    it("returns veljko@lodgetrack.com for ENTERPRISE tier", () => {
-      expect(getAccountManagerEmail("ENTERPRISE")).toBe("veljko@lodgetrack.com")
+    it("returns veljko@lodgetrack.com for BUSINESS tier", () => {
+      expect(getAccountManagerEmail("BUSINESS")).toBe("veljko@lodgetrack.com")
     })
 
     it("returns null for STARTER tier", () => {

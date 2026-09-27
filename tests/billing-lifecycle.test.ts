@@ -146,7 +146,7 @@ describe("billing lifecycle - handleTierDowngrade", () => {
   })
 
   it("returns 0 when new tier has unlimited properties", async () => {
-    const result = await handleTierDowngrade("org-123", "ENTERPRISE")
+    const result = await handleTierDowngrade("org-123", "BUSINESS")
     expect(result).toBe(0)
     expect(prisma.property.findMany).not.toHaveBeenCalled()
   })

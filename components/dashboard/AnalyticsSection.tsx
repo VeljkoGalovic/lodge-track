@@ -201,11 +201,11 @@ function ChartPanel({
                 className="relative flex items-end justify-around gap-2 px-2"
                 style={{ height: CHART_HEIGHT }}
               >
-                {all.map((point) => {
+               {all.map((point, index) => {
                   const isProjected = projected?.includes(point) ?? false
                   const isActive = activeMonth === point.month
                   return (
-                    <div key={point.month} className="flex flex-1 flex-col items-center self-stretch">
+                    <div key={`${point.month}-${index}`} className="flex flex-1 flex-col items-center self-stretch">
                       <div className="flex w-full flex-1 items-end">
                         <div
                           title={`${point.month}: ${formatFor(point)}`}

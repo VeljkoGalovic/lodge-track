@@ -197,9 +197,9 @@ export default async function TeamPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-primary" />
-              {t.pages.team.enterpriseSettings}
+              {t.pages.team.businessSettings}
             </CardTitle>
-            <CardDescription>{t.pages.team.enterpriseSettingsHelp}</CardDescription>
+            <CardDescription>{t.pages.team.businessSettingsHelp}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {canManageRbac && (
@@ -209,7 +209,7 @@ export default async function TeamPage() {
                   <p className="text-sm text-subtle-foreground">{t.pages.team.roleManagementHelp}</p>
                 </div>
                 <Badge variant="secondary" className="border-brand-purple/25 bg-brand-purple/10 text-brand-purple">
-                  {t.pages.team.enterpriseOnly}
+                  {t.pages.team.businessOnly}
                 </Badge>
               </div>
             )}
@@ -220,13 +220,13 @@ export default async function TeamPage() {
                   <p className="text-sm text-subtle-foreground">{t.pages.team.ssoConfigurationHelp}</p>
                 </div>
                 <Badge variant="secondary" className="border-brand-purple/25 bg-brand-purple/10 text-brand-purple">
-                  {t.pages.team.enterpriseOnly}
+                  {t.pages.team.businessOnly}
                 </Badge>
               </div>
             )}
             {(!canManageRbac || !canConfigureSso) && (
               <p className="text-xs text-subtle-foreground">
-                {t.pages.team.enterpriseFeaturesLocked}
+                {t.pages.team.businessFeaturesLocked}
               </p>
             )}
           </CardContent>
