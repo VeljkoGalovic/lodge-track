@@ -28,8 +28,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
           propertyId: true,
           name: true,
           kind: true,
-          bedCount: true,
-          description: true,
           orgId: true,
           createdAt: true,
           updatedAt: true,

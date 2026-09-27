@@ -12,6 +12,7 @@ import type { ThemePreference } from "@/lib/theme"
 import LanguageStep from "./steps/LanguageStep"
 import ThemeStep from "./steps/ThemeStep"
 import CurrencyStep from "./steps/CurrencyStep"
+import PlanStep from "./steps/PlanStep"
 import AccountStep from "./steps/AccountStep"
 import { ChevronLeft, ChevronRight, Check } from "lucide-react"
 
@@ -39,9 +40,10 @@ export function RegisterForm() {
 
   const handleLocaleChange = (locale: Locale) => handleChange("locale", locale)
   const handleThemeChange = (theme: ThemePreference) => handleChange("theme", theme)
+  const handleTierChange = (tier: "STARTER" | "PRO" | "BUSINESS") => handleChange("selectedTier", tier)
 
   const nextStep = () => {
-    if (currentStep < 4) {
+    if (currentStep < 5) {
       setCurrentStep((prev) => (prev + 1) as OnboardingStep)
     }
   }
@@ -63,7 +65,8 @@ export function RegisterForm() {
     formDataToSubmit.set("locale", formData.locale)
     formDataToSubmit.set("theme", formData.theme)
     formDataToSubmit.set("currency", formData.currency)
-    
+    formDataToSubmit.set("selectedTier", formData.selectedTier)
+
     startTransition(() => {
       formAction(formDataToSubmit)
     })
@@ -73,7 +76,8 @@ export function RegisterForm() {
     { step: 1, label: t.onboarding?.step1Title || "Language" },
     { step: 2, label: t.onboarding?.step2Title || "Theme" },
     { step: 3, label: t.onboarding?.step3Title || "Currency" },
-    { step: 4, label: t.onboarding?.step4Title || "Account" },
+    { step: 4, label: t.onboarding?.step4Title || "Plan" },
+    { step: 5, label: t.onboarding?.step5Title || "Account" },
   ]
 
   const renderStep = () => {
@@ -100,6 +104,13 @@ export function RegisterForm() {
           />
         )
       case 4:
+        return (
+          <PlanStep
+            selectedTier={formData.selectedTier}
+            onChange={handleTierChange}
+          />
+        )
+      case 5:
         return (
           <AccountStep
             name={formData.name}
@@ -169,8 +180,8 @@ export function RegisterForm() {
           </div>
 
           <p className="mt-4 text-center text-sm text-white/60">
-            {t.onboarding?.progressLabel?.replace("{current}", String(currentStep)).replace("{total}", "4") ||
-              `Step ${currentStep} of 4`}
+            {t.onboarding?.progressLabel?.replace("{current}", String(currentStep)).replace("{total}", "5") ||
+              `Step ${currentStep} of 5`}
           </p>
         </div>
 
@@ -198,7 +209,7 @@ export function RegisterForm() {
             {t.onboarding?.back || "Back"}
           </button>
 
-          {currentStep < 4 ? (
+          {currentStep < 5 ? (
             <button
               type="button"
               onClick={nextStep}

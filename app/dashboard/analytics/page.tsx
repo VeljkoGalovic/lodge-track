@@ -213,6 +213,7 @@ export default async function AnalyticsPage({
 
       <ForecastCard
         showForecast={showForecast}
+        range={range}
         currency={org.currency}
         revenue={series.revenue}
         revenueProjection={revenueProjection?.projections}

@@ -12,6 +12,7 @@ import { isLocale } from "@/lib/i18n/locales"
 import { isThemePreference } from "@/lib/theme"
 import { isSupportedCurrency, normalizeCurrency } from "@/lib/currency"
 import { validatePassword } from "@/lib/password-validation"
+import { createCheckoutUrl } from "@/lib/billing"
 
 export async function registerUser(prevState: { error?: string; success?: string }, formData: FormData): Promise<{ error?: string; success?: string; redirect?: string }> {
   const email = formData.get("email") as string
@@ -21,6 +22,7 @@ export async function registerUser(prevState: { error?: string; success?: string
   const locale = formData.get("locale") as string
   const theme = formData.get("theme") as string
   const currency = formData.get("currency") as string
+  const selectedTier = formData.get("selectedTier") as "STARTER" | "PRO" | "BUSINESS"
 
   if (!email || !password) {
     return { error: "Email and password are required." }
@@ -40,6 +42,7 @@ export async function registerUser(prevState: { error?: string; success?: string
   const validatedLocale = isLocale(locale) ? locale : "en"
   const validatedTheme = isThemePreference(theme) ? theme : "SYSTEM"
   const validatedCurrency = normalizeCurrency(currency)
+  const validatedTier = selectedTier === "PRO" || selectedTier === "BUSINESS" ? selectedTier : "STARTER"
 
   // Rate limiting for registration
   const identifier = getRateLimitIdentifier(null, email)
@@ -70,6 +73,9 @@ export async function registerUser(prevState: { error?: string; success?: string
   const privacyPolicyVersion = getLegalVersionDate("privacy-policy.md")
 
   // Use a Prisma transaction to create the Organization, User, LegalConsent, and default Starter Subscription atomically
+  let organizationId = ""
+  let userId = ""
+
   await prisma.$transaction(async (tx) => {
     // 1. Create the firm/organization with currency preference
     const organization = await tx.organization.create({
@@ -78,6 +84,8 @@ export async function registerUser(prevState: { error?: string; success?: string
         currency: validatedCurrency,
       },
     })
+
+    organizationId = organization.id
 
     // 2. Create the user linked to this organization with locale and theme preferences
     const user = await tx.user.create({
@@ -93,6 +101,8 @@ export async function registerUser(prevState: { error?: string; success?: string
       },
     })
 
+    userId = user.id
+
     // 3. Create LegalConsent record for compliance
     await tx.legalConsent.create({
       data: {
@@ -104,17 +114,39 @@ export async function registerUser(prevState: { error?: string; success?: string
       },
     })
 
-    // 4. Create a default Trial/Starter subscription for the organization
+    // 4. Create a default subscription for the organization
     await tx.subscription.create({
       data: {
         orgId: organization.id,
-        tier: "STARTER",
+        tier: validatedTier,
         status: "ACTIVE",
       },
     })
   })
 
-  // Create verification token and send email (outside transaction to avoid long-running transaction)
+  // For PRO/BUSINESS tiers, create Lemon Squeezy checkout and redirect
+  if (validatedTier === "PRO" || validatedTier === "BUSINESS") {
+    const checkoutUrl = await createCheckoutUrl({
+      tier: validatedTier,
+      email,
+      orgId: organizationId,
+      redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard/billing?checkout=complete`,
+    })
+
+    if (checkoutUrl) {
+      // Send verification email
+      try {
+        const { token } = await createVerificationToken(email, "email_verification", 24)
+        await sendVerificationEmail(email, token, validatedLocale)
+      } catch (error) {
+        console.error("Failed to send verification email:", error)
+      }
+
+      return { redirect: checkoutUrl }
+    }
+  }
+
+  // For STARTER tier or if checkout creation failed, send verification email and redirect to signin
   try {
     const { token } = await createVerificationToken(email, "email_verification", 24)
     await sendVerificationEmail(email, token, validatedLocale)

@@ -140,7 +140,12 @@ function ChartPanel({
     ? Math.max(...projected.map((point) => point.value), 0)
     : 0
   const scale = ceiling ?? Math.max(historyPeak, projectionPeak)
-  const hasData = series.length > 0 && all.some((point) => point.value > 0)
+
+  // Check if we have data to display: either historical data with values,
+  // or projected data when showing projected-only view (series is empty)
+  const hasHistoricalData = series.length > 0 && series.some((point) => point.value > 0)
+  const hasProjectedData = projected && projected.length > 0 && projected.some((point) => point.value > 0)
+  const hasData = hasHistoricalData || (series.length === 0 && hasProjectedData)
 
   const formatFor = (point: ChartPoint) => formatValue(point.value)
 
@@ -377,6 +382,7 @@ export function AnalyticsSection({
 export function ForecastCard({
   showForecast,
   currency,
+  range,
   revenue,
   revenueProjection,
   revenueMetadata,
@@ -389,6 +395,7 @@ export function ForecastCard({
 }: {
   showForecast: boolean
   currency: string
+  range: RangeKey
   /** Recorded history, drawn solid. */
   revenue: ChartPoint[]
   /** Trend-slope continuation, drawn outlined. */
@@ -434,6 +441,9 @@ export function ForecastCard({
     ? t.pages.analytics.forecastMethodLearnedDesc
     : t.pages.analytics.forecastMethodSeasonalDesc
 
+  // Check if we're in 1-year view with forecast - show historical and projected in separate rows
+  const isYearViewWithForecast = range === "12" && showForecast
+
   return (
     <Card className="border-border/50 bg-muted/30">
       <CardHeader>
@@ -463,34 +473,101 @@ export function ForecastCard({
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
-          <ChartPanel
-            title={t.pages.analytics.monthlyRevenue}
-            badge={t.pages.analytics.projected}
-            series={revenue}
-            projected={revenueProjection}
-            accent="teal"
-            formatValue={(value) => formatCurrency(value, currency)}
-          />
-          <ChartPanel
-            title={t.pages.analytics.occupancyRate}
-            badge={t.pages.analytics.projected}
-            series={occupancy}
-            projected={occupancyProjection}
-            accent="purple"
-            ceiling={100}
-            formatValue={(value) => `${value}%`}
-          />
-          {expenses.length > 0 ? (
-            <ChartPanel
-              title={t.pages.analytics.expensesTitle}
-              badge={t.pages.analytics.projected}
-              series={expenses}
-              projected={expensesProjection}
-              accent="amber"
-              formatValue={(value) => formatCurrency(value, currency)}
-              goodWhenDown
-            />
-          ) : null}
+          {isYearViewWithForecast ? (
+            // Historical data row
+            <>
+              <div className="space-y-6">
+                <ChartPanel
+                  title={t.pages.analytics.monthlyRevenue}
+                  badge={t.pages.analytics.last12Months}
+                  series={revenue}
+                  accent="teal"
+                  formatValue={(value) => formatCurrency(value, currency)}
+                />
+                <ChartPanel
+                  title={t.pages.analytics.occupancyRate}
+                  badge={t.pages.analytics.last12Months}
+                  series={occupancy}
+                  accent="purple"
+                  ceiling={100}
+                  formatValue={(value) => `${value}%`}
+                />
+                {expenses.length > 0 ? (
+                  <ChartPanel
+                    title={t.pages.analytics.expensesTitle}
+                    badge={t.pages.analytics.last12Months}
+                    series={expenses}
+                    accent="amber"
+                    formatValue={(value) => formatCurrency(value, currency)}
+                    goodWhenDown
+                  />
+                ) : null}
+              </div>
+              {/* Projected data row */}
+              <div className="space-y-6 pt-4 border-t border-border/50">
+                <ChartPanel
+                  title={t.pages.analytics.monthlyRevenue}
+                  badge={t.pages.analytics.projectedNext12Months}
+                  series={[]}
+                  projected={revenueProjection}
+                  accent="teal"
+                  formatValue={(value) => formatCurrency(value, currency)}
+                />
+                <ChartPanel
+                  title={t.pages.analytics.occupancyRate}
+                  badge={t.pages.analytics.projectedNext12Months}
+                  series={[]}
+                  projected={occupancyProjection}
+                  accent="purple"
+                  ceiling={100}
+                  formatValue={(value) => `${value}%`}
+                />
+                {expenses.length > 0 && expensesProjection ? (
+                  <ChartPanel
+                    title={t.pages.analytics.expensesTitle}
+                    badge={t.pages.analytics.projectedNext12Months}
+                    series={[]}
+                    projected={expensesProjection}
+                    accent="amber"
+                    formatValue={(value) => formatCurrency(value, currency)}
+                    goodWhenDown
+                  />
+                ) : null}
+              </div>
+            </>
+          ) : (
+            // Original combined view for 3/6 month ranges
+            <div className="space-y-6">
+              <ChartPanel
+                title={t.pages.analytics.monthlyRevenue}
+                badge={t.pages.analytics.projected}
+                series={revenue}
+                projected={revenueProjection}
+                accent="teal"
+                formatValue={(value) => formatCurrency(value, currency)}
+              />
+              <ChartPanel
+                title={t.pages.analytics.occupancyRate}
+                badge={t.pages.analytics.projected}
+                series={occupancy}
+                projected={occupancyProjection}
+                accent="purple"
+                ceiling={100}
+                formatValue={(value) => `${value}%`}
+              />
+              {expenses.length > 0 ? (
+                <ChartPanel
+                  title={t.pages.analytics.expensesTitle}
+                  badge={t.pages.analytics.projected}
+                  series={expenses}
+                  projected={expensesProjection}
+                  accent="amber"
+                  formatValue={(value) => formatCurrency(value, currency)}
+                  goodWhenDown
+                />
+              ) : null}
+            </div>
+          )}
         </div>
         <p className="mt-6 border-t border-border pt-4 text-xs text-subtle-foreground">
           {t.pages.analytics.forecastDisclaimer}

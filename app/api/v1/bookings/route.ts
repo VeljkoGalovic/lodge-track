@@ -74,7 +74,6 @@ export async function GET(req: NextRequest) {
       totalAmount: true,
       externalUid: true,
       createdAt: true,
-      updatedAt: true,
     },
     orderBy,
     take: limit + 1, // Take one extra to check if there's a next page
@@ -369,8 +368,6 @@ export async function POST(req: NextRequest) {
           propertyId: true,
           name: true,
           kind: true,
-          bedCount: true,
-          description: true,
           orgId: true,
           createdAt: true,
           updatedAt: true,
