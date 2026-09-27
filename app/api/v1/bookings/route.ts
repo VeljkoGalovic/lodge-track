@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { verifyApiKeyAuth } from "@/lib/api-auth"
 import { BookingStatus, BookingType } from "@prisma/client"
 import { findConflicts, rangesOverlap } from "@/lib/availability"
+import { checkRateLimit } from "@/lib/rate-limit"
 
 const VALID_STATUSES = Object.values(BookingStatus)
 const VALID_TYPES = Object.values(BookingType)
@@ -17,8 +18,21 @@ export async function GET(req: NextRequest) {
   const authResult = await verifyApiKeyAuth(req)
   if (!authResult.ok) return authResult.response
 
-  const { organization } = authResult
+  const { organization, apiKey } = authResult
   const orgId = organization.id
+
+  // Rate limiting: 100 requests/minute for GET
+  const rateLimitResult = await checkRateLimit(`apikey:${apiKey.keyPrefix}`, {
+    maxAttempts: 100,
+    windowMinutes: 1,
+    action: "api:v1:read",
+  })
+  if (!rateLimitResult.allowed) {
+    return NextResponse.json(
+      { ok: false, error: "Rate limit exceeded", code: "RATE_LIMIT_EXCEEDED" },
+      { status: 429, headers: { "Retry-After": String(rateLimitResult.retryAfterSeconds) } }
+    )
+  }
 
   const { searchParams } = new URL(req.url)
   const cursor = searchParams.get("cursor")
@@ -99,8 +113,21 @@ export async function POST(req: NextRequest) {
   const authResult = await verifyApiKeyAuth(req)
   if (!authResult.ok) return authResult.response
 
-  const { organization } = authResult
+  const { organization, apiKey } = authResult
   const orgId = organization.id
+
+  // Rate limiting: 30 requests/minute for POST
+  const rateLimitResult = await checkRateLimit(`apikey:${apiKey.keyPrefix}`, {
+    maxAttempts: 30,
+    windowMinutes: 1,
+    action: "api:v1:write",
+  })
+  if (!rateLimitResult.allowed) {
+    return NextResponse.json(
+      { ok: false, error: "Rate limit exceeded", code: "RATE_LIMIT_EXCEEDED" },
+      { status: 429, headers: { "Retry-After": String(rateLimitResult.retryAfterSeconds) } }
+    )
+  }
 
   let body: Record<string, unknown>
   try {

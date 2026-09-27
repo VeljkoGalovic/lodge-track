@@ -22,6 +22,11 @@ vi.mock("@/lib/prisma", () => ({
       update: mockPrismaApiKeyUpdate,
     },
     property: { findMany: mockPrismaPropertyFindMany },
+    rateLimit: {
+      deleteMany: vi.fn().mockResolvedValue({}),
+      count: vi.fn().mockResolvedValue(0),
+      create: vi.fn().mockResolvedValue({}),
+    },
   }
 }))
 

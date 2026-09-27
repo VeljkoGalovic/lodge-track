@@ -76,11 +76,11 @@ export async function verifyApiAccess(req: NextRequest): Promise<
 
 /**
  * Verifies an API key from the Authorization header (Bearer token).
- * Returns the organization if valid, or a NextResponse with 401/403 if not.
+ * Returns the organization and apiKey if valid, or a NextResponse with 401/403 if not.
  * Note: Internal tier is "BUSINESS" but user-facing is "Business".
  */
 export async function verifyApiKeyAuth(req: NextRequest): Promise<
-  | { ok: true; organization: { id: string; subscription: { tier: string } | null } }
+  | { ok: true; organization: { id: string; subscription: { tier: string } | null }; apiKey: { id: string; keyPrefix: string } }
   | { ok: false; response: NextResponse }
 > {
   const authHeader = req.headers.get("authorization")
@@ -184,7 +184,8 @@ export async function verifyApiKeyAuth(req: NextRequest): Promise<
 
   return {
     ok: true,
-    organization: { id: apiKey.organization.id, subscription: subscription ? { tier: subscription.tier } : null }
+    organization: { id: apiKey.organization.id, subscription: subscription ? { tier: subscription.tier } : null },
+    apiKey: { id: apiKey.id, keyPrefix: apiKey.keyPrefix }
   }
 }
 

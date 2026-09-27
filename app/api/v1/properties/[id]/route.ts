@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { verifyApiKeyAuth } from "@/lib/api-auth"
+import { checkRateLimit } from "@/lib/rate-limit"
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -14,9 +15,22 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
   const authResult = await verifyApiKeyAuth(req)
   if (!authResult.ok) return authResult.response
 
-  const { organization } = authResult
+  const { organization, apiKey } = authResult
   const orgId = organization.id
   const { id } = await params
+
+  // Rate limiting: 100 requests/minute for GET
+  const rateLimitResult = await checkRateLimit(`apikey:${apiKey.keyPrefix}`, {
+    maxAttempts: 100,
+    windowMinutes: 1,
+    action: "api:v1:read",
+  })
+  if (!rateLimitResult.allowed) {
+    return NextResponse.json(
+      { ok: false, error: "Rate limit exceeded", code: "RATE_LIMIT_EXCEEDED" },
+      { status: 429, headers: { "Retry-After": String(rateLimitResult.retryAfterSeconds) } }
+    )
+  }
 
   const property = await prisma.property.findFirst({
     where: { id, orgId },
@@ -60,9 +74,22 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   const authResult = await verifyApiKeyAuth(req)
   if (!authResult.ok) return authResult.response
 
-  const { organization } = authResult
+  const { organization, apiKey } = authResult
   const orgId = organization.id
   const { id } = await params
+
+  // Rate limiting: 30 requests/minute for PATCH
+  const rateLimitResult = await checkRateLimit(`apikey:${apiKey.keyPrefix}`, {
+    maxAttempts: 30,
+    windowMinutes: 1,
+    action: "api:v1:write",
+  })
+  if (!rateLimitResult.allowed) {
+    return NextResponse.json(
+      { ok: false, error: "Rate limit exceeded", code: "RATE_LIMIT_EXCEEDED" },
+      { status: 429, headers: { "Retry-After": String(rateLimitResult.retryAfterSeconds) } }
+    )
+  }
 
   let body: Record<string, unknown>
   try {
@@ -202,9 +229,22 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
   const authResult = await verifyApiKeyAuth(req)
   if (!authResult.ok) return authResult.response
 
-  const { organization } = authResult
+  const { organization, apiKey } = authResult
   const orgId = organization.id
   const { id } = await params
+
+  // Rate limiting: 30 requests/minute for DELETE
+  const rateLimitResult = await checkRateLimit(`apikey:${apiKey.keyPrefix}`, {
+    maxAttempts: 30,
+    windowMinutes: 1,
+    action: "api:v1:write",
+  })
+  if (!rateLimitResult.allowed) {
+    return NextResponse.json(
+      { ok: false, error: "Rate limit exceeded", code: "RATE_LIMIT_EXCEEDED" },
+      { status: 429, headers: { "Retry-After": String(rateLimitResult.retryAfterSeconds) } }
+    )
+  }
 
   // Check if property exists and belongs to organization
   const existingProperty = await prisma.property.findFirst({
