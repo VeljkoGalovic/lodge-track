@@ -7,7 +7,7 @@ const stats = [
 ];
 
 const bookings = [
-  { guest: "Marina Kovač", unit: "Seaside Loft", nights: "3 nights", status: "Confirmed" },
+  { guest: "John Williams", unit: "Seaside Loft", nights: "3 nights", status: "Confirmed" },
   { guest: "Tom Lindqvist", unit: "Alpine Cabin", nights: "5 nights", status: "Pending" },
   { guest: "Ana Rossi", unit: "City Studio", nights: "2 nights", status: "Confirmed" },
 ];

@@ -23,7 +23,7 @@ export default function LanguageStep({ locale, onChange }: LanguageStepProps) {
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-3" role="radiogroup" aria-label={t.onboarding?.step1Title || "Choose your language"}>
+      <div className="flex flex-wrap items-center justify-center gap-3" role="radiogroup" aria-label={t.onboarding?.step1Title || "Choose your language"}>
         {LOCALES.map((l) => (
           <button
             key={l}

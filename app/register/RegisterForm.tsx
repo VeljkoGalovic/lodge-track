@@ -133,12 +133,12 @@ export function RegisterForm() {
         <div className="absolute top-[30%] -right-[10%] w-[50%] h-[50%] rounded-full bg-gradient-to-tl from-[#ba87ff]/20 to-[#36bfae]/25 blur-[100px] animate-aurora [animation-delay:3s]" />
       </div>
 
-      <div className="glass-card w-full max-w-2xl p-8 relative z-10">
+      <div className="glass-card w-full max-w-3xl p-8 relative z-10">
         {/* Progress Indicator */}
         <div className="mb-8">
           <div className="flex items-start w-full overflow-x-auto snap-x snap-mandatory -mx-2 px-2 pb-2">
             {steps.map((step, index) => (
-              <div key={step.step} className="flex items-center flex-1 last:flex-initial snap-center min-w-[140px]">
+              <div key={step.step} className="flex items-start flex-1 last:flex-initial snap-center min-w-[100px]">
                 {/* Step Circle */}
                 <div className="flex flex-col items-center shrink-0">
                   <div
@@ -156,7 +156,7 @@ export function RegisterForm() {
                       step.step
                     )}
                   </div>
-                  <span className="mt-2 text-xs text-white/60 text-center whitespace-nowrap max-w-[120px] overflow-hidden text-ellipsis">
+                  <span className="mt-2 text-xs text-white/60 text-center whitespace-nowrap max-w-[100px] overflow-hidden text-ellipsis">
                     {step.label}
                   </span>
                 </div>
@@ -164,7 +164,7 @@ export function RegisterForm() {
                 {/* Connecting Line */}
                 {index < steps.length - 1 && (
                   <div
-                    className={`h-0.5 flex-1 min-w-[16px] mx-2 mt-5 transition-colors ${
+                    className={`h-0.5 flex-1 min-w-[12px] mx-1 mt-[19px] transition-colors ${
                       step.step < currentStep ? "bg-blue-600" : "bg-white/10"
                     }`}
                   />
@@ -187,17 +187,23 @@ export function RegisterForm() {
           </div>
         )}
 
-        <div className="space-y-6">
+        <div className="space-y-6 flex flex-col items-center text-center w-full [&>div]:w-full">
           {renderStep()}
         </div>
 
         {/* Navigation Buttons */}
+        {/* Navigation Buttons */}
         <div className="mt-8 flex items-center justify-between">
-         <button
+          <button
             type="button"
-            onClick={prevStep}
-            disabled={currentStep === 1 ? true : false}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white/70 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            onClick={() => {
+              if (currentStep > 1) prevStep()
+            }}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors ${
+              currentStep === 1
+                ? "opacity-50 cursor-not-allowed text-white/40 pointer-events-none"
+                : "text-white/70 hover:text-white cursor-pointer"
+            }`}
           >
             <ChevronLeft className="w-4 h-4" aria-hidden="true" />
             {t.onboarding?.back || "Back"}
@@ -207,7 +213,7 @@ export function RegisterForm() {
             <button
               type="button"
               onClick={nextStep}
-              className="flex items-center gap-2 px-6 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-2 px-6 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors cursor-pointer"
             >
               {t.onboarding?.next || "Next"}
               <ChevronRight className="w-4 h-4" aria-hidden="true" />

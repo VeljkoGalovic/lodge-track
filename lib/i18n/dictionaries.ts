@@ -1070,7 +1070,7 @@ const booking = await api("/bookings", {
     and: "and",
     // Plan selection
     planTitle: "Choose your plan",
-    planSubtitle: "All plans include a 14-day free trial. No credit card required.",
+    planSubtitle: "All plans include a 30-day free trial. No credit card required.",
     starterPlan: "Starter",
     proPlan: "Pro",
     businessPlan: "Business",
@@ -1083,7 +1083,7 @@ const booking = await api("/bookings", {
     choosePlan: "Choose {plan}",
     selectPlan: "Select plan",
     continueToCheckout: "Continue to checkout",
-    startingTrial: "Starting your 14-day trial...",
+    startingTrial: "Starting your 30-day trial...",
     trialDaysLabel: "{days}-day free trial",
   },
 
@@ -2180,7 +2180,7 @@ const booking = await api("/bookings", {
     and: "i",
     // Plan selection
     planTitle: "Izaberite plan",
-    planSubtitle: "Svi planovi uključuju 14-dnevni besplatan probni period. Kreditna kartica nije potrebna.",
+    planSubtitle: "Svi planovi uključuju 30-dnevni besplatan probni period. Kreditna kartica nije potrebna.",
     starterPlan: "Starter",
     proPlan: "Pro",
     businessPlan: "Business",
@@ -2193,7 +2193,7 @@ const booking = await api("/bookings", {
     choosePlan: "Izaberi {plan}",
     selectPlan: "Izaberi plan",
     continueToCheckout: "Nastavi na plaćanje",
-    startingTrial: "Pokrećem 14-dnevni probni period...",
+    startingTrial: "Pokrećem 30-dnevni probni period...",
     trialDaysLabel: "Besplatan probni period od {days} dana",
   },
 

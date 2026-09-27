@@ -58,35 +58,39 @@ export async function proxy(request: NextRequest) {
   // =========================================================================
   // Rate limiting for auth endpoints
   // =========================================================================
-  for (const endpoint of AUTH_ENDPOINTS) {
-    if (pathname.startsWith(endpoint)) {
-      const config = RATE_LIMIT_CONFIGS[endpoint.replace("/api/auth/", "")] || RATE_LIMIT_CONFIGS.register
-      const identifier = getRateLimitIdentifier(ip)
+  if (pathname.startsWith("/api/auth/")) {
+    // Skip session checks and CSRF from strict auth endpoint rate limiting
+    if (pathname === "/api/auth/session" || pathname === "/api/auth/csrf") {
+      return NextResponse.next()
+    }
 
-      try {
-        await enforceRateLimit(identifier, config)
-      } catch (error) {
-        if (error instanceof Error && "code" in error && (error as RateLimitError).code === "RATE_LIMIT_EXCEEDED") {
-          const retryAfter = (error as RateLimitError).retryAfterSeconds ?? config.windowMinutes * 60
-          return new NextResponse(
-            JSON.stringify({
-              error: "Too many requests. Please try again later.",
-              retryAfter,
-            }),
-            {
-              status: 429,
-              headers: {
-                "Content-Type": "application/json",
-                "Retry-After": String(retryAfter),
-                "X-RateLimit-Limit": String(config.maxAttempts),
-                "X-RateLimit-Remaining": "0",
-                "X-RateLimit-Reset": String(Math.floor(Date.now() / 1000) + retryAfter),
-              },
-            }
-          )
-        }
-        throw error
+    const subAction = pathname.replace("/api/auth/", "").split("/")[0]
+    const config = RATE_LIMIT_CONFIGS[subAction] || RATE_LIMIT_CONFIGS.register
+    const identifier = getRateLimitIdentifier(ip)
+
+    try {
+      await enforceRateLimit(identifier, config)
+    } catch (error) {
+      if (error instanceof Error && "code" in error && (error as RateLimitError).code === "RATE_LIMIT_EXCEEDED") {
+        const retryAfter = (error as RateLimitError).retryAfterSeconds ?? config.windowMinutes * 60
+        return new NextResponse(
+          JSON.stringify({
+            error: "Too many requests. Please try again later.",
+            retryAfter,
+          }),
+          {
+            status: 429,
+            headers: {
+              "Content-Type": "application/json",
+              "Retry-After": String(retryAfter),
+              "X-RateLimit-Limit": String(config.maxAttempts),
+              "X-RateLimit-Remaining": "0",
+              "X-RateLimit-Reset": String(Math.floor(Date.now() / 1000) + retryAfter),
+            },
+          }
+        )
       }
+      throw error
     }
   }
 

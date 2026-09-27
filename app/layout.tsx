@@ -5,6 +5,8 @@ import "./globals.css";
 import { CookieConsentProvider } from "@/components/cookie-consent/CookieConsentProvider";
 import { SessionProvider } from "next-auth/react"; // 1. Import SessionProvider
 
+
+
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",

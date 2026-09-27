@@ -29,7 +29,7 @@ export default function ThemeStep({ theme, onChange }: ThemeStepProps) {
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-3" role="radiogroup" aria-label={t.onboarding?.step2Title || "Choose your theme"}>
+      <div className="flex flex-wrap items-center justify-center gap-3" role="radiogroup" aria-label={t.onboarding?.step2Title || "Choose your theme"}>
         {themeOptions.map((option) => {
           const Icon = option.icon
           return (

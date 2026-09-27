@@ -1,7 +1,8 @@
 import Image from "next/image";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
-import { ArrowRight, Calendar, DollarSign } from "lucide-react";
+import { ArrowRight} from "lucide-react";
+import { DashboardMockup } from "@/components/DashboardMockup";
 
 export function Hero() {
   return (
@@ -51,26 +52,10 @@ export function Hero() {
           </GlassCard>
 
           {/* Right Column */}
-          <div className="lg:col-span-5 flex flex-col justify-between gap-4 sm:gap-6">
-            <GlassCard className="p-6 md:p-10 border-white/15 space-y-3 sm:space-y-4 flex flex-col justify-center" hover={false}>
-              <div className="w-12 h-12 rounded-xl bg-[#36BFAE]/10 border border-[#36BFAE]/30 flex items-center justify-center text-[#36BFAE]">
-                <Calendar size={24} />
-              </div>
-              <h3 className="text-white font-semibold text-lg md:text-xl">Smart Booking Sync</h3>
-              <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-                Automatically sync calendar schedules across multiple channels with zero double-booking friction.
-              </p>
-            </GlassCard>
-
-            <GlassCard className="p-6 md:p-14 border-white/15 space-y-3 sm:space-y-4 flex flex-col justify-center" hover={false}>
-              <div className="w-12 h-12 rounded-xl bg-[#BA87FF]/10 border border-[#BA87FF]/30 flex items-center justify-center text-[#BA87FF]">
-                <DollarSign size={24} />
-              </div>
-              <h3 className="text-white font-semibold text-lg md:text-xl">Unified Revenue Stream</h3>
-              <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-                Track payouts, occupancy rates, and operational expenses in real-time with granular precision.
-              </p>
-            </GlassCard>
+          <div className="lg:col-span-5 flex justify-center w-full">
+            <div className="w-full transform hover:scale-[1.02] transition-transform duration-500">
+              <DashboardMockup />
+            </div>
           </div>
 
         </div>
