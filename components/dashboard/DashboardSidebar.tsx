@@ -67,8 +67,8 @@ const navigation: NavItem[] = [
   { labelKey: "expenses", href: "/dashboard/expenses", icon: Receipt },
   { labelKey: "analytics", href: "/dashboard/analytics", icon: BarChart3, requiresFeature: "hasAdvancedAnalytics" },
   { labelKey: "team", href: "/dashboard/team", icon: Users, requiresFeature: "hasTeamRoles" },
-  { labelKey: "billing", href: "/dashboard/billing", icon: CreditCard },
   { labelKey: "api", href: "/dashboard/api", icon: Key, requiresFeature: "hasApiAccess" },
+  { labelKey: "billing", href: "/dashboard/billing", icon: CreditCard },
 ]
 
 export function DashboardSidebar({
