@@ -1,34 +1,48 @@
 "use client";
 
 import { useEffect } from "react";
-import Lenis from "lenis";
 
-export function LenisProvider({ children }: { children: React.ReactNode }) {
+export function LenisProvider() {
   useEffect(() => {
-    // Initialize Lenis with smooth scroll
-    const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // Smooth easing
-      orientation: "vertical",
-      gestureOrientation: "vertical",
-      smoothWheel: true,
-      syncTouch: false,
-      touchMultiplier: 2,
-    });
+    // Only initialize on client side
+    const initLenis = async () => {
+      if (typeof window === "undefined") return;
 
-    // Animation frame loop
-    function raf(time: number) {
-      lenis.raf(time);
+      // Check if we're on the landing page (has the dark class on the root element)
+      const isLandingPage = document.documentElement.classList.contains("dark");
+
+      if (!isLandingPage) return;
+
+      // Dynamic import to avoid SSR issues
+      const { default: Lenis } = await import("lenis");
+
+      const lenis = new Lenis({
+        duration: 1.2,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        orientation: "vertical",
+        gestureOrientation: "vertical",
+        smoothWheel: true,
+        wheelMultiplier: 1,
+        syncTouch: false,
+        touchMultiplier: 2,
+        infinite: false,
+      });
+
+      function raf(time: number) {
+        lenis.raf(time);
+        requestAnimationFrame(raf);
+      }
+
       requestAnimationFrame(raf);
-    }
 
-    requestAnimationFrame(raf);
-
-    // Cleanup
-    return () => {
-      lenis.destroy();
+      // Cleanup on unmount
+      return () => {
+        lenis.destroy();
+      };
     };
+
+    initLenis();
   }, []);
 
-  return <>{children}</>;
+  return null;
 }

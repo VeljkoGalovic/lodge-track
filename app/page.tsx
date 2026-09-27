@@ -4,6 +4,7 @@ import { Features } from "@/components/Features";
 import { Pricing } from "@/components/Pricing";
 import { About } from "@/components/About";
 import { Footer } from "@/components/Footer";
+import { LenisProvider } from "@/components/LenisProvider";
 
 /**
  * The marketing page is a fixed dark brand experience.
@@ -21,6 +22,7 @@ import { Footer } from "@/components/Footer";
 export default function Home() {
   return (
     <div className="dark min-h-screen bg-background text-foreground">
+      <LenisProvider />
       <Navbar />
       <main>
         <Hero />
