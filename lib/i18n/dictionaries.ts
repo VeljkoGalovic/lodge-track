@@ -1443,7 +1443,7 @@ const sr: Dictionary = {
     roleManagement: "Upravljanje ulogama (RBAC)",
     roleManagementHelp: "Prilagodite dozvole uloga i kreirajte prilagođene uloge",
     ssoConfiguration: "Konfiguracija SSO",
-    ssoConfigurationHelp: "Konfigurisajte prilagođene SAML/OIDC dobavljace identiteta",
+    ssoConfigurationHelp: "Konfigurisajte prilagođene SAML/OIDC dobavljače identiteta",
     businessOnly: "Samo Business",
     businessFeaturesLocked: "Pređite na Business da biste otključali upravljanje ulogama i konfiguraciju SSO.",
     api: {
@@ -2063,7 +2063,7 @@ const booking = await api("/bookings", {
       roleManagement: "Upravljanje ulogama (RBAC)",
       roleManagementHelp: "Prilagodite dozvole uloga i kreirajte prilagođene uloge",
       ssoConfiguration: "Konfiguracija SSO",
-      ssoConfigurationHelp: "Konfigurisajte prilagođene SAML/OIDC dobavljace identiteta",
+      ssoConfigurationHelp: "Konfigurisajte prilagođene SAML/OIDC dobavljače identiteta",
       businessOnly: "Samo Business",
       businessFeaturesLocked: "Pređite na Business da biste otključali upravljanje ulogama i konfiguraciju SSO.",
       preview: {
