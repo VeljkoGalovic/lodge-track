@@ -120,11 +120,12 @@ export async function registerUser(prevState: { error?: string; success?: string
     })
 
     // 4. Create a default subscription for the organization
+    // Use PENDING status to indicate payment hasn't been completed yet
     await tx.subscription.create({
       data: {
         orgId: organization.id,
         tier: validatedTier,
-        status: "ACTIVE",
+        status: "CANCELED", // Start as CANCELED so dashboard guard forces checkout
       },
     })
   })

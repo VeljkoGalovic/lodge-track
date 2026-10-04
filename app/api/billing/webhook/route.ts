@@ -108,6 +108,8 @@ async function applyEvent(tx: Prisma.TransactionClient, eventName: string, paylo
   const providerSubscriptionId = attributes.subscription_id
     ? String(attributes.subscription_id)
     : data.id
+  // Store customer ID for subscription validation (used to detect completed checkout)
+  const providerCustomerId = attributes.customer_id ? String(attributes.customer_id) : null
 
   // `ends_at` is set when a subscription is cancelled but still running, so it
   // is a better end date than `renews_at` whenever it is present.
@@ -132,6 +134,7 @@ async function applyEvent(tx: Prisma.TransactionClient, eventName: string, paylo
       // variant id cannot silently downgrade a paying organization.
       ...(tier ? { tier } : {}),
       billingSubscriptionId: providerSubscriptionId,
+      ...(providerCustomerId ? { billingCustomerId: providerCustomerId } : {}),
       currentPeriodEnd: periodEnd ? new Date(periodEnd) : null,
     },
   })

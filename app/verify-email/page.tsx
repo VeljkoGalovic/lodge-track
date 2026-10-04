@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma"
 import { createCheckoutUrl } from "@/lib/billing"
 import { redirect } from "next/navigation"
 import { requestOrigin } from "@/lib/origin"
+import { isRedirectError } from "next/dist/client/components/redirect-error"
 
 interface VerifyEmailPageProps {
   searchParams: Promise<{ token?: string }>
@@ -77,6 +78,10 @@ export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageP
         }
       }
     } catch (error) {
+      // Rethrow redirect errors so Next.js can handle them properly
+      if (isRedirectError(error)) {
+        throw error
+      }
       console.error("Verification error:", error)
       verificationResult = {
         success: false,

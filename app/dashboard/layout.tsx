@@ -7,6 +7,8 @@ import { currentThemePreference } from "@/lib/theme-server"
 import { redirect } from "next/navigation"
 import { DashboardShell } from "@/components/dashboard/DashboardShell"
 import { hasValidAccess } from "@/lib/billing"
+import { requestOrigin } from "@/lib/origin"
+import { createCheckoutUrl } from "@/lib/billing"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -48,6 +50,32 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
   const hasAccess = hasValidAccess(subscription?.status ?? "CANCELED", subscription?.trialEndsAt ?? null)
   if (!hasAccess) {
     redirect("/dashboard/billing?reason=access_revoked")
+  }
+
+  // Subscription payment guard: ensure paid tiers have completed checkout
+  // If user has a paid tier (STARTER, PRO, BUSINESS) but subscription lacks billing identifiers,
+  // they haven't completed Lemon Squeezy checkout - redirect to checkout
+  const paidTiers = ["STARTER", "PRO", "BUSINESS"] as const
+  if (subscription && paidTiers.includes(subscription.tier)) {
+    const hasBillingIdentifiers = subscription.billingCustomerId && subscription.billingSubscriptionId
+
+    if (!hasBillingIdentifiers) {
+      // User selected a paid tier but never completed checkout - redirect to checkout
+      const origin = await requestOrigin()
+      const checkoutUrl = await createCheckoutUrl({
+        tier: subscription.tier,
+        email: user.email,
+        orgId: user.orgId,
+        redirectUrl: `${origin}/dashboard/billing?checkout=complete`,
+      })
+
+      if (checkoutUrl) {
+        redirect(checkoutUrl)
+      } else {
+        // Checkout creation failed - redirect to billing with error
+        redirect("/dashboard/billing?reason=checkout_failed")
+      }
+    }
   }
 
   const features = getOrgFeatures(

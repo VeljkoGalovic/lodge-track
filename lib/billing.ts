@@ -142,7 +142,8 @@ export async function createCheckoutUrl(request: CheckoutRequest): Promise<strin
     },
   }
 
-  console.log("[billing] Creating checkout:", {
+  // Log full request details for debugging
+  console.log("[billing] Creating checkout - FULL REQUEST:", {
     tier: request.tier,
     email: request.email,
     orgId: request.orgId,
@@ -150,9 +151,12 @@ export async function createCheckoutUrl(request: CheckoutRequest): Promise<strin
     variantId,
     storeId: config.storeId,
     apiKeyPrefix: config.apiKey.slice(0, 8) + "...",
+    requestBody: JSON.stringify(requestBody, null, 2),
+    url: `${API_BASE}/checkouts`,
   })
 
   try {
+    console.log("[billing] Sending request to Lemon Squeezy API...")
     const response = await fetch(`${API_BASE}/checkouts`, {
       method: "POST",
       headers: {
@@ -165,26 +169,66 @@ export async function createCheckoutUrl(request: CheckoutRequest): Promise<strin
 
     const responseText = await response.text()
 
+    // Log full response details regardless of success/failure
+    console.log("[billing] Lemon Squeezy API response received:", {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+      headers: Object.fromEntries(response.headers.entries()),
+      responseBody: responseText,
+      tier: request.tier,
+      variantId,
+    })
+
     if (!response.ok) {
-      console.error("[billing] checkout creation failed", {
+      console.error("[billing] checkout creation failed - HTTP ERROR", {
         status: response.status,
         statusText: response.statusText,
         response: responseText,
         tier: request.tier,
         variantId,
+        storeId: config.storeId,
+        apiKeyPrefix: config.apiKey.slice(0, 8) + "...",
       })
       return null
     }
 
     console.log("[billing] checkout creation succeeded", { tier: request.tier, status: response.status })
 
-    const payload = JSON.parse(responseText) as { data?: { attributes?: { url?: string } } }
-    return payload.data?.attributes?.url ?? null
+    let payload: { data?: { attributes?: { url?: string } } }
+    try {
+      payload = JSON.parse(responseText) as { data?: { attributes?: { url?: string } } }
+    } catch (parseError) {
+      console.error("[billing] checkout creation - FAILED TO PARSE RESPONSE JSON", {
+        error: parseError instanceof Error ? parseError.message : String(parseError),
+        responseText,
+        tier: request.tier,
+      })
+      return null
+    }
+
+    const checkoutUrl = payload.data?.attributes?.url ?? null
+    if (!checkoutUrl) {
+      console.error("[billing] checkout creation - NO URL IN RESPONSE", {
+        payload: JSON.stringify(payload, null, 2),
+        tier: request.tier,
+      })
+      return null
+    }
+
+    console.log("[billing] checkout URL generated successfully", { tier: request.tier, url: checkoutUrl })
+    return checkoutUrl
   } catch (error) {
-    console.error("[billing] checkout creation exception", {
+    console.error("[billing] checkout creation exception - NETWORK/UNEXPECTED ERROR", {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
       tier: request.tier,
+      variantId,
+      storeId: config.storeId,
+      apiKeyPrefix: config.apiKey.slice(0, 8) + "...",
+      // Include request info for debugging
+      requestUrl: `${API_BASE}/checkouts`,
+      requestBodyPreview: JSON.stringify(requestBody).slice(0, 500),
     })
     return null
   }
