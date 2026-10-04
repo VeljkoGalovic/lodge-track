@@ -19,6 +19,7 @@ export async function registerUser(prevState: { error?: string; success?: string
   const password = formData.get("password") as string
   const name = formData.get("name") as string
   const termsAccepted = formData.get("termsAccepted") === "on"
+  const isOver18 = formData.get("isOver18") === "on"
   const locale = formData.get("locale") as string
   const theme = formData.get("theme") as string
   const currency = formData.get("currency") as string
@@ -30,6 +31,10 @@ export async function registerUser(prevState: { error?: string; success?: string
 
   if (!termsAccepted) {
     return { error: "You must accept the Terms of Service and Privacy Policy to register." }
+  }
+
+  if (!isOver18) {
+    return { error: "You must confirm that you are over 18 years old to register." }
   }
 
   // Validate password strength

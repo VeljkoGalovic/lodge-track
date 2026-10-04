@@ -162,6 +162,7 @@ describe("Fix 2: Rate limiting on auth endpoints", () => {
     formData.set("password", "ValidPass123!")
     formData.set("name", "Test User")
     formData.set("termsAccepted", "on")
+    formData.set("isOver18", "on")
 
     const result = await registerUser({}, formData)
     expect(result.success).toBeTruthy()
@@ -180,6 +181,7 @@ describe("Fix 2: Rate limiting on auth endpoints", () => {
     formData.set("password", "ValidPass123!")
     formData.set("name", "Test User")
     formData.set("termsAccepted", "on")
+    formData.set("isOver18", "on")
 
     const result = await registerUser({}, formData)
     expect(result.error).toMatch(/Too many registration attempts/)
@@ -268,6 +270,7 @@ describe("registerUser with onboarding preferences", () => {
     formData.set("password", "SecurePass123!")
     formData.set("name", "Test User")
     formData.set("termsAccepted", "on")
+    formData.set("isOver18", "on")
     formData.set("locale", "sr")
     formData.set("theme", "DARK")
     formData.set("currency", "EUR")
@@ -301,6 +304,7 @@ describe("registerUser with onboarding preferences", () => {
     formData.set("password", "SecurePass123!")
     formData.set("name", "Test User")
     formData.set("termsAccepted", "on")
+    formData.set("isOver18", "on")
     // No locale, theme, currency provided
 
     const result = await registerUser({}, formData)
@@ -331,6 +335,7 @@ describe("registerUser with onboarding preferences", () => {
     formData.set("password", "weak") // Too short, no uppercase, no number, no special char
     formData.set("name", "Test User")
     formData.set("termsAccepted", "on")
+    formData.set("isOver18", "on")
     formData.set("locale", "en")
     formData.set("theme", "SYSTEM")
     formData.set("currency", "USD")
@@ -352,6 +357,7 @@ describe("registerUser with onboarding preferences", () => {
     formData.set("password", "ValidPass123!")
     formData.set("name", "Test User")
     formData.set("termsAccepted", "on")
+    formData.set("isOver18", "on")
     formData.set("locale", "en")
     formData.set("theme", "SYSTEM")
     formData.set("currency", "USD")
@@ -367,6 +373,7 @@ describe("registerUser with onboarding preferences", () => {
     formData.set("password", "ValidPass123!")
     formData.set("name", "Test User")
     formData.set("termsAccepted", "on")
+    formData.set("isOver18", "on")
     formData.set("locale", "invalid") // Invalid locale
     formData.set("theme", "SYSTEM")
     formData.set("currency", "USD")
@@ -390,6 +397,7 @@ describe("registerUser with onboarding preferences", () => {
     formData.set("password", "ValidPass123!")
     formData.set("name", "Test User")
     formData.set("termsAccepted", "on")
+    formData.set("isOver18", "on")
     formData.set("locale", "en")
     formData.set("theme", "INVALID") // Invalid theme
     formData.set("currency", "USD")
@@ -413,6 +421,7 @@ describe("registerUser with onboarding preferences", () => {
     formData.set("password", "ValidPass123!")
     formData.set("name", "Test User")
     formData.set("termsAccepted", "on")
+    formData.set("isOver18", "on")
     formData.set("locale", "en")
     formData.set("theme", "SYSTEM")
     formData.set("currency", "INVALID") // Invalid currency
@@ -436,6 +445,7 @@ describe("registerUser with onboarding preferences", () => {
     formData.set("password", "ValidPass123!")
     formData.set("name", "Test User")
     formData.set("termsAccepted", "on")
+    formData.set("isOver18", "on")
     formData.set("locale", "en")
     formData.set("theme", "SYSTEM")
     formData.set("currency", "eur") // lowercase
@@ -454,6 +464,7 @@ describe("registerUser with onboarding preferences", () => {
     formData.set("email", "new@example.com")
     formData.set("password", "ValidPass123!")
     formData.set("name", "Test User")
+    formData.set("isOver18", "on")
     // termsAccepted not set
     formData.set("locale", "en")
     formData.set("theme", "SYSTEM")

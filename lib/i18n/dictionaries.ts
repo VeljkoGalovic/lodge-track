@@ -1068,6 +1068,7 @@ const booking = await api("/bookings", {
     passwordMismatch: "Passwords do not match",
     termsLabelPrefix: "I agree to the",
     and: "and",
+    over18Label: "I confirm that I am over 18 years old",
     // Plan selection
     planTitle: "Choose your plan",
     planSubtitle: "All plans include a 30-day free trial. No credit card required.",
@@ -1232,6 +1233,7 @@ const sr: Dictionary = {
     and: "i",
     privacyLink: "Politikom privatnosti",
     termsRequired: "Morate prihvatiti Uslove korišćenja i Politiku privatnosti da biste nastavili.",
+    over18Label: "Potvrđujem da imam više od 18 godina",
     emailNotVerified: "Molimo vas da verifikujete vašu email adresu pre prijave. Proverite vaš inbox za link za verifikaciju.",
     resendVerification: "Pošalji verifikacioni email ponovo",
     verificationEmailSent: "Verifikacioni email je poslat! Proverite vaš inbox.",

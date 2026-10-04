@@ -35,6 +35,7 @@ export function RegisterForm() {
   const handleLocaleChange = (locale: Locale) => handleChange("locale", locale)
   const handleThemeChange = (theme: ThemePreference) => handleChange("theme", theme)
   const handleTierChange = (tier: "STARTER" | "PRO" | "BUSINESS") => handleChange("selectedTier", tier)
+  const handleOver18Change = (isOver18: boolean) => handleChange("isOver18", isOver18)
 
   const nextStep = () => {
     if (currentStep < 5) {
@@ -56,6 +57,7 @@ export function RegisterForm() {
     formDataToSubmit.set("password", formData.password)
     formDataToSubmit.set("confirmPassword", formData.confirmPassword)
     formDataToSubmit.set("termsAccepted", formData.termsAccepted ? "on" : "")
+    formDataToSubmit.set("isOver18", formData.isOver18 ? "on" : "")
     formDataToSubmit.set("locale", formData.locale)
     formDataToSubmit.set("theme", formData.theme)
     formDataToSubmit.set("currency", formData.currency)
@@ -117,6 +119,8 @@ export function RegisterForm() {
             onConfirmPasswordChange={(confirmPassword) => handleChange("confirmPassword", confirmPassword)}
             termsAccepted={formData.termsAccepted}
             onTermsChange={(termsAccepted) => handleChange("termsAccepted", termsAccepted)}
+            isOver18={formData.isOver18}
+            onOver18Change={(isOver18) => handleChange("isOver18", isOver18)}
             onSubmit={handleSubmit}
             isSubmitting={isPending}
             error={state?.error}

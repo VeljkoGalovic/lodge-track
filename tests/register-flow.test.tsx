@@ -36,7 +36,7 @@ describe("RegisterForm - Full Flow Integration", () => {
     expect(screen.getByRole("heading", { name: "Choose your language" })).toBeInTheDocument()
     expect(screen.getByText("English")).toBeInTheDocument()
     expect(screen.getByText("Srpski")).toBeInTheDocument()
-    expect(screen.getByText("Step 1 of 4")).toBeInTheDocument()
+    expect(screen.getByText("Step 1 of 5")).toBeInTheDocument()
   })
 
   it("navigates to step 2 (Theme) when Next is clicked", async () => {
@@ -51,7 +51,7 @@ describe("RegisterForm - Full Flow Integration", () => {
     })
 
     expect(screen.getByRole("heading", { name: "Choose your theme" })).toBeInTheDocument()
-    expect(screen.getByText("Step 2 of 4")).toBeInTheDocument()
+    expect(screen.getByText("Step 2 of 5")).toBeInTheDocument()
   })
 
   it("navigates back from step 2 to step 1", async () => {
@@ -69,10 +69,10 @@ describe("RegisterForm - Full Flow Integration", () => {
     })
 
     expect(screen.getByRole("heading", { name: "Choose your language" })).toBeInTheDocument()
-    expect(screen.getByText("Step 1 of 4")).toBeInTheDocument()
+    expect(screen.getByText("Step 1 of 5")).toBeInTheDocument()
   })
 
-  it("navigates through all 4 steps", async () => {
+  it("navigates through all 5 steps", async () => {
     renderWithLocale(<RegisterForm />)
 
     // Step 1: Language
@@ -80,23 +80,30 @@ describe("RegisterForm - Full Flow Integration", () => {
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /next/i }))
     })
-    expect(screen.getByText("Step 2 of 4")).toBeInTheDocument()
+    expect(screen.getByText("Step 2 of 5")).toBeInTheDocument()
 
     // Step 2: Theme
     fireEvent.click(screen.getByText("Light"))
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /next/i }))
     })
-    expect(screen.getByText("Step 3 of 4")).toBeInTheDocument()
+    expect(screen.getByText("Step 3 of 5")).toBeInTheDocument()
 
     // Step 3: Currency
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "EUR" } })
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /next/i }))
     })
-    expect(screen.getByText("Step 4 of 4")).toBeInTheDocument()
+    expect(screen.getByText("Step 4 of 5")).toBeInTheDocument()
 
-    // Step 4: Account - use h3 heading to avoid matching page title h1
+    // Step 4: Plan
+    fireEvent.click(screen.getByText("Starter"))
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }))
+    })
+    expect(screen.getByText("Step 5 of 5")).toBeInTheDocument()
+
+    // Step 5: Account - the h3 heading uses step5Title ("Create your account")
     expect(screen.getByRole("heading", { name: "Create your account", level: 3 })).toBeInTheDocument()
   })
 
@@ -121,7 +128,13 @@ describe("RegisterForm - Full Flow Integration", () => {
       fireEvent.click(screen.getByRole("button", { name: /next/i }))
     })
 
-    // Step 4: Verify data persisted
+    // Step 4: Select Plan
+    fireEvent.click(screen.getByText("Starter"))
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }))
+    })
+
+    // Step 5: Verify data persisted
     expect(screen.getByLabelText(/Email/)).toBeInTheDocument()
     // Form data should be in state (we can't directly test internal state, but we can verify final submit)
   })
@@ -150,12 +163,19 @@ describe("RegisterForm - Full Flow Integration", () => {
       fireEvent.click(screen.getByRole("button", { name: /next/i }))
     })
 
-    // Step 4: Fill account details
+    // Step 4: Plan
+    fireEvent.click(screen.getByText("Starter"))
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }))
+    })
+
+    // Step 5: Fill account details
     fireEvent.change(screen.getByLabelText(/Full name/), { target: { value: "John Doe" } })
     fireEvent.change(screen.getByLabelText(/Email/), { target: { value: "john@example.com" } })
     fireEvent.change(screen.getByLabelText(/^Password \*/), { target: { value: "SecurePass123!" } })
     fireEvent.change(screen.getByLabelText(/Confirm New Password/), { target: { value: "SecurePass123!" } })
     fireEvent.click(screen.getByRole("checkbox", { name: /terms/i }))
+    fireEvent.click(screen.getByRole("checkbox", { name: /over 18/i }))
 
     // Submit
     await act(async () => {
@@ -173,9 +193,11 @@ describe("RegisterForm - Full Flow Integration", () => {
     expect(formData.get("password")).toBe("SecurePass123!")
     expect(formData.get("confirmPassword")).toBe("SecurePass123!")
     expect(formData.get("termsAccepted")).toBe("on")
+    expect(formData.get("isOver18")).toBe("on")
     expect(formData.get("locale")).toBe("en")
     expect(formData.get("theme")).toBe("LIGHT")
     expect(formData.get("currency")).toBe("EUR")
+    expect(formData.get("selectedTier")).toBe("STARTER")
   })
 
   it("shows error message when server action returns error", async () => {
@@ -184,12 +206,14 @@ describe("RegisterForm - Full Flow Integration", () => {
 
     renderWithLocale(<RegisterForm />)
 
-    // Quick navigate to step 4
+    // Quick navigate to step 5
     fireEvent.click(screen.getByText("English"))
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: /next/i })) })
     fireEvent.click(screen.getByText("System"))
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: /next/i })) })
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "USD" } })
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /next/i })) })
+    fireEvent.click(screen.getByText("Starter"))
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: /next/i })) })
 
     // Fill and submit
@@ -197,6 +221,7 @@ describe("RegisterForm - Full Flow Integration", () => {
     fireEvent.change(screen.getByLabelText(/^Password \*/), { target: { value: "SecurePass123!" } })
     fireEvent.change(screen.getByLabelText(/Confirm New Password/), { target: { value: "SecurePass123!" } })
     fireEvent.click(screen.getByRole("checkbox", { name: /terms/i }))
+    fireEvent.click(screen.getByRole("checkbox", { name: /over 18/i }))
 
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /create account/i }))
@@ -213,12 +238,14 @@ describe("RegisterForm - Full Flow Integration", () => {
 
     renderWithLocale(<RegisterForm />)
 
-    // Quick navigate to step 4
+    // Quick navigate to step 5
     fireEvent.click(screen.getByText("English"))
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: /next/i })) })
     fireEvent.click(screen.getByText("System"))
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: /next/i })) })
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "USD" } })
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /next/i })) })
+    fireEvent.click(screen.getByText("Starter"))
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: /next/i })) })
 
     // Fill and submit
@@ -226,6 +253,7 @@ describe("RegisterForm - Full Flow Integration", () => {
     fireEvent.change(screen.getByLabelText(/^Password \*/), { target: { value: "SecurePass123!" } })
     fireEvent.change(screen.getByLabelText(/Confirm New Password/), { target: { value: "SecurePass123!" } })
     fireEvent.click(screen.getByRole("checkbox", { name: /terms/i }))
+    fireEvent.click(screen.getByRole("checkbox", { name: /over 18/i }))
 
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /create account/i }))
@@ -244,14 +272,15 @@ describe("RegisterForm - Full Flow Integration", () => {
     expect(nextButton).not.toBeDisabled()
   })
 
-  it("renders progress indicator with all 4 steps", () => {
+  it("renders progress indicator with all 5 steps", () => {
     renderWithLocale(<RegisterForm />)
 
-    // All 4 step indicators should be visible
+    // All 5 step indicators should be visible
     expect(screen.getByText("1")).toBeInTheDocument()
     expect(screen.getByText("2")).toBeInTheDocument()
     expect(screen.getByText("3")).toBeInTheDocument()
     expect(screen.getByText("4")).toBeInTheDocument()
+    expect(screen.getByText("5")).toBeInTheDocument()
   })
 
   it("marks completed steps with check icon", async () => {
@@ -286,15 +315,17 @@ describe("RegisterForm - Full Flow Integration", () => {
     expect(screen.getByRole("heading", { name: "Izaberite temu" })).toBeInTheDocument()
   })
 
-  it("shows password validation in real-time on step 4", async () => {
+  it("shows password validation in real-time on step 5", async () => {
     renderWithLocale(<RegisterForm />)
 
-    // Quick navigate to step 4
+    // Quick navigate to step 5
     fireEvent.click(screen.getByText("English"))
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: /next/i })) })
     fireEvent.click(screen.getByText("System"))
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: /next/i })) })
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "USD" } })
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /next/i })) })
+    fireEvent.click(screen.getByText("Starter"))
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: /next/i })) })
 
     // Type password - use correct label matchers from component

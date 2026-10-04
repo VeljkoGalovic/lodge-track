@@ -29,6 +29,7 @@ export interface OnboardingData {
   password: string
   confirmPassword: string
   termsAccepted: boolean
+  isOver18: boolean
 }
 
 /**
@@ -44,6 +45,7 @@ export const initialOnboardingData: OnboardingData = {
   password: "",
   confirmPassword: "",
   termsAccepted: false,
+  isOver18: false,
 }
 
 /**

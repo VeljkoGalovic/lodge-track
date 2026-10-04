@@ -27,6 +27,7 @@ interface AccountStepTestWrapperProps {
   onPasswordChange?: (password: string) => void
   onConfirmPasswordChange?: (confirmPassword: string) => void
   onTermsChange?: (accepted: boolean) => void
+  onOver18Change?: (accepted: boolean) => void
   onSubmit?: (e: React.FormEvent) => void
   isSubmitting?: boolean
   error?: string
@@ -36,6 +37,7 @@ interface AccountStepTestWrapperProps {
     password?: string
     confirmPassword?: string
     termsAccepted?: boolean
+    isOver18?: boolean
   }
 }
 
@@ -45,6 +47,7 @@ function AccountStepTestWrapper({
   onPasswordChange,
   onConfirmPasswordChange,
   onTermsChange,
+  onOver18Change,
   onSubmit,
   isSubmitting = false,
   error,
@@ -55,6 +58,7 @@ function AccountStepTestWrapper({
   const [password, setPassword] = useState(initialValues.password ?? "")
   const [confirmPassword, setConfirmPassword] = useState(initialValues.confirmPassword ?? "")
   const [termsAccepted, setTermsAccepted] = useState(initialValues.termsAccepted ?? false)
+  const [isOver18, setIsOver18] = useState(initialValues.isOver18 ?? false)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -81,6 +85,10 @@ function AccountStepTestWrapper({
     setTermsAccepted(value)
     onTermsChange?.(value)
   }
+  const handleOver18Change = (value: boolean) => {
+    setIsOver18(value)
+    onOver18Change?.(value)
+  }
 
   return (
     <AccountStep
@@ -94,6 +102,8 @@ function AccountStepTestWrapper({
       onConfirmPasswordChange={handleConfirmPasswordChange}
       termsAccepted={termsAccepted}
       onTermsChange={handleTermsChange}
+      isOver18={isOver18}
+      onOver18Change={handleOver18Change}
       onSubmit={handleSubmit}
       isSubmitting={isSubmitting}
       error={error}
@@ -227,6 +237,7 @@ describe("AccountStep", () => {
   it("renders all account fields", () => {
     renderAccountStep(defaultHandlers)
 
+    // Component uses step5Title for the heading (step 5 is "Create your account")
     expect(screen.getByText("Create your account")).toBeInTheDocument()
     // Label says "Full name" not "Name"
     expect(screen.getByLabelText(/Full name/)).toBeInTheDocument()
@@ -236,6 +247,7 @@ describe("AccountStep", () => {
     // Component uses "Confirm New Password" label with asterisk
     expect(screen.getByLabelText(/Confirm New Password/)).toBeInTheDocument()
     expect(screen.getByRole("checkbox", { name: /terms/i })).toBeInTheDocument()
+    expect(screen.getByRole("checkbox", { name: /over 18/i })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /create account/i })).toBeInTheDocument()
   })
 
@@ -333,6 +345,7 @@ describe("AccountStep", () => {
     // Use getByLabelText for confirm password since it has unique label
     fireEvent.change(screen.getByLabelText(/Confirm New Password/), { target: { value: "Test123!" } })
     fireEvent.click(screen.getByRole("checkbox", { name: /terms/i }))
+    fireEvent.click(screen.getByRole("checkbox", { name: /over 18/i }))
 
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /create account/i }))

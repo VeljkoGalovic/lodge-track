@@ -15,6 +15,8 @@ interface AccountStepProps {
   onConfirmPasswordChange: (confirmPassword: string) => void
   termsAccepted: boolean
   onTermsChange: (accepted: boolean) => void
+  isOver18: boolean
+  onOver18Change: (accepted: boolean) => void
   onSubmit: (e: React.FormEvent) => void
   isSubmitting: boolean
   error?: string
@@ -31,6 +33,8 @@ export default function AccountStep({
   onConfirmPasswordChange,
   termsAccepted,
   onTermsChange,
+  isOver18,
+  onOver18Change,
   onSubmit,
   isSubmitting,
   error,
@@ -58,10 +62,10 @@ export default function AccountStep({
 
       <div>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          {t.onboarding?.step4Title || "Create your account"}
+          {t.onboarding?.step5Title || "Create your account"}
         </h3>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {t.onboarding?.step4Description || "Start tracking your properties in a few seconds."}
+          {t.onboarding?.step5Description || "Start tracking your properties in a few seconds."}
         </p>
       </div>
 
@@ -189,26 +193,43 @@ export default function AccountStep({
         </div>
       </div>
 
-      <div className="flex items-start gap-3">
-        <input
-          id="terms"
-          type="checkbox"
-          checked={termsAccepted}
-          onChange={(e) => onTermsChange(e.target.checked)}
-          required
-          className="mt-1 h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
-        />
-        <label htmlFor="terms" className="text-sm text-gray-700 dark:text-gray-300">
-          {t.onboarding?.termsLabelPrefix || t.auth?.termsLabelPrefix || "I agree to the "}
-          <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-            {t.auth?.termsLink || "Terms of Service"}
-          </a>
-          {t.onboarding?.and || t.auth?.and || " and "}
-          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-            {t.auth?.privacyLink || "Privacy Policy"}
-          </a>
-          <span className="text-red-500">*</span>
-        </label>
+      <div className="space-y-3">
+        <div className="flex items-start gap-3">
+          <input
+            id="terms"
+            type="checkbox"
+            checked={termsAccepted}
+            onChange={(e) => onTermsChange(e.target.checked)}
+            required
+            className="mt-1 h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+          />
+          <label htmlFor="terms" className="text-sm text-gray-700 dark:text-gray-300">
+            {t.onboarding?.termsLabelPrefix || t.auth?.termsLabelPrefix || "I agree to the "}
+            <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+              {t.auth?.termsLink || "Terms of Service"}
+            </a>
+            {t.onboarding?.and || t.auth?.and || " and "}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+              {t.auth?.privacyLink || "Privacy Policy"}
+            </a>
+            <span className="text-red-500">*</span>
+          </label>
+        </div>
+
+        <div className="flex items-start gap-3">
+          <input
+            id="isOver18"
+            type="checkbox"
+            checked={isOver18}
+            onChange={(e) => onOver18Change(e.target.checked)}
+            required
+            className="mt-1 h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+          />
+          <label htmlFor="isOver18" className="text-sm text-gray-700 dark:text-gray-300">
+            {t.onboarding?.over18Label || "I confirm that I am over 18 years old"}
+            <span className="text-red-500">*</span>
+          </label>
+        </div>
       </div>
 
       <button
