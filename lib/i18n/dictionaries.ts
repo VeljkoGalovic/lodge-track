@@ -122,6 +122,7 @@ export const en = {
     and: "and",
     privacyLink: "Privacy Policy",
     termsRequired: "You must accept the Terms of Service and Privacy Policy to continue.",
+    over18Label: "I confirm I am over 18 years old",
     emailNotVerified: "Please verify your email address before signing in. Check your inbox for the verification link.",
     resendVerification: "Resend verification email",
     verificationEmailSent: "Verification email sent! Please check your inbox.",
@@ -2180,6 +2181,7 @@ const booking = await api("/bookings", {
     passwordMismatch: "Lozinke se ne poklapaju",
     termsLabelPrefix: "Slažem se sa",
     and: "i",
+    over18Label: "Potvrđujem da imam više od 18 godina",
     // Plan selection
     planTitle: "Izaberite plan",
     planSubtitle: "Svi planovi uključuju 30-dnevni besplatan probni period. Kreditna kartica nije potrebna.",

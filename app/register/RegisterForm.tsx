@@ -17,7 +17,7 @@ import AccountStep from "./steps/AccountStep"
 import { ChevronLeft, ChevronRight, Check } from "lucide-react"
 
 export function RegisterForm() {
-  const { t } = useI18n()
+  const { t, setLocale } = useI18n()
   const router = useRouter()
   const [state, formAction, isPending] = useActionState(registerUser, { error: "", success: "" })
   const [currentStep, setCurrentStep] = useState<OnboardingStep>(1)
@@ -32,7 +32,11 @@ export function RegisterForm() {
     }
   }
 
-  const handleLocaleChange = (locale: Locale) => handleChange("locale", locale)
+  const handleLocaleChange = (locale: Locale) => {
+    handleChange("locale", locale)
+    // Update the locale context so all steps render in the selected language
+    setLocale(locale)
+  }
   const handleThemeChange = (theme: ThemePreference) => handleChange("theme", theme)
   const handleTierChange = (tier: "STARTER" | "PRO" | "BUSINESS") => handleChange("selectedTier", tier)
   const handleOver18Change = (isOver18: boolean) => handleChange("isOver18", isOver18)

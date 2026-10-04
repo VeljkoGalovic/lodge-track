@@ -113,29 +113,29 @@ describe("RegisterForm - Full Flow Integration", () => {
     // Step 1: Select Serbian
     fireEvent.click(screen.getByText("Srpski"))
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /next/i }))
+      fireEvent.click(screen.getByRole("button", { name: /next|dalje/i }))
     })
 
-    // Step 2: Select Dark theme
-    fireEvent.click(screen.getByText("Dark"))
+    // Step 2: Select Dark theme (Serbian: "Tamna")
+    fireEvent.click(screen.getByText("Tamna"))
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /next/i }))
+      fireEvent.click(screen.getByRole("button", { name: /next|dalje/i }))
     })
 
     // Step 3: Select GBP
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "GBP" } })
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /next/i }))
+      fireEvent.click(screen.getByRole("button", { name: /next|dalje/i }))
     })
 
     // Step 4: Select Plan
     fireEvent.click(screen.getByText("Starter"))
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /next/i }))
+      fireEvent.click(screen.getByRole("button", { name: /next|dalje/i }))
     })
 
     // Step 5: Verify data persisted
-    expect(screen.getByLabelText(/Email/)).toBeInTheDocument()
+    expect(screen.getByLabelText(/Email|Imejl/i)).toBeInTheDocument()
     // Form data should be in state (we can't directly test internal state, but we can verify final submit)
   })
 

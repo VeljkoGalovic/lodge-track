@@ -8,6 +8,8 @@ interface I18nValue {
   locale: Locale
   /** The dictionary for `locale`. Every nested object is present by type. */
   t: Dictionary
+  /** Function to dynamically update the locale */
+  setLocale: (locale: Locale) => void
 }
 
 const I18nContext = React.createContext<I18nValue | null>(null)
@@ -31,9 +33,15 @@ export function LocaleProvider({
   locale: Locale
   children: React.ReactNode
 }) {
+  const [currentLocale, setCurrentLocale] = React.useState<Locale>(locale)
+
+  const setLocale = React.useCallback((newLocale: Locale) => {
+    setCurrentLocale(newLocale)
+  }, [])
+
   const value = React.useMemo<I18nValue>(
-    () => ({ locale, t: getDictionary(locale) }),
-    [locale]
+    () => ({ locale: currentLocale, t: getDictionary(currentLocale), setLocale }),
+    [currentLocale]
   )
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
