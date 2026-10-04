@@ -45,8 +45,8 @@ vi.mock("@/lib/tokens", () => ({
   invalidateUserTokens: vi.fn().mockResolvedValue(0),
 }))
 vi.mock("@/lib/email", () => ({
-  sendVerificationEmail: vi.fn().mockResolvedValue(undefined),
-  sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
+  sendVerificationEmail: vi.fn().mockResolvedValue({ success: true }),
+  sendPasswordResetEmail: vi.fn().mockResolvedValue({ success: true }),
 }))
 vi.mock("next/headers", () => ({
   headers: () => ({
@@ -154,6 +154,10 @@ describe("Fix 2: Rate limiting on auth endpoints", () => {
     // Token functions - need to re-mock after vi.resetAllMocks()
     const { createVerificationToken } = await import("@/lib/tokens")
     vi.mocked(createVerificationToken).mockResolvedValue({ token: "test-token", expiresAt: new Date() })
+    // Email functions - need to re-mock after vi.resetAllMocks()
+    const { sendVerificationEmail, sendPasswordResetEmail } = await import("@/lib/email")
+    vi.mocked(sendVerificationEmail).mockResolvedValue({ success: true })
+    vi.mocked(sendPasswordResetEmail).mockResolvedValue({ success: true })
   })
 
   it("registerUser allows registration under rate limit", async () => {
@@ -262,6 +266,10 @@ describe("registerUser with onboarding preferences", () => {
     db.rateLimit.create.mockResolvedValue({})
     const { createVerificationToken } = await import("@/lib/tokens")
     vi.mocked(createVerificationToken).mockResolvedValue({ token: "test-token", expiresAt: new Date() })
+    // Email functions - need to re-mock after vi.resetAllMocks()
+    const { sendVerificationEmail, sendPasswordResetEmail } = await import("@/lib/email")
+    vi.mocked(sendVerificationEmail).mockResolvedValue({ success: true })
+    vi.mocked(sendPasswordResetEmail).mockResolvedValue({ success: true })
   })
 
   it("registerUser accepts locale, theme, and currency preferences", async () => {

@@ -4,6 +4,10 @@ import { getDictionary } from "@/lib/i18n/dictionaries"
 import { LocaleProvider } from "@/components/i18n/LocaleProvider"
 import Link from "next/link"
 import { verifyAndConsumeToken } from "@/lib/tokens"
+import { prisma } from "@/lib/prisma"
+import { createCheckoutUrl } from "@/lib/billing"
+import { redirect } from "next/navigation"
+import { requestOrigin } from "@/lib/origin"
 
 interface VerifyEmailPageProps {
   searchParams: Promise<{ token?: string }>
@@ -22,11 +26,47 @@ export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageP
     try {
       const email = await verifyAndConsumeToken(token, "email_verification")
       if (email) {
-        verificationResult = {
-          success: true,
-          message: locale === "sr"
-            ? "Vaš email je uspešno verifikovan! Možete se prijaviti."
-            : "Your email has been verified successfully! You can now sign in.",
+        // Check if user has subscription and trigger checkout for paid tiers
+        const user = await prisma.user.findUnique({
+          where: { email },
+          include: { organization: { include: { subscription: true } } },
+        })
+
+        const origin = await requestOrigin()
+
+        if (user?.organization?.subscription) {
+          const tier = user.organization.subscription.tier
+          // All three tiers are paid - trigger checkout for STARTER, PRO, and BUSINESS
+          if (tier === "STARTER" || tier === "PRO" || tier === "BUSINESS") {
+            // Create checkout URL and redirect
+            const checkoutUrl = await createCheckoutUrl({
+              tier,
+              email: user.email,
+              orgId: user.orgId,
+              redirectUrl: `${origin}/dashboard/billing?checkout=complete`,
+            })
+
+            if (checkoutUrl) {
+              redirect(checkoutUrl)
+            } else {
+              // Checkout creation failed - variant ID missing or API error
+              verificationResult = {
+                success: false,
+                message: locale === "sr"
+                  ? "Nije moguće pokrenuti plaćanje. Molimo vas da kontaktirate podršku ili pokušajte ponovo."
+                  : "Unable to start checkout. Please contact support or try again later.",
+              }
+            }
+          }
+        }
+
+        if (!verificationResult) {
+          verificationResult = {
+            success: true,
+            message: locale === "sr"
+              ? "Vaš email je uspešno verifikovan! Možete se prijaviti."
+              : "Your email has been verified successfully! You can now sign in.",
+          }
         }
       } else {
         verificationResult = {

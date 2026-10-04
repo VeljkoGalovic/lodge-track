@@ -129,35 +129,17 @@ export async function registerUser(prevState: { error?: string; success?: string
     })
   })
 
-  // For PRO/BUSINESS tiers, create Lemon Squeezy checkout and redirect
-  if (validatedTier === "PRO" || validatedTier === "BUSINESS") {
-    const checkoutUrl = await createCheckoutUrl({
-      tier: validatedTier,
-      email,
-      orgId: organizationId,
-      redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard/billing?checkout=complete`,
-    })
-
-    if (checkoutUrl) {
-      // Send verification email
-      try {
-        const { token } = await createVerificationToken(email, "email_verification", 24)
-        await sendVerificationEmail(email, token, validatedLocale)
-      } catch (error) {
-        console.error("Failed to send verification email:", error)
-      }
-
-      return { redirect: checkoutUrl }
-    }
-  }
-
-  // For STARTER tier or if checkout creation failed, send verification email and redirect to signin
+  // For all tiers, send verification email first. Checkout will be triggered after email verification.
   try {
     const { token } = await createVerificationToken(email, "email_verification", 24)
-    await sendVerificationEmail(email, token, validatedLocale)
+    const emailResult = await sendVerificationEmail(email, token, validatedLocale)
+    if (!emailResult.success) {
+      return { error: `Registration saved, but email failed: ${emailResult.error}` }
+    }
   } catch (error) {
     console.error("Failed to send verification email:", error)
-    // Don't fail registration if email fails - user can request resend later
+    const message = error instanceof Error ? error.message : String(error)
+    return { error: `Failed to send verification email: ${message}` }
   }
 
   return { success: "Account created! Please check your email to verify your address.", redirect: "/signin?verify=pending" }

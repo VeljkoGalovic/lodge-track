@@ -18,11 +18,12 @@ import { prisma } from "@/lib/prisma"
 
 const API_BASE = "https://api.lemonsqueezy.com/v1"
 
-/** Env var holding the Lemon Squeezy variant id for each paid tier. STARTER is
- *  the free tier created at registration and is never purchased. */
-const VARIANT_ENV: Record<Exclude<SubscriptionTier, "STARTER">, string> = {
-  PRO: "LEMON_SQUEEZY_VARIANT_ID_PRO",
-  BUSINESS: "LEMON_SQUEEZY_VARIANT_ID_BUSINESS",
+/** Env var holding the Lemon Squeezy variant id for each paid tier. All three
+ *  tiers (STARTER, PRO, BUSINESS) are paid tiers with 30-day trials. */
+const VARIANT_ENV: Record<SubscriptionTier, string> = {
+  STARTER: "LEMON_SQUEEZY_STARTER_VARIANT_ID",
+  PRO: "LEMON_SQUEEZY_PRO_VARIANT_ID",
+  BUSINESS: "LEMON_SQUEEZY_BUSINESS_VARIANT_ID",
 }
 
 export interface BillingConfig {
@@ -66,12 +67,17 @@ export function billingStatus(): BillingStatus {
   if (!config.apiKey) missing.push("LEMON_SQUEEZY_API_KEY")
   if (!config.storeId) missing.push("LEMON_SQUEEZY_STORE_ID")
   if (!config.webhookSecret) missing.push("LEMON_SQUEEZY_WEBHOOK_SECRET")
-  if (Object.keys(config.variants).length === 0) {
-    missing.push("LEMON_SQUEEZY_VARIANT_ID_PRO")
+
+  // Check all three paid tiers have variant IDs configured
+  const requiredVariants: SubscriptionTier[] = ["STARTER", "PRO", "BUSINESS"]
+  for (const tier of requiredVariants) {
+    if (!config.variants[tier]) {
+      missing.push(`LEMON_SQUEEZY_VARIANT_ID_${tier}`)
+    }
   }
 
   return {
-    canCheckout: Boolean(config.apiKey && config.storeId && Object.keys(config.variants).length > 0),
+    canCheckout: Boolean(config.apiKey && config.storeId && requiredVariants.every(t => config.variants[t])),
     canReceiveWebhooks: Boolean(config.webhookSecret),
     missing,
   }
@@ -104,40 +110,84 @@ export interface CheckoutRequest {
 export async function createCheckoutUrl(request: CheckoutRequest): Promise<string | null> {
   const config = readConfig()
   const variantId = config.variants[request.tier]
-  if (!config.apiKey || !config.storeId || !variantId) return null
 
-  const response = await fetch(`${API_BASE}/checkouts`, {
-    method: "POST",
-    headers: {
-      Accept: "application/vnd.api+json",
-      "Content-Type": "application/vnd.api+json",
-      Authorization: `Bearer ${config.apiKey}`,
-    },
-    body: JSON.stringify({
-      data: {
-        type: "checkouts",
-        attributes: {
-          // `custom` is echoed back on the webhook's `meta.custom_data`, which is
-          // how the subscription event finds its organization.
-          checkout_data: { email: request.email, custom: { org_id: request.orgId } },
-          product_options: { redirect_url: request.redirectUrl, enabled_variants: [] },
-          checkout_options: { media: false, logo: true },
-        },
-        relationships: {
-          store: { data: { type: "stores", id: config.storeId } },
-          variant: { data: { type: "variants", id: variantId } },
-        },
-      },
-    }),
-  })
-
-  if (!response.ok) {
-    console.error("[billing] checkout creation failed", response.status, await response.text())
+  // Log configuration state for debugging
+  if (!config.apiKey) {
+    console.error("[billing] createCheckoutUrl: missing LEMON_SQUEEZY_API_KEY")
+    return null
+  }
+  if (!config.storeId) {
+    console.error("[billing] createCheckoutUrl: missing LEMON_SQUEEZY_STORE_ID")
+    return null
+  }
+  if (!variantId) {
+    console.error("[billing] createCheckoutUrl: missing variant ID for tier", request.tier)
     return null
   }
 
-  const payload = (await response.json()) as { data?: { attributes?: { url?: string } } }
-  return payload.data?.attributes?.url ?? null
+  const requestBody = {
+    data: {
+      type: "checkouts",
+      attributes: {
+        // `custom` is echoed back on the webhook's `meta.custom_data`, which is
+        // how the subscription event finds its organization.
+        checkout_data: { email: request.email, custom: { org_id: request.orgId } },
+        product_options: { redirect_url: request.redirectUrl, enabled_variants: [] },
+        checkout_options: { media: false, logo: true },
+      },
+      relationships: {
+        store: { data: { type: "stores", id: config.storeId } },
+        variant: { data: { type: "variants", id: variantId } },
+      },
+    },
+  }
+
+  console.log("[billing] Creating checkout:", {
+    tier: request.tier,
+    email: request.email,
+    orgId: request.orgId,
+    redirectUrl: request.redirectUrl,
+    variantId,
+    storeId: config.storeId,
+    apiKeyPrefix: config.apiKey.slice(0, 8) + "...",
+  })
+
+  try {
+    const response = await fetch(`${API_BASE}/checkouts`, {
+      method: "POST",
+      headers: {
+        Accept: "application/vnd.api+json",
+        "Content-Type": "application/vnd.api+json",
+        Authorization: `Bearer ${config.apiKey}`,
+      },
+      body: JSON.stringify(requestBody),
+    })
+
+    const responseText = await response.text()
+
+    if (!response.ok) {
+      console.error("[billing] checkout creation failed", {
+        status: response.status,
+        statusText: response.statusText,
+        response: responseText,
+        tier: request.tier,
+        variantId,
+      })
+      return null
+    }
+
+    console.log("[billing] checkout creation succeeded", { tier: request.tier, status: response.status })
+
+    const payload = JSON.parse(responseText) as { data?: { attributes?: { url?: string } } }
+    return payload.data?.attributes?.url ?? null
+  } catch (error) {
+    console.error("[billing] checkout creation exception", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      tier: request.tier,
+    })
+    return null
+  }
 }
 
 /**

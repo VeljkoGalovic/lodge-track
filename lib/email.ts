@@ -9,9 +9,26 @@ import { getDictionary } from "@/lib/i18n/dictionaries"
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
-/** Base URL for email links - should be set via env var. */
+/** Base URL for email links - dynamically determined based on environment. */
 function getBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+  // 1. Explicit override via env var (highest priority)
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL
+  }
+
+  // 2. Vercel deployment URL (production preview/production)
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`
+  }
+
+  // 3. Auto-detect: if NODE_ENV is production but no explicit URL, don't default to localhost
+  if (process.env.NODE_ENV === "production") {
+    console.warn("[Email] NODE_ENV=production but no NEXT_PUBLIC_APP_URL or VERCEL_URL set. Email links may not work.")
+    return "https://www.lodgetrack.com"
+  }
+
+  // 4. Development/local default
+  return "http://localhost:3000"
 }
 
 /** Send an email via Resend, with graceful degradation if not configured. */
