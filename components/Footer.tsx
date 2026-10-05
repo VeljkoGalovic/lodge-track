@@ -1,6 +1,5 @@
 import Image from "next/image";
 import { Activity } from "lucide-react";
-import { currentLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 
 function GithubIcon({ size = 15 }: { size?: number }) {
