@@ -1,16 +1,12 @@
 import { LocaleProvider } from "@/components/i18n/LocaleProvider"
-import { currentLocale } from "@/lib/i18n/server"
 import { RegisterForm } from "./RegisterForm"
 
 export const metadata = { title: "Create your account · LodgeTrack" }
 
-/** Server shell, for the same reason as the sign-in page beside it: the locale
-    is read from the cookie before the client form's first paint. */
-export default async function RegisterPage() {
-  const locale = await currentLocale()
-
+/** Server shell — locale defaults to English; user selects language in Step 1. */
+export default function RegisterPage() {
   return (
-    <LocaleProvider locale={locale}>
+    <LocaleProvider locale="en">
       <RegisterForm />
     </LocaleProvider>
   )
