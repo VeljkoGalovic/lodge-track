@@ -27,8 +27,7 @@ function LinkedInIcon({ size = 15 }: { size?: number }) {
   );
 }
 
-async function getFooterData() {
-  const locale = await currentLocale();
+async function getFooterData(locale: "en" | "sr" = "en") {
   const t = getDictionary(locale).footer;
 
   const columns = [
@@ -64,8 +63,8 @@ async function getFooterData() {
   return { t, columns, socials };
 }
 
-export async function Footer() {
-  const { t, columns, socials } = await getFooterData();
+export async function Footer({ locale = "en" }: { locale?: "en" | "sr" } = {}) {
+  const { t, columns, socials } = await getFooterData(locale);
 
   return (
     <footer className="relative bg-[#07090E] border-t border-white/[0.06]">
