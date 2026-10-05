@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button"
 import { Badge } from "@/components/ui/badge"
 import { PageHeader } from "@/components/dashboard/PageHeader"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { CreditCard, Check, Lock, AlertTriangle, ArrowUpRight } from "lucide-react"
+import { CreditCard, Check, Lock, AlertTriangle, ArrowUpRight, Settings, XCircle, Clock } from "lucide-react"
 import { currentLocale } from "@/lib/i18n/server"
 import { format, getDictionary, type Dictionary } from "@/lib/i18n/dictionaries"
 import { getOrgFeatures, getTierBadgeColor, formatBytes, TIER_PRICES_CENTS, TIER_PRICE_STRINGS, getAccountManagerEmail } from "@/lib/subscriptions"
@@ -120,6 +120,11 @@ export default async function BillingPage({
     not_owner: t.pages.billing.errorNotOwner,
   }
 
+  const portalErrors: Record<string, string> = {
+    portal_unavailable: t.pages.billing.portalUnavailable,
+    portal_error: t.pages.billing.portalError,
+  }
+
   const params = await searchParams
 
   const org = user.organization
@@ -155,6 +160,13 @@ export default async function BillingPage({
         <div className="flex items-start gap-3 rounded-xl border border-warning/20 bg-warning/10 px-4 py-3 text-sm text-warning">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <p>{checkoutErrors[params.error]}</p>
+        </div>
+      ) : null}
+
+      {params.error && portalErrors[params.error] ? (
+        <div className="flex items-start gap-3 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>{portalErrors[params.error]}</p>
         </div>
       ) : null}
 
@@ -213,17 +225,31 @@ export default async function BillingPage({
 
           {subscription?.billingSubscriptionId ? (
             <div className="rounded-2xl border border-border bg-muted p-4">
-              <p className="text-sm text-subtle-foreground">{t.pages.billing.providerSubscription}</p>
-              <p className="mt-1 font-mono text-sm text-muted-foreground">
-                {subscription.billingSubscriptionId}
-              </p>
-              {subscription.currentPeriodEnd ? (
-                <p className="mt-1 text-xs text-subtle-foreground">
-                  {format(t.pages.billing.periodEnds, { date: subscription.currentPeriodEnd.toLocaleDateString(dateLocale, {
-                    day: "numeric", month: "long", year: "numeric",
-                  }) })}
-                </p>
-              ) : null}
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm text-subtle-foreground">{t.pages.billing.providerSubscription}</p>
+                  <p className="mt-1 font-mono text-sm text-muted-foreground">
+                    {subscription.billingSubscriptionId}
+                  </p>
+                  {subscription.currentPeriodEnd ? (
+                    <p className="mt-1 text-xs text-subtle-foreground">
+                      {format(t.pages.billing.renewalDate, { date: subscription.currentPeriodEnd.toLocaleDateString(dateLocale, {
+                        day: "numeric", month: "long", year: "numeric",
+                      }) })}
+                    </p>
+                  ) : null}
+                </div>
+                {isOwner && subscription.billingCustomerId && provider.canCheckout ? (
+                  <a
+                    href="/api/billing/portal"
+                    className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                    title={t.pages.billing.manageSubscriptionHint}
+                  >
+                    <Settings className="h-4 w-4" />
+                    {t.pages.billing.manageSubscription}
+                  </a>
+                ) : null}
+              </div>
             </div>
           ) : null}
 
@@ -249,6 +275,39 @@ export default async function BillingPage({
               </div>
               <p className="mt-1 text-sm text-subtle-foreground">{t.pages.billing.accountManagerHelp}</p>
               <p className="mt-2 font-mono text-sm text-brand-purple">{accountManagerEmail}</p>
+            </div>
+          ) : null}
+
+          {/* Canceled banner - shows when subscription is CANCELED but still in grace period (currentPeriodEnd in future) */}
+          {subscription?.status === "CANCELED" && subscription?.currentPeriodEnd && new Date(subscription.currentPeriodEnd) > new Date() ? (
+            <div className="rounded-2xl border border-warning/20 bg-warning/10 p-4">
+              <div className="flex items-start gap-3">
+                <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
+                <div>
+                  <p className="text-sm font-medium text-warning">
+                    {format(t.pages.billing.canceledBanner, {
+                      date: new Date(subscription.currentPeriodEnd).toLocaleDateString(dateLocale, { day: "numeric", month: "long", year: "numeric" }),
+                      endDate: subscription.currentPeriodEnd.toLocaleDateString(dateLocale, { day: "numeric", month: "long", year: "numeric" }),
+                    })}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {/* Resumed banner - shows when subscription was canceled but then resumed */}
+          {subscription?.status === "ACTIVE" && subscription?.currentPeriodEnd && new Date(subscription.currentPeriodEnd) > new Date() ? (
+            <div className="rounded-2xl border border-primary/20 bg-primary/10 p-4">
+              <div className="flex items-start gap-3">
+                <Clock className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                <div>
+                  <p className="text-sm font-medium text-primary">
+                    {format(t.pages.billing.canceledBannerResumed, {
+                      date: subscription.currentPeriodEnd.toLocaleDateString(dateLocale, { day: "numeric", month: "long", year: "numeric" }),
+                    })}
+                  </p>
+                </div>
+              </div>
             </div>
           ) : null}
         </CardContent>
