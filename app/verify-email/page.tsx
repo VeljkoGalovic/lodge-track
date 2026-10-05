@@ -1,4 +1,5 @@
 import { Metadata } from "next"
+import { NextResponse } from "next/server"
 import { currentLocale } from "@/lib/i18n/server"
 import { getDictionary } from "@/lib/i18n/dictionaries"
 import { LocaleProvider } from "@/components/i18n/LocaleProvider"
@@ -48,7 +49,14 @@ export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageP
             })
 
             if (checkoutUrl) {
-              redirect(checkoutUrl)
+              const response = NextResponse.redirect(checkoutUrl)
+              // Set redirect counter cookie to prevent infinite loop after checkout returns
+              response.cookies.set("checkout_redirect_count", "0", {
+                path: "/",
+                maxAge: 60 * 60, // 1 hour
+                sameSite: "lax",
+              })
+              return response
             } else {
               // Checkout creation failed - variant ID missing or API error
               verificationResult = {

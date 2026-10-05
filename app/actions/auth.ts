@@ -23,7 +23,6 @@ export async function registerUser(prevState: { error?: string; success?: string
   const locale = formData.get("locale") as string
   const theme = formData.get("theme") as string
   const currency = formData.get("currency") as string
-  const selectedTier = formData.get("selectedTier") as "STARTER" | "PRO" | "BUSINESS"
 
   if (!email || !password) {
     return { error: "Email and password are required." }
@@ -47,7 +46,7 @@ export async function registerUser(prevState: { error?: string; success?: string
   const validatedLocale = isLocale(locale) ? locale : "en"
   const validatedTheme = isThemePreference(theme) ? theme : "SYSTEM"
   const validatedCurrency = normalizeCurrency(currency)
-  const validatedTier = selectedTier === "PRO" || selectedTier === "BUSINESS" ? selectedTier : "STARTER"
+  const validatedTier = "STARTER" // Default to STARTER tier; plan selection happens after email verification on Lemon Squeezy checkout
 
   // Rate limiting for registration
   const identifier = getRateLimitIdentifier(null, email)

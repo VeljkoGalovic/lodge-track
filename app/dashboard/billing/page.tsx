@@ -12,6 +12,7 @@ import { currentLocale } from "@/lib/i18n/server"
 import { format, getDictionary, type Dictionary } from "@/lib/i18n/dictionaries"
 import { getOrgFeatures, getTierBadgeColor, formatBytes, TIER_PRICES_CENTS, TIER_PRICE_STRINGS, getAccountManagerEmail } from "@/lib/subscriptions"
 import type { Tier } from "@/lib/subscriptions"
+import { CheckoutComplete } from "./CheckoutComplete"
 
 interface TierCopy {
   name: string
@@ -158,9 +159,10 @@ export default async function BillingPage({
       ) : null}
 
       {params.checkout === "complete" ? (
-        <div className="rounded-xl border border-primary/25 bg-primary/10 px-4 py-3 text-sm text-muted-foreground">
-          {t.pages.billing.checkoutComplete}
-        </div>
+        <CheckoutComplete
+          message={t.pages.billing.checkoutComplete}
+          pollingMessage={t.pages.billing.pollingCheckout}
+        />
       ) : null}
 
       {/* Current Plan Card */}

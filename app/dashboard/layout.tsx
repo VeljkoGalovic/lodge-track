@@ -9,6 +9,8 @@ import { DashboardShell } from "@/components/dashboard/DashboardShell"
 import { hasValidAccess } from "@/lib/billing"
 import { requestOrigin } from "@/lib/origin"
 import { createCheckoutUrl } from "@/lib/billing"
+import { headers } from "next/headers"
+import { NextResponse } from "next/server"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -60,20 +62,33 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
     const hasBillingIdentifiers = subscription.billingCustomerId && subscription.billingSubscriptionId
 
     if (!hasBillingIdentifiers) {
-      // User selected a paid tier but never completed checkout - redirect to checkout
-      const origin = await requestOrigin()
-      const checkoutUrl = await createCheckoutUrl({
-        tier: subscription.tier,
-        email: user.email,
-        orgId: user.orgId,
-        redirectUrl: `${origin}/dashboard/billing?checkout=complete`,
-      })
+      // Check redirect counter to prevent infinite loop
+      // After checkout, Lemon Squeezy redirects back with ?checkout=complete
+      // We allow up to 3 redirects to give webhook time to process
+      const headersList = await headers()
+      const cookieHeader = headersList.get("cookie") ?? ""
+      const redirectCountMatch = cookieHeader.match(/checkout_redirect_count=(\d+)/)
+      const redirectCount = redirectCountMatch ? parseInt(redirectCountMatch[1], 10) : 0
 
-      if (checkoutUrl) {
-        redirect(checkoutUrl)
+      if (redirectCount >= 3) {
+        // Too many redirects - let the billing page handle it with polling
+        // Don't redirect to checkout again
       } else {
-        // Checkout creation failed - redirect to billing with error
-        redirect("/dashboard/billing?reason=checkout_failed")
+        // User selected a paid tier but never completed checkout - redirect to checkout
+        const origin = await requestOrigin()
+        const checkoutUrl = await createCheckoutUrl({
+          tier: subscription.tier,
+          email: user.email,
+          orgId: user.orgId,
+          redirectUrl: `${origin}/dashboard/billing?checkout=complete`,
+        })
+
+        if (checkoutUrl) {
+          redirect(checkoutUrl)
+        } else {
+          // Checkout creation failed - redirect to billing with error
+          redirect("/dashboard/billing?reason=checkout_failed")
+        }
       }
     }
   }

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen, fireEvent, act, waitFor } from "@testing-library/react"
 import { LocaleProvider } from "@/components/i18n/LocaleProvider"
-import { RegisterForm } from "@/app/register/RegisterForm"
+import { RegisterFormSingle } from "@/app/register/RegisterFormSingle"
 import { registerUser } from "@/app/actions/auth"
 
 // Mock the server action
@@ -25,155 +25,104 @@ function renderWithLocale(ui: React.ReactElement, locale: "en" | "sr" = "en") {
   )
 }
 
-describe("RegisterForm - Full Flow Integration", () => {
+describe("RegisterFormSingle - Full Flow Integration", () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it("renders step 1 (Language) by default", () => {
-    renderWithLocale(<RegisterForm />)
+  it("renders single-screen form with all sections", () => {
+    renderWithLocale(<RegisterFormSingle />)
 
-    expect(screen.getByRole("heading", { name: "Choose your language" })).toBeInTheDocument()
-    expect(screen.getByText("English")).toBeInTheDocument()
-    expect(screen.getByText("Srpski")).toBeInTheDocument()
-    expect(screen.getByText("Step 1 of 5")).toBeInTheDocument()
-  })
-
-  it("navigates to step 2 (Theme) when Next is clicked", async () => {
-    renderWithLocale(<RegisterForm />)
-
-    // Select English
-    fireEvent.click(screen.getByText("English"))
-
-    // Click Next
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /next/i }))
-    })
-
-    expect(screen.getByRole("heading", { name: "Choose your theme" })).toBeInTheDocument()
-    expect(screen.getByText("Step 2 of 5")).toBeInTheDocument()
-  })
-
-  it("navigates back from step 2 to step 1", async () => {
-    renderWithLocale(<RegisterForm />)
-
-    // Go to step 2
-    fireEvent.click(screen.getByText("English"))
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /next/i }))
-    })
-
-    // Click Back
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /back/i }))
-    })
-
-    expect(screen.getByRole("heading", { name: "Choose your language" })).toBeInTheDocument()
-    expect(screen.getByText("Step 1 of 5")).toBeInTheDocument()
-  })
-
-  it("navigates through all 5 steps", async () => {
-    renderWithLocale(<RegisterForm />)
-
-    // Step 1: Language
-    fireEvent.click(screen.getByText("English"))
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /next/i }))
-    })
-    expect(screen.getByText("Step 2 of 5")).toBeInTheDocument()
-
-    // Step 2: Theme
-    fireEvent.click(screen.getByText("Light"))
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /next/i }))
-    })
-    expect(screen.getByText("Step 3 of 5")).toBeInTheDocument()
-
-    // Step 3: Currency
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "EUR" } })
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /next/i }))
-    })
-    expect(screen.getByText("Step 4 of 5")).toBeInTheDocument()
-
-    // Step 4: Plan
-    fireEvent.click(screen.getByText("Starter"))
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /next/i }))
-    })
-    expect(screen.getByText("Step 5 of 5")).toBeInTheDocument()
-
-    // Step 5: Account - the h3 heading uses step5Title ("Create your account")
+    // Main title (h1)
+    expect(screen.getByRole("heading", { name: "Create your account", level: 1 })).toBeInTheDocument()
+    // Settings section
+    expect(screen.getByText("Settings")).toBeInTheDocument()
+    // Settings field labels use t.onboarding.step1Title/step2Title/step3Title
+    expect(screen.getByText("Choose your language")).toBeInTheDocument()
+    expect(screen.getByText("Choose your theme")).toBeInTheDocument()
+    expect(screen.getByText("Choose your currency")).toBeInTheDocument()
+    // Account section (h3)
     expect(screen.getByRole("heading", { name: "Create your account", level: 3 })).toBeInTheDocument()
   })
 
-  it("persists form data across steps", async () => {
-    renderWithLocale(<RegisterForm />)
+  it("allows filling all settings and account fields in one screen", async () => {
+    renderWithLocale(<RegisterFormSingle />)
 
-    // Step 1: Select Serbian
+    // Fill Settings
+    fireEvent.click(screen.getByText("English"))
+    fireEvent.click(screen.getByText("Light"))
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "EUR" } })
+
+    // Fill Account - label is "Full name" (from t.auth.nameLabel)
+    fireEvent.change(screen.getByLabelText(/Full name/), { target: { value: "John Doe" } })
+    fireEvent.change(screen.getByLabelText(/Email/), { target: { value: "john@example.com" } })
+    fireEvent.change(screen.getByLabelText(/^Password \*/), { target: { value: "SecurePass123!" } })
+    fireEvent.change(screen.getByLabelText(/Confirm password/), { target: { value: "SecurePass123!" } })
+    fireEvent.click(screen.getByRole("checkbox", { name: /terms/i }))
+    fireEvent.click(screen.getByRole("checkbox", { name: /over 18/i }))
+
+    // All fields should be filled
+    expect(screen.getByRole("combobox")).toHaveValue("EUR")
+    expect(screen.getByLabelText(/Email/)).toHaveValue("john@example.com")
+  })
+
+  it("persists form data when switching between fields", async () => {
+    renderWithLocale(<RegisterFormSingle />)
+
+    // Fill Theme first (before changing locale) - use role="radio" since text is broken up by SVG icon
+    const darkRadio = screen.getByRole("radio", { name: /Dark/ })
+    fireEvent.click(darkRadio)
+    expect(darkRadio).toHaveClass("border-blue-500")
+
+    // Fill Account - verify data persisted (do this before changing locale)
+    expect(screen.getByLabelText(/Email/)).toBeInTheDocument()
+    expect(screen.getByLabelText(/Full name/)).toBeInTheDocument()
+
+    // Fill Language
     fireEvent.click(screen.getByText("Srpski"))
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /next|dalje/i }))
-    })
+    expect(screen.getByText("Srpski")).toHaveClass("border-blue-500")
 
-    // Step 2: Select Dark theme (Serbian: "Tamna")
-    fireEvent.click(screen.getByText("Tamna"))
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /next|dalje/i }))
-    })
-
-    // Step 3: Select GBP
+    // Fill Currency
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "GBP" } })
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /next|dalje/i }))
-    })
+    expect(screen.getByRole("combobox")).toHaveValue("GBP")
+  })
 
-    // Step 4: Select Plan
-    fireEvent.click(screen.getByText("Starter"))
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /next|dalje/i }))
-    })
+  it("persists form data when switching between fields in Serbian", async () => {
+    renderWithLocale(<RegisterFormSingle />, "sr")
 
-    // Step 5: Verify data persisted
-    expect(screen.getByLabelText(/Email|Imejl/i)).toBeInTheDocument()
-    // Form data should be in state (we can't directly test internal state, but we can verify final submit)
+    // Fill Theme first - use role="radio" since text is broken up by SVG icon
+    const darkRadio = screen.getByRole("radio", { name: /Tamna/ })
+    fireEvent.click(darkRadio)
+    expect(darkRadio).toHaveClass("border-blue-500")
+
+    // Fill Account - verify data persisted (Serbian labels)
+    expect(screen.getByLabelText(/Imejl/)).toBeInTheDocument()
+    expect(screen.getByLabelText(/Ime i prezime/)).toBeInTheDocument()
+
+    // Fill Language (already Srpski by default in Serbian)
+    expect(screen.getByText("Srpski")).toHaveClass("border-blue-500")
+
+    // Fill Currency
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "GBP" } })
+    expect(screen.getByRole("combobox")).toHaveValue("GBP")
   })
 
   it("calls registerUser with all preferences on final submit", async () => {
     const mockRegisterUser = vi.mocked(registerUser)
     mockRegisterUser.mockResolvedValue({ success: "Account created!", redirect: "/signin?verify=pending" })
 
-    renderWithLocale(<RegisterForm />)
+    renderWithLocale(<RegisterFormSingle />)
 
-    // Step 1: Language
+    // Fill Settings
     fireEvent.click(screen.getByText("English"))
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /next/i }))
-    })
-
-    // Step 2: Theme
     fireEvent.click(screen.getByText("Light"))
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /next/i }))
-    })
-
-    // Step 3: Currency
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "EUR" } })
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /next/i }))
-    })
 
-    // Step 4: Plan
-    fireEvent.click(screen.getByText("Starter"))
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /next/i }))
-    })
-
-    // Step 5: Fill account details
+    // Fill Account - label is "Full name" (from t.auth.nameLabel)
     fireEvent.change(screen.getByLabelText(/Full name/), { target: { value: "John Doe" } })
     fireEvent.change(screen.getByLabelText(/Email/), { target: { value: "john@example.com" } })
     fireEvent.change(screen.getByLabelText(/^Password \*/), { target: { value: "SecurePass123!" } })
-    fireEvent.change(screen.getByLabelText(/Confirm New Password/), { target: { value: "SecurePass123!" } })
+    fireEvent.change(screen.getByLabelText(/Confirm password/), { target: { value: "SecurePass123!" } })
     fireEvent.click(screen.getByRole("checkbox", { name: /terms/i }))
     fireEvent.click(screen.getByRole("checkbox", { name: /over 18/i }))
 
@@ -197,29 +146,20 @@ describe("RegisterForm - Full Flow Integration", () => {
     expect(formData.get("locale")).toBe("en")
     expect(formData.get("theme")).toBe("LIGHT")
     expect(formData.get("currency")).toBe("EUR")
-    expect(formData.get("selectedTier")).toBe("STARTER")
+    // No selectedTier - defaults to STARTER server-side
+    expect(formData.get("selectedTier")).toBeNull()
   })
 
   it("shows error message when server action returns error", async () => {
     const mockRegisterUser = vi.mocked(registerUser)
     mockRegisterUser.mockResolvedValue({ error: "User already exists" })
 
-    renderWithLocale(<RegisterForm />)
-
-    // Quick navigate to step 5
-    fireEvent.click(screen.getByText("English"))
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /next/i })) })
-    fireEvent.click(screen.getByText("System"))
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /next/i })) })
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "USD" } })
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /next/i })) })
-    fireEvent.click(screen.getByText("Starter"))
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /next/i })) })
+    renderWithLocale(<RegisterFormSingle />)
 
     // Fill and submit
     fireEvent.change(screen.getByLabelText(/Email/), { target: { value: "existing@example.com" } })
     fireEvent.change(screen.getByLabelText(/^Password \*/), { target: { value: "SecurePass123!" } })
-    fireEvent.change(screen.getByLabelText(/Confirm New Password/), { target: { value: "SecurePass123!" } })
+    fireEvent.change(screen.getByLabelText(/Confirm password/), { target: { value: "SecurePass123!" } })
     fireEvent.click(screen.getByRole("checkbox", { name: /terms/i }))
     fireEvent.click(screen.getByRole("checkbox", { name: /over 18/i }))
 
@@ -236,22 +176,12 @@ describe("RegisterForm - Full Flow Integration", () => {
     const mockRegisterUser = vi.mocked(registerUser)
     mockRegisterUser.mockResolvedValue({ success: "Account created!", redirect: "/signin?verify=pending" })
 
-    renderWithLocale(<RegisterForm />)
-
-    // Quick navigate to step 5
-    fireEvent.click(screen.getByText("English"))
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /next/i })) })
-    fireEvent.click(screen.getByText("System"))
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /next/i })) })
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "USD" } })
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /next/i })) })
-    fireEvent.click(screen.getByText("Starter"))
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /next/i })) })
+    renderWithLocale(<RegisterFormSingle />)
 
     // Fill and submit
     fireEvent.change(screen.getByLabelText(/Email/), { target: { value: "new@example.com" } })
     fireEvent.change(screen.getByLabelText(/^Password \*/), { target: { value: "SecurePass123!" } })
-    fireEvent.change(screen.getByLabelText(/Confirm New Password/), { target: { value: "SecurePass123!" } })
+    fireEvent.change(screen.getByLabelText(/Confirm password/), { target: { value: "SecurePass123!" } })
     fireEvent.click(screen.getByRole("checkbox", { name: /terms/i }))
     fireEvent.click(screen.getByRole("checkbox", { name: /over 18/i }))
 
@@ -264,71 +194,10 @@ describe("RegisterForm - Full Flow Integration", () => {
     })
   })
 
-  it("disables next button on step 1 until language selected", () => {
-    renderWithLocale(<RegisterForm />)
+  it("shows password validation in real-time", async () => {
+    renderWithLocale(<RegisterFormSingle />)
 
-    const nextButton = screen.getByRole("button", { name: /next/i })
-    // Next button should be enabled (language has default)
-    expect(nextButton).not.toBeDisabled()
-  })
-
-  it("renders progress indicator with all 5 steps", () => {
-    renderWithLocale(<RegisterForm />)
-
-    // All 5 step indicators should be visible
-    expect(screen.getByText("1")).toBeInTheDocument()
-    expect(screen.getByText("2")).toBeInTheDocument()
-    expect(screen.getByText("3")).toBeInTheDocument()
-    expect(screen.getByText("4")).toBeInTheDocument()
-    expect(screen.getByText("5")).toBeInTheDocument()
-  })
-
-  it("marks completed steps with check icon", async () => {
-    renderWithLocale(<RegisterForm />)
-
-    // Go to step 2
-    fireEvent.click(screen.getByText("English"))
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /next/i }))
-    })
-
-    // Step 1 should show check mark instead of number "1"
-    // The step number "1" should no longer be in the document (replaced by check icon)
-    // We use queryByText to check it's not there
-    expect(screen.queryByText("1")).not.toBeInTheDocument()
-  })
-
-  it("works with Serbian locale", async () => {
-    const mockRegisterUser = vi.mocked(registerUser)
-    mockRegisterUser.mockResolvedValue({ success: "Account created!", redirect: "/signin?verify=pending" })
-
-    renderWithLocale(<RegisterForm />, "sr")
-
-    expect(screen.getByRole("heading", { name: "Izaberite svoj jezik" })).toBeInTheDocument()
-    expect(screen.getByText("Srpski")).toBeInTheDocument()
-    expect(screen.getByText("English")).toBeInTheDocument()
-
-    // Navigate through flow in Serbian
-    fireEvent.click(screen.getByText("Srpski"))
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /dalje/i })) })
-
-    expect(screen.getByRole("heading", { name: "Izaberite temu" })).toBeInTheDocument()
-  })
-
-  it("shows password validation in real-time on step 5", async () => {
-    renderWithLocale(<RegisterForm />)
-
-    // Quick navigate to step 5
-    fireEvent.click(screen.getByText("English"))
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /next/i })) })
-    fireEvent.click(screen.getByText("System"))
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /next/i })) })
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "USD" } })
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /next/i })) })
-    fireEvent.click(screen.getByText("Starter"))
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /next/i })) })
-
-    // Type password - use correct label matchers from component
+    // Type password
     fireEvent.change(screen.getByLabelText(/^Password \*/), { target: { value: "weak" } })
 
     expect(screen.getByText("Weak")).toBeInTheDocument()
@@ -341,5 +210,61 @@ describe("RegisterForm - Full Flow Integration", () => {
     // All requirements should be met (green checks)
     const checks = document.querySelectorAll('svg.lucide-check')
     expect(checks.length).toBeGreaterThanOrEqual(5)
+  })
+
+  it("works with Serbian locale", async () => {
+    const mockRegisterUser = vi.mocked(registerUser)
+    mockRegisterUser.mockResolvedValue({ success: "Account created!", redirect: "/signin?verify=pending" })
+
+    renderWithLocale(<RegisterFormSingle />, "sr")
+
+    // Main title (h1)
+    expect(screen.getByRole("heading", { name: "Napravite svoj nalog", level: 1 })).toBeInTheDocument()
+    expect(screen.getByText("Podešavanja")).toBeInTheDocument()
+    expect(screen.getByText("Izaberite svoj jezik")).toBeInTheDocument()
+    expect(screen.getByText("Srpski")).toBeInTheDocument()
+    expect(screen.getByText("English")).toBeInTheDocument()
+
+    // Navigate through flow in Serbian
+    fireEvent.click(screen.getByText("Srpski"))
+    expect(screen.getByText("Srpski")).toHaveClass("border-blue-500")
+  })
+
+  it("validates password requirements", async () => {
+    renderWithLocale(<RegisterFormSingle />)
+
+    // Test each requirement
+    const passwordInput = screen.getByLabelText(/^Password \*/)
+
+    // Length
+    fireEvent.change(passwordInput, { target: { value: "Test123!" } })
+    await waitFor(() => {
+      expect(screen.getByText("At least 8 characters")).toHaveClass("text-green-600")
+    })
+
+    // Uppercase
+    fireEvent.change(passwordInput, { target: { value: "test123!" } })
+    expect(screen.getByText("One uppercase letter")).toHaveClass("text-gray-500")
+
+    fireEvent.change(passwordInput, { target: { value: "Test123!" } })
+    expect(screen.getByText("One uppercase letter")).toHaveClass("text-green-600")
+  })
+
+  it("does not include tier/plan selection", () => {
+    renderWithLocale(<RegisterFormSingle />)
+
+    // Should NOT have tier/plan selection
+    expect(screen.queryByText("Starter")).not.toBeInTheDocument()
+    expect(screen.queryByText("Professional")).not.toBeInTheDocument()
+    expect(screen.queryByText("Business")).not.toBeInTheDocument()
+    expect(screen.queryByText("Choose your plan")).not.toBeInTheDocument()
+    expect(screen.queryByText("Plan")).not.toBeInTheDocument()
+  })
+
+  it("shows sign in link at bottom", () => {
+    renderWithLocale(<RegisterFormSingle />)
+
+    expect(screen.getByText("Already have an account?")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /sign in/i })).toHaveAttribute("href", "/signin")
   })
 })

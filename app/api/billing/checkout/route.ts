@@ -54,5 +54,12 @@ export async function GET(request: Request) {
     return NextResponse.redirect(absoluteUrl("/dashboard/billing?error=not_configured", request))
   }
 
-  return NextResponse.redirect(checkoutUrl)
+  const response = NextResponse.redirect(checkoutUrl)
+  // Set redirect counter cookie to prevent infinite loop after checkout returns
+  response.cookies.set("checkout_redirect_count", "0", {
+    path: "/",
+    maxAge: 60 * 60, // 1 hour
+    sameSite: "lax",
+  })
+  return response
 }
