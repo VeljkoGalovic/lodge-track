@@ -367,6 +367,71 @@ export function getTrialExpiryWarning(trialEndsAt: Date | null | undefined): num
 }
 
 /**
+ * Creates a Customer Portal URL for an organization's subscription.
+ * Returns the portal URL, or null if configuration is missing,
+ * subscription not found, or API call fails.
+ */
+export async function createCustomerPortalUrl(orgId: string): Promise<string | null> {
+  const config = readConfig()
+
+  if (!config.apiKey || !config.storeId) {
+    console.error("[billing] createCustomerPortalUrl: missing API key or store ID")
+    return null
+  }
+
+  const subscription = await prisma.subscription.findUnique({
+    where: { orgId },
+    select: { billingCustomerId: true, billingSubscriptionId: true },
+  })
+
+  if (!subscription?.billingCustomerId) {
+    console.error("[billing] createCustomerPortalUrl: no billingCustomerId for org", orgId)
+    return null
+  }
+
+  const requestBody = {
+    data: {
+      type: "customer-portal",
+      attributes: { customer_id: subscription.billingCustomerId },
+      relationships: {
+        store: { data: { type: "stores", id: config.storeId } },
+      },
+    },
+  }
+
+  try {
+    const response = await fetch(`${API_BASE}/customer-portal`, {
+      method: "POST",
+      headers: {
+        Accept: "application/vnd.api+json",
+        "Content-Type": "application/vnd.api+json",
+        Authorization: `Bearer ${config.apiKey}`,
+      },
+      body: JSON.stringify(requestBody),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error("[billing] customer portal creation failed", {
+        status: response.status,
+        response: errorText,
+        orgId,
+      })
+      return null
+    }
+
+    const payload = await response.json()
+    return payload.data?.attributes?.url ?? null
+  } catch (error) {
+    console.error("[billing] customer portal creation exception", {
+      error: error instanceof Error ? error.message : String(error),
+      orgId,
+    })
+    return null
+  }
+}
+
+/**
  * Handles tier downgrade by archiving excess properties that exceed the new tier's limit.
  * Properties are archived in order of creation (oldest first) until the count matches the new limit.
  * Returns the number of properties archived.
