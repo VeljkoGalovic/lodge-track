@@ -89,7 +89,7 @@ function validPayload(value: unknown): value is WebhookPayload {
   return [attrs.ends_at, attrs.renews_at].every(date => date == null || Number.isFinite(Date.parse(date)))
 }
 
-async function applyEvent(tx: Prisma.TransactionClient, eventName: string, payload: WebhookPayload): Promise<void> {
+export async function applyEvent(tx: Prisma.TransactionClient, eventName: string, payload: WebhookPayload): Promise<void> {
   const data = payload.data
   if (!data || !eventName.startsWith("subscription_")) return
 
