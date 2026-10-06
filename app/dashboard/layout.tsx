@@ -93,6 +93,11 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
     }
   }
 
+  // Check if onboarding is completed for paid subscriptions
+  // Only show wizard for organizations with an active paid subscription
+  const isPaidTier = subscription && paidTiers.includes(subscription.tier)
+  const needsOnboarding = Boolean(isPaidTier && !org.onboardingCompleted)
+
   const features = getOrgFeatures(
     subscription?.tier || "STARTER",
     subscription?.maxPropertiesOverride ?? undefined,
@@ -142,6 +147,7 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
       attentionCount={attentionCount}
       locale={locale}
       theme={theme}
+      needsOnboarding={needsOnboarding}
     >
       {children}
     </DashboardShell>

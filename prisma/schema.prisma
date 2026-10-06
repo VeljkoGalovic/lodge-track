@@ -79,26 +79,33 @@ enum ExpenseCategory {
 }
 
 model Organization {
-  id        String   @id @default(cuid())
-  name      String
+  id                 String   @id @default(cuid())
+  name               String
   /**
    * ISO 4217 code for every monetary amount in this organization. Bookings
    * store minor units (cents) with no currency of their own, so this is the
    * single place the app decides how to render them.
    */
-  currency  String   @default("USD")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  currency           String   @default("USD")
+  onboardingCompleted Boolean   @default(false)
+  /** IANA time zone identifier for displaying dates/times in the org's local time. */
+  timeZone           String   @default("UTC")
+  /** Default check-in time for new bookings (HH:mm format, 24-hour). */
+  checkInTime        String   @default("15:00")
+  /** Default check-out time for new bookings (HH:mm format, 24-hour). */
+  checkOutTime       String   @default("11:00")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   // Multi-tenancy relations
-  users        User[]
-  properties   Property[]
-  units        PropertyUnit[]
-  expenses     Expense[]
-  subscription Subscription?
-  invitations  Invitation[]
-  attachments  Attachment[]
-  apiKeys      ApiKey[]
+  users              User[]
+  properties         Property[]
+  units              PropertyUnit[]
+  expenses           Expense[]
+  subscription       Subscription?
+  invitations        Invitation[]
+  attachments        Attachment[]
+  apiKeys            ApiKey[]
 }
 
 /**

@@ -15,7 +15,7 @@ export function CheckoutComplete({ message, pollingMessage }: CheckoutCompletePr
   const POLL_INTERVAL = 1000 // 1 second
 
   useEffect(() => {
-    let intervalId: NodeJS.Timeout
+    const intervalIdRef = { current: null as NodeJS.Timeout | null }
 
     const pollStatus = async () => {
       try {
@@ -39,21 +39,21 @@ export function CheckoutComplete({ message, pollingMessage }: CheckoutCompletePr
 
       if (pollCount >= MAX_POLLS - 1) {
         setIsPolling(false)
-        if (intervalId) {
-          clearInterval(intervalId)
+        if (intervalIdRef.current) {
+          clearInterval(intervalIdRef.current)
         }
       }
     }
 
     // Start polling
-    intervalId = setInterval(pollStatus, POLL_INTERVAL)
+    intervalIdRef.current = setInterval(pollStatus, POLL_INTERVAL)
 
     // Also poll immediately on mount
     pollStatus()
 
     return () => {
-      if (intervalId) {
-        clearInterval(intervalId)
+      if (intervalIdRef.current) {
+        clearInterval(intervalIdRef.current)
       }
     }
   }, [pollCount])

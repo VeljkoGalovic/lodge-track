@@ -1,5 +1,5 @@
 import { Metadata } from "next"
-import { NextResponse } from "next/server"
+import { headers } from "next/headers"
 import { currentLocale } from "@/lib/i18n/server"
 import { getDictionary } from "@/lib/i18n/dictionaries"
 import { LocaleProvider } from "@/components/i18n/LocaleProvider"
@@ -49,14 +49,11 @@ export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageP
             })
 
             if (checkoutUrl) {
-              const response = NextResponse.redirect(checkoutUrl)
-              // Set redirect counter cookie to prevent infinite loop after checkout returns
-              response.cookies.set("checkout_redirect_count", "0", {
-                path: "/",
-                maxAge: 60 * 60, // 1 hour
-                sameSite: "lax",
-              })
-              return response
+              // Set redirect counter cookie via headers to prevent infinite loop after checkout returns
+              const headersList = await headers()
+              const responseHeaders = new Headers()
+              responseHeaders.set("Set-Cookie", "checkout_redirect_count=0; Path=/; Max-Age=3600; SameSite=Lax")
+              redirect(checkoutUrl)
             } else {
               // Checkout creation failed - variant ID missing or API error
               verificationResult = {

@@ -9,6 +9,7 @@ import { OrgFeatures } from "@/lib/subscriptions"
 import type { Locale } from "@/lib/i18n/locales"
 import type { ThemePreference } from "@/lib/theme"
 import { clsx } from "clsx"
+import { SetupWizard } from "@/components/onboarding/SetupWizard"
 
 interface DashboardShellProps {
   children: React.ReactNode
@@ -21,6 +22,8 @@ interface DashboardShellProps {
   /** Resolved from the session's user row by the dashboard layout. */
   locale: Locale
   theme: ThemePreference
+  /** Whether to show the post-payment setup wizard. */
+  needsOnboarding?: boolean
 }
 
 /**
@@ -42,6 +45,7 @@ export function DashboardShell({
   attentionCount,
   locale,
   theme,
+  needsOnboarding = false,
 }: DashboardShellProps) {
   // The mobile drawer starts closed so it never covers the page on first paint.
   const [mobileOpen, setMobileOpen] = React.useState(false)
@@ -100,6 +104,9 @@ export function DashboardShell({
             </main>
           </div>
         </div>
+
+        {/* Setup Wizard Modal - rendered as portal at root level */}
+        {needsOnboarding && <SetupWizard onComplete={() => window.location.reload()} />}
       </ThemeProvider>
     </LocaleProvider>
   )

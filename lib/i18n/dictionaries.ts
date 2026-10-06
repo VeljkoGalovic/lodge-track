@@ -78,6 +78,7 @@ export const en = {
     edit: "Edit",
     view: "View",
     back: "Back",
+    next: "Next",
     add: "Add",
     adding: "Adding...",
     actions: "Actions",
@@ -1088,6 +1089,27 @@ const booking = await api("/bookings", {
     continueToCheckout: "Continue to checkout",
     startingTrial: "Starting your 30-day trial...",
     trialDaysLabel: "{days}-day free trial",
+
+    // Setup Wizard (post-payment)
+    setupWizard: {
+      step1Title: "Organization Basics",
+      step1Description: "Set your organization name and default currency.",
+      step2Title: "Time Zone",
+      step2Description: "Select your local time zone. This affects calendar display and check-in/out times.",
+      step3Title: "Check-in / Check-out",
+      step3Description: "Set default check-in and check-out times for new bookings.",
+      timeZoneLabel: "Time Zone",
+      timeZonePlaceholder: "Select time zone",
+      timeZoneHelp: "All dates and times will display in this time zone.",
+      checkInLabel: "Default Check-in Time",
+      checkInHelp: "Guests can check in from this time.",
+      checkOutLabel: "Default Check-out Time",
+      checkOutHelp: "Guests must check out by this time.",
+      timesNote: "These are defaults — you can override them per booking.",
+      completeButton: "Complete Setup",
+      completedTitle: "Setup Complete!",
+      completedMessage: "Your organization is ready. Welcome to LodgeTrack!",
+    },
   },
 
   availability: {
@@ -1191,6 +1213,7 @@ const sr: Dictionary = {
     edit: "Izmeni",
     view: "Prikaži",
     back: "Nazad",
+    next: "Dalje",
     add: "Dodaj",
     adding: "Dodavanje...",
     actions: "Radnje",
@@ -2201,6 +2224,27 @@ const booking = await api("/bookings", {
     continueToCheckout: "Nastavi na plaćanje",
     startingTrial: "Pokrećem 30-dnevni probni period...",
     trialDaysLabel: "Besplatan probni period od {days} dana",
+
+    // Setup Wizard (post-payment)
+    setupWizard: {
+      step1Title: "Osnove organizacije",
+      step1Description: "Postavite naziv organizacije i podrazumevanu valutu.",
+      step2Title: "Vremenska zona",
+      step2Description: "Izaberite svoju vremensku zonu. Ona utiče na prikaz kalendara i vremena prijave/odjave.",
+      step3Title: "Prijava / Odjava",
+      step3Description: "Postavite podrazumevana vremena prijave i odjave za nove rezervacije.",
+      timeZoneLabel: "Vremenska zona",
+      timeZonePlaceholder: "Izaberite vremensku zonu",
+      timeZoneHelp: "Svi datumi i vremena će se prikazivati u ovoj vremenskoj zoni.",
+      checkInLabel: "Podrazumevano vreme prijave",
+      checkInHelp: "Gosti se mogu prijaviti od ovog vremena.",
+      checkOutLabel: "Podrazumevano vreme odjave",
+      checkOutHelp: "Gosti se moraju odjaviti do ovog vremena.",
+      timesNote: "Ovo su podrazumevane vrednosti — možete ih zameniti po rezervaciji.",
+      completeButton: "Završi podešavanje",
+      completedTitle: "Podešavanje završeno!",
+      completedMessage: "Vaša organizacija je spremna. Dobrodošli u LodgeTrack!",
+    },
   },
 
   availability: {
