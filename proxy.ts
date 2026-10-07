@@ -37,6 +37,11 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? request.headers.get("x-real-ip") ?? "unknown"
 
+  ///RATE LIMITING BYPASS
+  if (process.env.LOCAL_DEVELOPMENT === "true") {
+    return NextResponse.next()
+  }
+
   // Skip proxy for static assets, Next.js internals, and public pages
   if (
     pathname.startsWith("/_next") ||

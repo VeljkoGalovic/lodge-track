@@ -132,7 +132,7 @@ export async function createCheckoutUrl(request: CheckoutRequest): Promise<strin
         // `custom` is echoed back on the webhook's `meta.custom_data`, which is
         // how the subscription event finds its organization.
         checkout_data: { email: request.email, custom: { org_id: request.orgId } },
-        product_options: { redirect_url: request.redirectUrl, enabled_variants: [] },
+        product_options: { redirect_url: request.redirectUrl, enabled_variants: [variantId] },
         checkout_options: { media: false, logo: true },
       },
       relationships: {
@@ -181,16 +181,22 @@ export async function createCheckoutUrl(request: CheckoutRequest): Promise<strin
     })
 
     if (!response.ok) {
+      let errorDetails = responseText;
+      try {
+        errorDetails = JSON.parse(responseText);
+      } catch (e) {
+        // Keep as raw text if not JSON
+      }
+
       console.error("[billing] checkout creation failed - HTTP ERROR", {
         status: response.status,
         statusText: response.statusText,
-        response: responseText,
+        error: errorDetails,
         tier: request.tier,
         variantId,
         storeId: config.storeId,
-        apiKeyPrefix: config.apiKey.slice(0, 8) + "...",
-      })
-      return null
+      });
+      return null;
     }
 
     console.log("[billing] checkout creation succeeded", { tier: request.tier, status: response.status })
