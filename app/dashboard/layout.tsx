@@ -10,7 +10,6 @@ import { hasValidAccess } from "@/lib/billing"
 import { requestOrigin } from "@/lib/origin"
 import { createCheckoutUrl } from "@/lib/billing"
 import { headers } from "next/headers"
-import { NextResponse } from "next/server"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -48,15 +47,11 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
   const org = user.organization
   const subscription = org.subscription
 
-  // Billing guard: redirect to billing page if subscription is expired/inactive and trial has ended
-  const hasAccess = hasValidAccess(subscription?.status ?? "CANCELED", subscription?.trialEndsAt ?? null)
-  if (!hasAccess) {
-    redirect("/dashboard/billing?reason=access_revoked")
-  }
-
   // Subscription payment guard: ensure paid tiers have completed checkout
   // If user has a paid tier (STARTER, PRO, BUSINESS) but subscription lacks billing identifiers,
   // they haven't completed Lemon Squeezy checkout - redirect to checkout
+  // This must run BEFORE the billing access guard, because a CANCELED status with no
+  // billing identifiers means "never completed checkout" not "access revoked after having access"
   const paidTiers = ["STARTER", "PRO", "BUSINESS"] as const
   if (subscription && paidTiers.includes(subscription.tier)) {
     const hasBillingIdentifiers = subscription.billingCustomerId && subscription.billingSubscriptionId
@@ -91,6 +86,13 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
         }
       }
     }
+  }
+
+  // Billing guard: redirect to billing page if subscription is expired/inactive and trial has ended
+  // Only runs if user has completed checkout (has billing identifiers) or is on free tier
+  const hasAccess = hasValidAccess(subscription?.status ?? "CANCELED", subscription?.trialEndsAt ?? null)
+  if (!hasAccess) {
+    redirect("/dashboard/billing?reason=access_revoked")
   }
 
   // Check if onboarding is completed for paid subscriptions
