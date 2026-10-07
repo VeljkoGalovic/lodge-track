@@ -19,7 +19,13 @@ export function CheckoutComplete({ message, pollingMessage }: CheckoutCompletePr
 
     const pollStatus = async () => {
       try {
-        const response = await fetch("/api/billing/status", {
+        // In development, add mock=true after first few polls to auto-grant access
+        const isDev = process.env.NODE_ENV === "development"
+        const url = isDev && pollCount >= 3
+          ? "/api/billing/status?checkout=complete&mock=true"
+          : "/api/billing/status?checkout=complete"
+
+        const response = await fetch(url, {
           cache: "no-store",
         })
 
