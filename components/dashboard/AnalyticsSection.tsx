@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { percentChange, type ChartPoint, type ProjectedPoint, type ForecastMetadata, projectSeries, projectSeriesWithMeta } from "@/lib/metrics-display"
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useDictionary, useLocale } from "@/components/i18n/LocaleProvider"
 import { format } from "@/lib/i18n/dictionaries"
 import { formatCurrency } from "@/lib/currency"
 import { monthWindow } from "@/lib/dashboard-metrics"
@@ -49,7 +49,7 @@ function RangeSelector({
   basePath?: string
   showForecast?: boolean
 }) {
-  const { t } = useI18n()
+  const t = useDictionary()
   const options: Array<{ key: RangeKey; label: string }> = [
     { key: "3", label: t.pages.analytics.range3 },
     { key: "6", label: t.pages.analytics.range6 },
@@ -127,7 +127,8 @@ function ChartPanel({
   projected,
   goodWhenDown = false,
 }: ChartPanelProps) {
-  const { t, locale } = useI18n()
+  const t = useDictionary()
+  const { locale } = useLocale()
   const all = projected ? [...series, ...projected] : series
   const latest = series.at(-1)?.value ?? 0
   const previous = series.at(-2)?.value
@@ -299,7 +300,7 @@ export function AnalyticsSection({
   showForecast = false,
   data,
 }: AnalyticsSectionProps) {
-  const { t } = useI18n()
+  const t = useDictionary()
   if (!hasAccess) {
     return (
       <Card className="relative overflow-hidden">
@@ -415,7 +416,7 @@ export function ForecastCard({
   expensesProjection?: ProjectedPoint[]
   expensesMetadata?: ForecastMetadata
 }) {
-  const { t } = useI18n()
+  const t = useDictionary()
 
   if (!showForecast) {
     return (

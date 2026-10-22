@@ -7,7 +7,7 @@ import { Menu, Bell, LogOut, User, CreditCard } from "lucide-react"
 import { Button } from "@/components/ui/Button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useDictionary } from "@/components/i18n/LocaleProvider"
 import { format } from "@/lib/i18n/dictionaries"
 import { OrgFeatures, getTierBadgeColor } from "@/lib/subscriptions"
 import { ThemeMenu } from "@/components/theme/ThemeMenu"
@@ -24,7 +24,7 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ orgName, features, userName, userEmail, attentionCount, onMenuClick }: DashboardHeaderProps) {
-  const { t } = useI18n()
+  const t = useDictionary()
 
   return (
     <header className="z-30 flex h-16 shrink-0 items-center gap-4 border-b border-border bg-background/80 px-4 backdrop-blur-xl md:px-6">

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { registerUser } from "@/app/actions/auth"
 import Link from "next/link"
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useLocale, useDictionary } from "@/components/i18n/LocaleProvider"
 import { initialOnboardingData, type OnboardingData } from "@/lib/onboarding/types"
 import type { Locale } from "@/lib/i18n/locales"
 import type { ThemePreference } from "@/lib/theme"
@@ -17,7 +17,8 @@ import { THEMES } from "@/lib/theme"
 import { Check, X, Sun, Moon, Monitor, Loader2 } from "lucide-react"
 
 export function RegisterFormSingle() {
-  const { t, setLocale, locale: providerLocale } = useI18n()
+  const { setLocale, locale: providerLocale } = useLocale()
+  const t = useDictionary()
   const router = useRouter()
   const [state, formAction, isPending] = useActionState(registerUser, { error: "", success: "" })
   const [formData, setFormData] = useState<OnboardingData>({

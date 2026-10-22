@@ -1,6 +1,6 @@
 "use client"
 
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useLocale, useDictionary } from "@/components/i18n/LocaleProvider"
 import { useActionState } from "react"
 import { updateOrganization } from "@/app/actions/organization"
 import { EMPTY_ACTION_STATE } from "@/lib/action-state"
@@ -18,7 +18,8 @@ interface OrganizationFormProps {
 }
 
 export function OrganizationForm({ name, currency, canEdit }: OrganizationFormProps) {
-  const { t, locale } = useI18n()
+  const { locale } = useLocale()
+  const t = useDictionary()
   const currencies = new Intl.DisplayNames(locale === "sr" ? "sr-Latn-RS" : "en-US", { type: "currency" })
   const [state, formAction] = useActionState(updateOrganization, EMPTY_ACTION_STATE)
 

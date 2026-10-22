@@ -9,7 +9,11 @@ vi.mock("@/lib/exchange-rates", () => ({ getExchangeRates: vi.fn(), convertAmoun
 vi.mock("@/lib/prisma", () => ({ prisma: { booking: { findFirst: mocks.findFirst } } }))
 vi.mock("@/lib/authorization", () => ({ requireMembership: mocks.membership, canManage: (role: string) => role !== "MAINTENANCE" }))
 vi.mock("@/lib/i18n/server", () => ({ currentLocale: async () => "en" }))
-vi.mock("@/components/i18n/LocaleProvider", () => ({ useI18n: () => ({ locale: "en", t: getDictionary("en") }) }))
+vi.mock("@/components/i18n/LocaleProvider", () => ({
+  useI18n: () => ({ locale: "en", t: getDictionary("en") }),
+  useDictionary: () => getDictionary("en"),
+  useLocale: () => ({ locale: "en" as const, setLocale: vi.fn() }),
+}))
 vi.mock("@/app/actions/bookings", () => ({ deleteBooking: vi.fn(), setBookingStatus: vi.fn() }))
 vi.mock("@/lib/use-action-redirect", () => ({ useActionRedirect: vi.fn() }))
 vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("NEXT_NOT_FOUND") } }))

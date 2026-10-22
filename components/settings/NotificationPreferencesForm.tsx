@@ -1,6 +1,6 @@
 "use client"
 
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useDictionary, useLocale } from "@/components/i18n/LocaleProvider"
 import { format, plural, ITEM_COUNT_FORMS } from "@/lib/i18n/dictionaries"
 import { useActionState } from "react"
 import { updateNotificationPreferences } from "@/app/actions/account"
@@ -19,7 +19,8 @@ export function NotificationPreferencesForm({
   preferences,
   counts,
 }: NotificationPreferencesFormProps) {
-  const { t, locale } = useI18n()
+  const { locale } = useLocale()
+  const t = useDictionary()
   const options: { name: keyof NotificationPreferences; label: string; description: string }[] = [
     { name: "notifyCheckInsDue", label: t.pages.notifications.checkIns, description: t.pages.notifications.checkInsHelp },
     { name: "notifyStaysEnding", label: t.pages.notifications.ending, description: t.pages.notifications.endingHelp },

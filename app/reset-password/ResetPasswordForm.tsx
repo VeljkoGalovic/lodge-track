@@ -5,11 +5,11 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useDictionary } from "@/components/i18n/LocaleProvider"
 import { resetPassword } from "@/app/actions/auth"
 
 export function ResetPasswordForm() {
-  const { t } = useI18n()
+  const t = useDictionary()
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get("token")

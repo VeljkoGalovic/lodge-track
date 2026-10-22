@@ -6,7 +6,7 @@ import { EMPTY_ACTION_STATE } from "@/lib/action-state"
 import { useActionRedirect } from "@/lib/use-action-redirect"
 import { FormMessage } from "@/components/dashboard/FormMessage"
 import { SubmitButton } from "@/components/dashboard/SubmitButton"
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useDictionary } from "@/components/i18n/LocaleProvider"
 
 interface AcceptInviteFormProps {
   token: string
@@ -15,7 +15,7 @@ interface AcceptInviteFormProps {
 }
 
 export function AcceptInviteForm({ token, email }: AcceptInviteFormProps) {
-  const { t } = useI18n()
+  const t = useDictionary()
   const [state, formAction] = useActionState(acceptInvitation, EMPTY_ACTION_STATE)
   useActionRedirect(state)
 

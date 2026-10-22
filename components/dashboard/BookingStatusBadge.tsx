@@ -5,7 +5,7 @@ import type { BookingStatus } from "@prisma/client"
 import { clsx } from "clsx"
 import { CheckCircle, Clock, LogIn, LogOut, XCircle } from "lucide-react"
 import { getBookingStatusStyle } from "@/lib/booking-status"
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useDictionary } from "@/components/i18n/LocaleProvider"
 
 const STATUS_ICONS: Record<BookingStatus, ComponentType<{ className?: string }>> = {
   PENDING: Clock,
@@ -22,7 +22,7 @@ interface BookingStatusBadgeProps {
 }
 
 export function BookingStatusBadge({ status, showIcon = true, className }: BookingStatusBadgeProps) {
-  const { t } = useI18n()
+  const t = useDictionary()
   const { badge } = getBookingStatusStyle(status)
   const Icon = STATUS_ICONS[status]
 

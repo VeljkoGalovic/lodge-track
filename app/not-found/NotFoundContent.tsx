@@ -2,10 +2,10 @@
 
 import Link from "next/link"
 import { Home, RotateCcw } from "lucide-react"
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useDictionary } from "@/components/i18n/LocaleProvider"
 
 export function NotFoundContent() {
-  const { t } = useI18n()
+  const t = useDictionary()
 
   return (
     <section className="dark relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 text-foreground">

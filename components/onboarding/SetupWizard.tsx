@@ -5,7 +5,7 @@ import { useActionState, startTransition } from "react"
 import { completeSetupWizard } from "@/app/actions/onboarding"
 import { EMPTY_ACTION_STATE } from "@/lib/action-state"
 import { useActionRedirect } from "@/lib/use-action-redirect"
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useDictionary } from "@/components/i18n/LocaleProvider"
 import { SUPPORTED_CURRENCIES } from "@/lib/currency"
 import { SUPPORTED_TIMEZONES, TIMEZONE_LABELS } from "@/lib/timezones"
 import { getOrgFeatures, getTierBadgeColor, TIER_PRICE_STRINGS } from "@/lib/subscriptions"
@@ -89,7 +89,7 @@ const WALKTHROUGH_STEPS = [
 ] as const
 
 export function SetupWizard({ onComplete, subscriptionTier = "STARTER" }: SetupWizardProps) {
-  const { t } = useI18n()
+  const t = useDictionary()
   const [step, setStep] = React.useState<WizardStep>(1)
   const [formData, setFormData] = React.useState<WizardFormData>(INITIAL_DATA)
   const [state, formAction, isPending] = useActionState(completeSetupWizard, EMPTY_ACTION_STATE)
@@ -555,7 +555,7 @@ export function SetupWizard({ onComplete, subscriptionTier = "STARTER" }: SetupW
 
 // Preview Components
 function PropertiesPreview() {
-  const { t } = useI18n()
+  const t = useDictionary()
   const mockProperties = [
     { name: "Sunset Villa", location: "Malibu, CA", units: 3, status: "Active" },
     { name: "Mountain Cabin", location: "Aspen, CO", units: 1, status: "Active" },
@@ -598,7 +598,7 @@ function PropertiesPreview() {
 }
 
 function BookingsPreview() {
-  const { t } = useI18n()
+  const t = useDictionary()
   const today = new Date()
   const mockBookings = [
     { guest: "John Smith", property: "Sunset Villa", checkIn: today, checkOut: new Date(today.getTime() + 3 * 86400000), status: "CONFIRMED", amount: 1200 },
@@ -645,7 +645,7 @@ function BookingsPreview() {
 }
 
 function CalendarPreview() {
-  const { t } = useI18n()
+  const t = useDictionary()
   const today = new Date()
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
   const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0)
@@ -712,7 +712,7 @@ function CalendarPreview() {
 }
 
 function ExpensesPreview() {
-  const { t } = useI18n()
+  const t = useDictionary()
   const mockExpenses = [
     { date: new Date(), property: "Sunset Villa", category: "MAINTENANCE", description: "AC unit repair", amount: 350, hasReceipt: true },
     { date: new Date(Date.now() - 2 * 86400000), property: "Mountain Cabin", category: "UTILITIES", description: "Electric bill", amount: 120, hasReceipt: true },

@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select } from "@/components/ui/select"
 import { FormMessage } from "@/components/dashboard/FormMessage"
 import { SubmitButton } from "@/components/dashboard/SubmitButton"
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useDictionary } from "@/components/i18n/LocaleProvider"
 import {
   Dialog,
   DialogContent,
@@ -51,7 +51,7 @@ export function MemberRow({
   canPromoteToOwner,
   canResetTwoFactor,
 }: MemberRowProps) {
-  const { t } = useI18n()
+  const t = useDictionary()
   const [roleState, roleAction, rolePending] = useActionState(
     updateMemberRole,
     EMPTY_ACTION_STATE

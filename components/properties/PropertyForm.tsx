@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { FormMessage } from "@/components/dashboard/FormMessage"
 import { SubmitButton } from "@/components/dashboard/SubmitButton"
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useLocale, useDictionary } from "@/components/i18n/LocaleProvider"
 import { SUPPORTED_CURRENCIES } from "@/lib/currency"
 
 interface PropertyFormProps {
@@ -26,7 +26,8 @@ interface PropertyFormProps {
 }
 
 export function PropertyForm({ property }: PropertyFormProps) {
-  const { t, locale } = useI18n()
+  const { locale } = useLocale()
+  const t = useDictionary()
   const currencies = new Intl.DisplayNames(locale === "sr" ? "sr-Latn-RS" : "en-US", { type: "currency" })
   const action = property ? updateProperty : createProperty
   const [state, formAction] = useActionState(action, EMPTY_ACTION_STATE)

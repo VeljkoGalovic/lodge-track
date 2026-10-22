@@ -19,7 +19,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useLocale, useDictionary } from "@/components/i18n/LocaleProvider"
 import {
   ACTIVE_BOOKING_FORMS,
   format,
@@ -56,7 +56,8 @@ interface UnitsCardProps {
  * belongs to instead of somewhere else on the page.
  */
 function UnitRow({ unit, canEdit }: { unit: Unit; canEdit: boolean }) {
-  const { locale, t } = useI18n()
+  const { locale } = useLocale()
+  const t = useDictionary()
   const [renameState, renameAction] = useActionState(renameUnit, EMPTY_ACTION_STATE)
   const [deleteState, deleteAction] = useActionState(deleteUnit, EMPTY_ACTION_STATE)
   useActionRedirect(renameState)
@@ -172,7 +173,8 @@ function UnitRow({ unit, canEdit }: { unit: Unit; canEdit: boolean }) {
 }
 
 export function UnitsCard({ propertyId, units, canEdit, sharedInventory }: UnitsCardProps) {
-  const { locale, t } = useI18n()
+  const { locale } = useLocale()
+  const t = useDictionary()
   const [state, formAction] = useActionState(createUnit, EMPTY_ACTION_STATE)
   useActionRedirect(state)
 

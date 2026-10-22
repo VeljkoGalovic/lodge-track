@@ -7,7 +7,11 @@ import { getDictionary } from "@/lib/i18n/dictionaries"
 
 vi.mock("@/app/actions/expenses", () => ({ createExpense: vi.fn(), updateExpense: vi.fn() }))
 vi.mock("@/lib/use-action-redirect", () => ({ useActionRedirect: vi.fn() }))
-vi.mock("@/components/i18n/LocaleProvider", () => ({ useI18n: () => ({ locale: "en", t: getDictionary("en") }) }))
+vi.mock("@/components/i18n/LocaleProvider", () => ({
+  useI18n: () => ({ locale: "en", t: getDictionary("en") }),
+  useDictionary: () => getDictionary("en"),
+  useLocale: () => ({ locale: "en" as const, setLocale: vi.fn() }),
+}))
 vi.mock("next-auth/react", () => ({ useSession: () => ({ data: null }) }))
 vi.mock("@/hooks/useAttachmentUpload", () => ({ useAttachmentUpload: () => ({ upload: vi.fn(), deleteAttachment: vi.fn(), uploading: false }) }))
 

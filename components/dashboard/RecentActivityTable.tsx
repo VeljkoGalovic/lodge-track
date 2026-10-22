@@ -10,7 +10,7 @@ import { BedCapacity } from "@/components/dashboard/BedCapacity"
 import { Button } from "@/components/ui/Button"
 import { BookingStatusBadge } from "@/components/dashboard/BookingStatusBadge"
 
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useDictionary } from "@/components/i18n/LocaleProvider"
 
 export interface RecentProperty {
   id: string
@@ -50,7 +50,7 @@ type RecentActivityTableProps =
   | (BaseProps & { type: "bookings"; items: RecentBooking[] })
 
 export function RecentActivityTable(props: RecentActivityTableProps) {
-  const { t } = useI18n()
+  const t = useDictionary()
   const { emptyMessage, viewAllHref, viewAllLabel } = props
   const isProperties = props.type === "properties"
   const Icon = isProperties ? Building2 : Calendar

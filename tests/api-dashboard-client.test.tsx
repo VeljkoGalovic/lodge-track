@@ -12,6 +12,8 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/components/i18n/LocaleProvider", () => ({
   useI18n: () => ({ locale: "en", t: getDictionary("en") }),
+  useDictionary: () => getDictionary("en"),
+  useLocale: () => ({ locale: "en" as const, setLocale: vi.fn() }),
 }))
 
 vi.mock("@/lib/subscriptions", () => ({

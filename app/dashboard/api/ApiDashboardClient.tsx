@@ -25,7 +25,7 @@ import {
   FileCode,
   Globe as GlobeIcon,
 } from "lucide-react"
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useLocale, useDictionary } from "@/components/i18n/LocaleProvider"
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -90,7 +90,8 @@ export default function ApiDashboardClient({
   initialKeys: ApiKey[]
   orgTier: Tier
 }) {
-  const { t, locale } = useI18n()
+  const { locale } = useLocale()
+  const t = useDictionary()
   const [keys, setKeys] = useState<ApiKey[]>(initialKeys)
   const [isCreating, setIsCreating] = useState(false)
   const [showRawKey, setShowRawKey] = useState<string | null>(null)

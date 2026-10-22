@@ -7,7 +7,11 @@ import { getDictionary } from "@/lib/i18n/dictionaries"
 
 vi.mock("@/app/actions/bookings", () => ({ createBooking: vi.fn(), updateBooking: vi.fn() }))
 vi.mock("@/lib/use-action-redirect", () => ({ useActionRedirect: vi.fn() }))
-vi.mock("@/components/i18n/LocaleProvider", () => ({ useI18n: () => ({ locale: "en", t: getDictionary("en") }) }))
+vi.mock("@/components/i18n/LocaleProvider", () => ({
+  useI18n: () => ({ locale: "en", t: getDictionary("en") }),
+  useDictionary: () => getDictionary("en"),
+  useLocale: () => ({ locale: "en" as const, setLocale: vi.fn() }),
+}))
 afterEach(cleanup)
 const units = Array.from({ length: 5 }, (_, i) => ({ id: `bed-${i}`, propertyId: "p1", name: `Bed ${i + 1}`, kind: "Bed" }))
 const props = {

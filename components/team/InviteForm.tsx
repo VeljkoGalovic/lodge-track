@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { FormMessage } from "@/components/dashboard/FormMessage"
 import { SubmitButton } from "@/components/dashboard/SubmitButton"
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useDictionary } from "@/components/i18n/LocaleProvider"
 
 interface InviteFormProps {
   /** Only an owner may invite another owner, so the option is withheld otherwise. */
@@ -15,7 +15,7 @@ interface InviteFormProps {
 }
 
 export function InviteForm({ canInviteOwner }: InviteFormProps) {
-  const { t } = useI18n()
+  const t = useDictionary()
   const [state, formAction] = useActionState(inviteMember, EMPTY_ACTION_STATE)
 
   return (

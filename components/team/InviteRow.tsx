@@ -7,7 +7,7 @@ import { EMPTY_ACTION_STATE } from "@/lib/action-state"
 import { FormMessage } from "@/components/dashboard/FormMessage"
 import { SubmitButton } from "@/components/dashboard/SubmitButton"
 import { InviteLink } from "@/components/team/InviteLink"
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useLocale, useDictionary } from "@/components/i18n/LocaleProvider"
 import { format } from "@/lib/i18n/dictionaries"
 import type { Role } from "@prisma/client"
 
@@ -22,7 +22,8 @@ export interface PendingInvitation {
 
 /** One pending invitation: its link, when it lapses, and a revoke control. */
 export function InviteRow({ invitation }: { invitation: PendingInvitation }) {
-  const { locale, t } = useI18n()
+  const { locale } = useLocale()
+  const t = useDictionary()
   const [state, formAction] = useActionState(revokeInvitation, EMPTY_ACTION_STATE)
 
   return (

@@ -7,7 +7,11 @@ import { BookingStatusSelect } from "@/components/bookings/BookingStatusSelect"
 
 const mocks = vi.hoisted(() => ({ setStatus: vi.fn() }))
 vi.mock("@/app/actions/bookings", () => ({ setBookingStatus: mocks.setStatus }))
-vi.mock("@/components/i18n/LocaleProvider", () => ({ useI18n: () => ({ locale: "en", t: getDictionary("en") }) }))
+vi.mock("@/components/i18n/LocaleProvider", () => ({
+  useI18n: () => ({ locale: "en", t: getDictionary("en"), setLocale: vi.fn() }),
+  useDictionary: () => getDictionary("en"),
+  useLocale: () => ({ locale: "en" as const, setLocale: vi.fn() }),
+}))
 afterEach(cleanup)
 beforeEach(() => { mocks.setStatus.mockReset() })
 

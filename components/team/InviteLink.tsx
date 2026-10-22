@@ -1,6 +1,6 @@
 "use client"
 
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useDictionary } from "@/components/i18n/LocaleProvider"
 import { useState } from "react"
 import { Check, Copy } from "lucide-react"
 import { Button } from "@/components/ui/Button"
@@ -17,7 +17,7 @@ interface InviteLinkProps {
  * is always readable, and always selectable by hand.
  */
 export function InviteLink({ url }: InviteLinkProps) {
-  const { t } = useI18n()
+  const t = useDictionary()
   const [copied, setCopied] = useState(false)
 
   async function copy() {

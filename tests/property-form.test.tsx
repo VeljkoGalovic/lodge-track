@@ -7,7 +7,11 @@ import { getDictionary } from "@/lib/i18n/dictionaries"
 
 vi.mock("@/app/actions/properties", () => ({ createProperty: vi.fn(), updateProperty: vi.fn() }))
 vi.mock("@/lib/use-action-redirect", () => ({ useActionRedirect: vi.fn() }))
-vi.mock("@/components/i18n/LocaleProvider", () => ({ useI18n: () => ({ locale: "en", t: getDictionary("en") }) }))
+vi.mock("@/components/i18n/LocaleProvider", () => ({
+  useI18n: () => ({ locale: "en", t: getDictionary("en") }),
+  useDictionary: () => getDictionary("en"),
+  useLocale: () => ({ locale: "en" as const, setLocale: vi.fn() }),
+}))
 afterEach(cleanup)
 
 it("hides the bed count and posts no shared flag for a traditional property", () => {

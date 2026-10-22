@@ -7,14 +7,14 @@ import { EMPTY_ACTION_STATE } from "@/lib/action-state"
 import { getBookingStatusStyle } from "@/lib/booking-status"
 import { Select } from "@/components/ui/select"
 import { FormMessage } from "@/components/dashboard/FormMessage"
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useDictionary } from "@/components/i18n/LocaleProvider"
 
 export function BookingStatusSelect({ bookingId, status, guestName }: {
   bookingId: string
   status: BookingStatus
   guestName: string
 }) {
-  const { t } = useI18n()
+  const t = useDictionary()
   const [state, dispatch, pending] = useActionState(async (previous: ReturnType<typeof initialState>, data: FormData) => {
     const result = await setBookingStatus(previous, data)
     return { ...result, status: result.success ? data.get("status") as BookingStatus : previous.status }

@@ -5,12 +5,12 @@ import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ShieldCheck, ArrowLeft, Mail, AlertCircle } from "lucide-react"
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useDictionary } from "@/components/i18n/LocaleProvider"
 import { sendVerificationEmailAction } from "@/app/actions/auth"
 
 
 export function SignInForm() {
-  const { t } = useI18n()
+  const t = useDictionary()
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")

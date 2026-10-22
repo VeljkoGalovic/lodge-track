@@ -1,6 +1,5 @@
 "use client"
 
-import { useI18n } from "@/components/i18n/LocaleProvider"
 import { format } from "@/lib/i18n/dictionaries"
 import { useActionState, useEffect, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
@@ -11,6 +10,7 @@ import { EMPTY_ACTION_STATE } from "@/lib/action-state"
 import { Input } from "@/components/ui/input"
 import { FormMessage } from "@/components/dashboard/FormMessage"
 import { SubmitButton } from "@/components/dashboard/SubmitButton"
+import { useDictionary } from "@/components/i18n/LocaleProvider"
 
 interface TwoFactorPanelProps {
   enabled: boolean
@@ -26,7 +26,7 @@ interface TwoFactorPanelProps {
  * the code is confirmed, signing in still only needs the password.
  */
 export function TwoFactorPanel({ enabled, issuer, accountName }: TwoFactorPanelProps) {
-  const { t } = useI18n()
+  const t = useDictionary()
   const router = useRouter()
   const [setup, setSetup] = useState<{ secret: string; uri: string } | null>(null)
   const [startError, setStartError] = useState("")

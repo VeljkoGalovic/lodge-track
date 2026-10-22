@@ -6,7 +6,7 @@ import { EMPTY_ACTION_STATE } from "@/lib/action-state"
 import { Input } from "@/components/ui/input"
 import { FormMessage } from "@/components/dashboard/FormMessage"
 import { SubmitButton } from "@/components/dashboard/SubmitButton"
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useDictionary } from "@/components/i18n/LocaleProvider"
 
 interface ProfileFormProps {
   name: string | null
@@ -14,7 +14,7 @@ interface ProfileFormProps {
 }
 
 export function ProfileForm({ name, email }: ProfileFormProps) {
-  const { t } = useI18n()
+  const t = useDictionary()
   const [state, formAction] = useActionState(updateProfile, EMPTY_ACTION_STATE)
 
   return (

@@ -6,34 +6,39 @@ import { LocaleProvider } from "@/components/i18n/LocaleProvider"
 import { ReactNode } from "react"
 
 // Mock i18n
-vi.mock("@/components/i18n/LocaleProvider", () => ({
-  useI18n: () => ({
-    t: {
-      pages: {
-        dashboard: {
-          metrics: {
-            usage: "Usage",
-            propertyUsage: "Property Usage",
-            ofLimit: "{used} of {limit}",
-            unlimitedUsage: "{used} used — unlimited",
-            atLimit: "At limit",
-            nearLimit: "Approaching limit",
-            upgradeToAddMore: "Upgrade to add more properties",
-            unlimited: "Unlimited",
-            propertiesUsed: "Properties used",
-            upgradePlan: "Upgrade Plan",
-          },
+vi.mock("@/components/i18n/LocaleProvider", () => {
+  const dict = {
+    pages: {
+      dashboard: {
+        metrics: {
+          usage: "Usage",
+          propertyUsage: "Property Usage",
+          ofLimit: "{used} of {limit}",
+          unlimitedUsage: "{used} used — unlimited",
+          atLimit: "At limit",
+          nearLimit: "Approaching limit",
+          upgradeToAddMore: "Upgrade to add more properties",
+          unlimited: "Unlimited",
+          propertiesUsed: "Properties used",
+          upgradePlan: "Upgrade Plan",
         },
       },
     },
-    locale: "en" as const,
-    format: (template: string, values: Record<string, string | number>) =>
-      template.replace(/\{(\w+)\}/g, (match, key: string) =>
-        Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : match
-      ),
-  }),
-  LocaleProvider: ({ children, locale }: { children: ReactNode; locale: "en" | "sr" }) => <>{children}</>,
-}))
+  }
+  return {
+    useI18n: () => ({
+      t: dict,
+      locale: "en" as const,
+      format: (template: string, values: Record<string, string | number>) =>
+        template.replace(/\{(\w+)\}/g, (match, key: string) =>
+          Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : match
+        ),
+    }),
+    useDictionary: () => dict,
+    useLocale: () => ({ locale: "en" as const, setLocale: vi.fn() }),
+    LocaleProvider: ({ children, locale }: { children: ReactNode; locale: "en" | "sr" }) => <>{children}</>,
+  }
+})
 
 const renderWithProvider = (component: ReactNode) => {
   return render(<LocaleProvider>{component}</LocaleProvider>)

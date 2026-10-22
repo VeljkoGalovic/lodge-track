@@ -1,15 +1,15 @@
 "use client"
 
-import { useI18n } from "@/components/i18n/LocaleProvider"
 import { useActionState } from "react"
 import { changePassword } from "@/app/actions/account"
 import { EMPTY_ACTION_STATE } from "@/lib/action-state"
 import { Input } from "@/components/ui/input"
 import { FormMessage } from "@/components/dashboard/FormMessage"
 import { SubmitButton } from "@/components/dashboard/SubmitButton"
+import { useDictionary } from "@/components/i18n/LocaleProvider"
 
 export function PasswordForm() {
-  const { t } = useI18n()
+  const t = useDictionary()
   const [state, formAction] = useActionState(changePassword, EMPTY_ACTION_STATE)
 
   return (

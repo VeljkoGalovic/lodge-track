@@ -12,7 +12,7 @@ import { Select } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { FormMessage } from "@/components/dashboard/FormMessage"
 import { SubmitButton } from "@/components/dashboard/SubmitButton"
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useDictionary } from "@/components/i18n/LocaleProvider"
 import { format } from "@/lib/i18n/dictionaries"
 
 /** A `Date` as the `YYYY-MM-DD` a date input expects, in local time. */
@@ -41,7 +41,7 @@ interface ExpenseFormProps {
 }
 
 export function ExpenseForm({ properties, currency, orgId, expense }: ExpenseFormProps) {
-  const { t } = useI18n()
+  const t = useDictionary()
   const action = expense ? updateExpense : createExpense
   const [state, formAction] = useActionState(action, EMPTY_ACTION_STATE)
   useActionRedirect(state)

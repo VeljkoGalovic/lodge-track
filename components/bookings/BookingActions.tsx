@@ -8,7 +8,7 @@ import { useActionRedirect } from "@/lib/use-action-redirect"
 import { Button } from "@/components/ui/Button"
 import { FormMessage } from "@/components/dashboard/FormMessage"
 import { SubmitButton } from "@/components/dashboard/SubmitButton"
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useDictionary } from "@/components/i18n/LocaleProvider"
 import { format } from "@/lib/i18n/dictionaries"
 import {
   Dialog,
@@ -27,7 +27,7 @@ interface BookingActionsProps {
 
 /** Edit link plus a delete confirmation, for the booking detail header. */
 export function BookingActions({ bookingId, guestName }: BookingActionsProps) {
-  const { t } = useI18n()
+  const t = useDictionary()
   const [state, formAction] = useActionState(deleteBooking, EMPTY_ACTION_STATE)
   useActionRedirect(state)
 

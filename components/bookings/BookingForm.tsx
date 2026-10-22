@@ -13,7 +13,7 @@ import { Select } from "@/components/ui/select"
 import { FormMessage } from "@/components/dashboard/FormMessage"
 import { SubmitButton } from "@/components/dashboard/SubmitButton"
 import { BedCapacity } from "@/components/dashboard/BedCapacity"
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useLocale, useDictionary } from "@/components/i18n/LocaleProvider"
 import { format, NIGHT_FORMS, plural } from "@/lib/i18n/dictionaries"
 
 /** Common booking sources, offered as suggestions rather than a closed list. */
@@ -61,7 +61,8 @@ function toDateInput(date: Date): string {
 }
 
 export function BookingForm({ properties, units, busy, currency, booking }: BookingFormProps) {
-  const { locale, t } = useI18n()
+  const { locale } = useLocale()
+  const t = useDictionary()
   const action = booking ? updateBooking : createBooking
   const [state, formAction] = useActionState(action, EMPTY_ACTION_STATE)
   useActionRedirect(state)

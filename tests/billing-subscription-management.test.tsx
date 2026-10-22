@@ -19,6 +19,8 @@ vi.mock("@/components/i18n/LocaleProvider", () => {
   const React = require("react")
   return {
     useI18n: () => ({ locale: "en", t: getDictionary("en") }),
+    useDictionary: () => getDictionary("en"),
+    useLocale: () => ({ locale: "en" as const, setLocale: vi.fn() }),
     LocaleProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   }
 })

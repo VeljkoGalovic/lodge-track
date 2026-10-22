@@ -1,6 +1,6 @@
 "use client"
 
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useDictionary } from "@/components/i18n/LocaleProvider"
 import * as React from "react"
 import { TrendingUp, AlertCircle, ArrowUpRight } from "lucide-react"
 import { clsx } from "clsx"
@@ -33,7 +33,7 @@ export function MetricCard({
   className,
   touchTarget = false
 }: MetricCardProps) {
-  const { t } = useI18n()
+  const t = useDictionary()
 
   // When touchTarget is true, make the entire card focusable with proper touch targets
   const cardProps = touchTarget ? {

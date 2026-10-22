@@ -1,6 +1,6 @@
 "use client"
 
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useDictionary } from "@/components/i18n/LocaleProvider"
 import * as React from "react"
 import { AlertTriangle, ChevronRight } from "lucide-react"
 import { clsx } from "clsx"
@@ -31,7 +31,7 @@ export function UsageMeter({
   compact = false,
   showPercentage = true,
 }: UsageMeterProps) {
-  const { t } = useI18n()
+  const t = useDictionary()
 
   const isUnlimited = max === Infinity
   const isAtLimit = !isUnlimited && used >= max

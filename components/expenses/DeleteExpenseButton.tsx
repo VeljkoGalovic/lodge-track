@@ -8,7 +8,7 @@ import { useActionRedirect } from "@/lib/use-action-redirect"
 import { Button } from "@/components/ui/Button"
 import { FormMessage } from "@/components/dashboard/FormMessage"
 import { SubmitButton } from "@/components/dashboard/SubmitButton"
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useDictionary } from "@/components/i18n/LocaleProvider"
 import {
   Dialog,
   DialogContent,
@@ -31,7 +31,7 @@ export function DeleteExpenseButton({
   description,
   hasReceipt,
 }: DeleteExpenseButtonProps) {
-  const { t } = useI18n()
+  const t = useDictionary()
   const [state, formAction] = useActionState(deleteExpense, EMPTY_ACTION_STATE)
   useActionRedirect(state)
 

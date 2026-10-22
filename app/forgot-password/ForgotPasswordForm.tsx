@@ -4,11 +4,11 @@ import { useActionState } from "react"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useDictionary } from "@/components/i18n/LocaleProvider"
 import { sendPasswordReset } from "@/app/actions/auth"
 
 export function ForgotPasswordForm() {
-  const { t } = useI18n()
+  const t = useDictionary()
   const router = useRouter()
   const [state, formAction, isPending] = useActionState(sendPasswordReset, { error: "", success: "" })
   const [email, setEmail] = useState("")

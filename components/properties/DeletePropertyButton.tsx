@@ -8,7 +8,7 @@ import { useActionRedirect } from "@/lib/use-action-redirect"
 import { Button } from "@/components/ui/Button"
 import { FormMessage } from "@/components/dashboard/FormMessage"
 import { SubmitButton } from "@/components/dashboard/SubmitButton"
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useLocale, useDictionary } from "@/components/i18n/LocaleProvider"
 import { BOOKING_COUNT_FORMS, format, plural } from "@/lib/i18n/dictionaries"
 import {
   Dialog,
@@ -32,7 +32,8 @@ export function DeletePropertyButton({
   propertyName,
   bookingCount,
 }: DeletePropertyButtonProps) {
-  const { locale, t } = useI18n()
+  const { locale } = useLocale()
+  const t = useDictionary()
   const [state, formAction] = useActionState(deleteProperty, EMPTY_ACTION_STATE)
   
   useActionRedirect(state)

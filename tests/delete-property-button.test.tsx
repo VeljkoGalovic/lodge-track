@@ -15,7 +15,11 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/app/actions/properties", () => ({ deleteProperty: mocks.deleteProperty }))
 vi.mock("@/lib/use-action-redirect", () => ({ useActionRedirect: mocks.useActionRedirect }))
-vi.mock("@/components/i18n/LocaleProvider", () => ({ useI18n: () => ({ locale: "en", t: getDictionary("en") }) }))
+vi.mock("@/components/i18n/LocaleProvider", () => ({
+  useI18n: () => ({ locale: "en", t: getDictionary("en") }),
+  useDictionary: () => getDictionary("en"),
+  useLocale: () => ({ locale: "en" as const, setLocale: vi.fn() }),
+}))
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.useRouter() }))
 
 // Mock useActionState to return proper state shape

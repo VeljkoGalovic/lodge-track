@@ -32,7 +32,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { Badge } from "@/components/ui/badge"
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useDictionary } from "@/components/i18n/LocaleProvider"
 import type { Dictionary } from "@/lib/i18n/dictionaries"
 import { OrgFeatures } from "@/lib/subscriptions"
 
@@ -78,7 +78,7 @@ export function DashboardSidebar({
   onToggleCollapse,
   onCloseMobile,
 }: DashboardSidebarProps) {
-  const { t } = useI18n()
+  const t = useDictionary()
   const pathname = usePathname()
 
   return (
