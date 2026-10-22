@@ -273,4 +273,37 @@ describe("Webhook lifecycle events", () => {
 
     expect(mockTx.subscription.update).not.toHaveBeenCalled()
   })
+
+  it("acknowledges payment events without mutating subscription", async () => {
+    const paymentEvents = [
+      "subscription_payment_success",
+      "subscription_payment_failed",
+      "subscription_payment_refunded",
+      "subscription_invoice_created",
+    ]
+
+    for (const eventName of paymentEvents) {
+      vi.clearAllMocks()
+
+      const payload = {
+        meta: { event_name: eventName, custom_data: { org_id: "org-1" } },
+        data: {
+          id: "123",
+          type: "subscriptions",
+          attributes: {
+            status: "active",
+            variant_id: 456,
+            subscription_id: 789,
+            renews_at: "2025-12-31T00:00:00Z",
+          },
+        },
+      }
+
+      await applyEvent(mockTx as any, eventName, payload)
+
+      // Should acknowledge (return without error) but NOT update subscription
+      expect(mockTx.subscription.update).not.toHaveBeenCalled()
+      expect(mockTx.subscription.findUnique).not.toHaveBeenCalled()
+    }
+  })
 })

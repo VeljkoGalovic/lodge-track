@@ -24,6 +24,8 @@ interface DashboardShellProps {
   theme: ThemePreference
   /** Whether to show the post-payment setup wizard. */
   needsOnboarding?: boolean
+  /** Subscription tier for plan-aware onboarding. */
+  subscriptionTier?: "STARTER" | "PRO" | "BUSINESS"
 }
 
 /**
@@ -46,6 +48,7 @@ export function DashboardShell({
   locale,
   theme,
   needsOnboarding = false,
+  subscriptionTier = "STARTER",
 }: DashboardShellProps) {
   // The mobile drawer starts closed so it never covers the page on first paint.
   const [mobileOpen, setMobileOpen] = React.useState(false)
@@ -106,7 +109,7 @@ export function DashboardShell({
         </div>
 
         {/* Setup Wizard Modal - rendered as portal at root level */}
-        {needsOnboarding && <SetupWizard onComplete={() => window.location.reload()} />}
+        {needsOnboarding && <SetupWizard onComplete={() => window.location.reload()} subscriptionTier={subscriptionTier} />}
       </ThemeProvider>
     </LocaleProvider>
   )

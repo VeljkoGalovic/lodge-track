@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ["fernlike-untaken-hurdle.ngrok-free.dev", "*.ngrok-free.dev"],
   experimental: {
     serverActions: {
       /**
@@ -12,6 +13,7 @@ const nextConfig: NextConfig = {
        * anything larger is still rejected before it is buffered.
        */
       bodySizeLimit: "6mb",
+      allowedOrigins: ["fernlike-untaken-hurdle.ngrok-free.dev", "*.ngrok-free.dev"],
     },
   },
   // Cloudflare Pages requires output: 'standalone' for edge deployment

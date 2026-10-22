@@ -150,6 +150,7 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
       locale={locale}
       theme={theme}
       needsOnboarding={needsOnboarding}
+      subscriptionTier={subscription?.tier || "STARTER"}
     >
       {children}
     </DashboardShell>

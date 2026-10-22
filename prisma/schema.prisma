@@ -88,6 +88,8 @@ model Organization {
    */
   currency           String   @default("USD")
   onboardingCompleted Boolean   @default(false)
+  /** Tracks whether the onboarding walkthrough (steps 4-7) has been completed. */
+  onboardingWalkthroughCompleted Boolean @default(false)
   /** IANA time zone identifier for displaying dates/times in the org's local time. */
   timeZone           String   @default("UTC")
   /** Default check-in time for new bookings (HH:mm format, 24-hour). */

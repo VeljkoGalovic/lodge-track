@@ -93,6 +93,14 @@ export async function applyEvent(tx: Prisma.TransactionClient, eventName: string
   const data = payload.data
   if (!data || !eventName.startsWith("subscription_")) return
 
+  // Payment/invoice events don't carry a subscription status change.
+  // Acknowledge them (200) but do not mutate subscription state.
+  const paymentEvents = ["subscription_payment_success", "subscription_payment_failed", "subscription_payment_refunded", "subscription_invoice_created"]
+  if (paymentEvents.includes(eventName)) {
+    console.log("[billing] acknowledged payment event", eventName, payload.meta?.custom_data?.org_id)
+    return
+  }
+
   const attributes = data.attributes ?? {}
   const providerStatus = attributes.status
   const status = providerStatus ? statusForProviderStatus(providerStatus) : null

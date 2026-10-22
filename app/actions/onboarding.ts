@@ -10,6 +10,7 @@ import {
 } from "@/lib/authorization"
 import { isSupportedCurrency } from "@/lib/currency"
 import { SUPPORTED_TIMEZONES } from "@/lib/timezones"
+import { cleanupMockData } from "./mock-data"
 
 export interface SetupWizardData {
   organizationName: string
@@ -17,6 +18,7 @@ export interface SetupWizardData {
   timeZone: string
   checkInTime: string      // HH:mm format
   checkOutTime: string     // HH:mm format
+  walkthroughCompleted?: boolean  // Step 8: whether user wants to keep mock data
 }
 
 export async function completeSetupWizard(
@@ -52,6 +54,9 @@ export async function completeSetupWizard(
   if (!timeRegex.test(checkInTime)) return { error: "Invalid check-in time format." }
   if (!timeRegex.test(checkOutTime)) return { error: "Invalid check-out time format." }
 
+  // Step 8: Walkthrough completion preference
+  const walkthroughCompleted = field(formData, "walkthroughCompleted") === "true"
+
   await prisma.$transaction(async (tx) => {
     // Update organization
     await tx.organization.update({
@@ -65,7 +70,18 @@ export async function completeSetupWizard(
         onboardingCompleted: true,
       },
     })
+
+    // Handle mock data cleanup if user doesn't want to keep it
+    if (!walkthroughCompleted) {
+      // The cleanup is done in a separate action to avoid transaction complexity
+      // but we could also do it here if needed
+    }
   })
+
+  // If user doesn't want to keep mock data, clean it up after the transaction
+  if (!walkthroughCompleted) {
+    await cleanupMockData()
+  }
 
   revalidatePath("/dashboard")
   revalidatePath("/dashboard/settings")
