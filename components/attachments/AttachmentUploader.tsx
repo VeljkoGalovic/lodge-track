@@ -157,6 +157,11 @@ export function AttachmentUploader({
 
   return (
     <div className="space-y-4">
+      {/* Live region for upload progress announcements */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {uploading ? `Uploading attachment, ${progress}% complete` : uploading === false && progress === 100 ? "Upload complete" : ""}
+      </div>
+
       {/* Drop Zone */}
       <div
         className={`
@@ -191,7 +196,7 @@ export function AttachmentUploader({
         {uploading ? (
           <div className="space-y-2">
             <div className="flex items-center justify-center gap-2">
-              <svg className="animate-spin h-6 w-6 text-blue-600" viewBox="0 0 24 24">
+              <svg className="animate-spin h-6 w-6 text-blue-600" viewBox="0 0 24 24" aria-hidden="true">
                 <circle
                   className="opacity-25"
                   cx="12"
@@ -209,7 +214,7 @@ export function AttachmentUploader({
               </svg>
               <span className="text-gray-700 font-medium">Uploading... {progress}%</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-gray-200 rounded-full h-2" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} aria-label="Upload progress">
               <div
                 className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${progress}%` }}
@@ -264,11 +269,11 @@ export function AttachmentUploader({
               >
                 <div className="flex items-center gap-3 min-w-0">
                   {attachment.type.startsWith("image/") ? (
-                    <svg className="h-10 w-10 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="h-10 w-10 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
                     </svg>
                   ) : (
-                    <svg className="h-10 w-10 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="h-10 w-10 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
                     </svg>
                   )}
@@ -284,7 +289,7 @@ export function AttachmentUploader({
                     className="text-gray-400 hover:text-red-600 p-1 rounded transition-colors"
                     aria-label={`Delete ${attachment.name}`}
                   >
-                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                       <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
                     </svg>
                   </button>

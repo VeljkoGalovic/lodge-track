@@ -10,6 +10,7 @@ import type { Locale } from "@/lib/i18n/locales"
 import type { ThemePreference } from "@/lib/theme"
 import { clsx } from "clsx"
 import { SetupWizard } from "@/components/onboarding/SetupWizard"
+import { FocusTrap } from "@/components/ui/FocusTrap"
 
 interface DashboardShellProps {
   children: React.ReactNode
@@ -75,22 +76,24 @@ export function DashboardShell({
           )}
 
           {/* Sidebar — a drawer below md, a collapsible rail at md and up. */}
-          <aside
-            className={clsx(
-              "fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar backdrop-blur-xl transition-[width,transform] duration-300 ease-in-out",
-              "md:relative md:translate-x-0",
-              collapsed ? "md:w-[4.5rem]" : "md:w-64",
-              mobileOpen ? "translate-x-0" : "-translate-x-full"
-            )}
-          >
-            <DashboardSidebar
-              features={features}
-              orgName={orgName}
-              collapsed={collapsed}
-              onToggleCollapse={() => setCollapsed((value) => !value)}
-              onCloseMobile={() => setMobileOpen(false)}
-            />
-          </aside>
+          <FocusTrap active={mobileOpen} onDeactivate={() => setMobileOpen(false)}>
+            <aside
+              className={clsx(
+                "fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar backdrop-blur-xl transition-[width,transform] duration-300 ease-in-out",
+                "md:relative md:translate-x-0",
+                collapsed ? "md:w-[4.5rem]" : "md:w-64",
+                mobileOpen ? "translate-x-0" : "-translate-x-full"
+              )}
+            >
+              <DashboardSidebar
+                features={features}
+                orgName={orgName}
+                collapsed={collapsed}
+                onToggleCollapse={() => setCollapsed((value) => !value)}
+                onCloseMobile={() => setMobileOpen(false)}
+              />
+            </aside>
+          </FocusTrap>
 
           {/* Main column */}
           <div className="relative z-10 flex flex-1 flex-col overflow-hidden">

@@ -1135,6 +1135,8 @@ const booking = await api("/bookings", {
       keepMockDataHelp: "Save the sample properties, bookings, and expenses created during the walkthrough.",
       discardMockData: "Start fresh",
       discardMockDataHelp: "Remove sample data and begin with a clean dashboard.",
+      progress: "Setup progress",
+      stepAnnouncement: "Step {current} of {total}",
     },
   },
 
@@ -2291,6 +2293,8 @@ const booking = await api("/bookings", {
       completeButton: "Završi podešavanje",
       completedTitle: "Podešavanje završeno!",
       completedMessage: "Vaša organizacija je spremna. Dobrodošli u LodgeTrack!",
+      progress: "Napredak podesavanja",
+      stepAnnouncement: "Korak {current} od {total}",
       walkthroughNext: "Sledeće: {feature}",
       keepMockData: "Zadržite uzorke podataka",
       keepMockDataHelp: "Sačuvajte uzorke objekata, rezervacija i troškova kreirane tokom vodiča.",

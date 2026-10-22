@@ -5,7 +5,9 @@ import { cn } from "@/lib/utils"
 
 const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
   ({ className, ...props }, ref) => (
-    <div className="relative w-full overflow-auto">
+    <div className="relative w-full overflow-auto" role="region" aria-label="Data table" tabIndex={0}>
+      {/* Gradient scroll shadow indicator - shows when content overflows */}
+      <div className="absolute right-0 top-0 bottom-0 w-16 pointer-events-none bg-gradient-to-l from-card to-transparent opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-200" aria-hidden="true" />
       <table
         ref={ref}
         className={cn("w-full caption-bottom text-sm", className)}

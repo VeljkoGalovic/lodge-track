@@ -157,31 +157,38 @@ export function SetupWizard({ onComplete, subscriptionTier = "STARTER" }: SetupW
       <DialogContent className="max-w-xl sm:max-w-2xl">
         <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-6">
           {/* Progress Indicator */}
-          <div className="flex items-center justify-between mb-6">
-            {([1, 2, 3, 4, 5, 6, 7, 8] as WizardStep[]).map((s) => (
-              <React.Fragment key={s}>
-                <div className={clsx(
-                  "flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors",
-                  s < step
-                    ? "bg-primary text-primary-foreground"
-                    : s === step
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
-                )}>
-                  {s < step ? <Check className="h-4 w-4" /> : s}
-                </div>
-                {s < 8 && (
-                  <div className={clsx(
-                    "hidden flex-1 h-0.5 mx-2 transition-colors",
-                    s < step ? "bg-primary" : "bg-muted"
-                  )} />
-                )}
-              </React.Fragment>
-            ))}
-          </div>
+          <nav aria-label={t.onboarding.setupWizard?.progress || "Setup wizard steps"} className="mb-6">
+            <ol className="flex items-center justify-between" role="list">
+              {([1, 2, 3, 4, 5, 6, 7, 8] as WizardStep[]).map((s) => (
+                <React.Fragment key={s}>
+                  <li aria-current={s === step ? "step" : undefined} className="flex items-center">
+                    <div className={clsx(
+                      "flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors",
+                      s < step
+                        ? "bg-primary text-primary-foreground"
+                        : s === step
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
+                    )}>
+                      {s < step ? <Check className="h-4 w-4" /> : s}
+                    </div>
+                    {s < 8 && (
+                      <div className={clsx(
+                        "hidden flex-1 h-0.5 mx-2 transition-colors",
+                        s < step ? "bg-primary" : "bg-muted"
+                      )} />
+                    )}
+                  </li>
+                </React.Fragment>
+              ))}
+            </ol>
+            <div className="sr-only" aria-live="polite" aria-atomic="true">
+              {t.onboarding.setupWizard?.stepAnnouncement?.replace("{current}", String(step)).replace("{total}", "8") || `Step ${step} of 8`}
+            </div>
+          </nav>
 
           {/* Step Content */}
-          <div className="space-y-6">
+          <div role="region" aria-label={t.onboarding.setupWizard?.progress || "Setup wizard progress"} aria-live="polite" className="space-y-6">
             {/* Step 1: Organization Basics */}
             {step === 1 && (
               <div className="space-y-6" data-step="1">
