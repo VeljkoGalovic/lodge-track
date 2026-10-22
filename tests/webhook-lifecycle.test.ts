@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { applyEvent } from "@/app/api/billing/webhook/route"
-import { Prisma } from "@prisma/client"
+import { Prisma, type SubscriptionStatus } from "@prisma/client"
 import { statusForProviderStatus, tierForVariantId } from "@/lib/billing"
 
 vi.mock("server-only", () => ({}))
@@ -8,7 +8,7 @@ vi.mock("@/lib/prisma")
 vi.mock("@/lib/billing")
 
 describe("Webhook lifecycle events", () => {
-  const mockTx = {
+  const mockTx: Prisma.TransactionClient = {
     subscription: {
       findUnique: vi.fn(),
       findFirst: vi.fn(),
@@ -17,19 +17,22 @@ describe("Webhook lifecycle events", () => {
     webhookEvent: {
       create: vi.fn(),
     },
-  }
+  } as unknown as Prisma.TransactionClient
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(statusForProviderStatus).mockImplementation((s) => ({
-      on_trial: "TRIALING",
-      active: "ACTIVE",
-      paused: "PAUSED",
-      past_due: "PAST_DUE",
-      unpaid: "PAST_DUE",
-      cancelled: "CANCELED",
-      expired: "CANCELED",
-    }[s] as any))
+    vi.mocked(statusForProviderStatus).mockImplementation((s) => {
+      const statuses: Record<string, SubscriptionStatus> = {
+        on_trial: "TRIALING",
+        active: "ACTIVE",
+        paused: "PAUSED",
+        past_due: "PAST_DUE",
+        unpaid: "PAST_DUE",
+        cancelled: "CANCELED",
+        expired: "CANCELED",
+      }
+      return statuses[s] ?? null
+    })
     vi.mocked(tierForVariantId).mockReturnValue("PRO")
   })
 
@@ -51,7 +54,7 @@ describe("Webhook lifecycle events", () => {
       },
     }
 
-    await applyEvent(mockTx as any, "subscription_updated", payload)
+    await applyEvent(mockTx, "subscription_updated", payload)
 
     expect(mockTx.subscription.update).toHaveBeenCalledWith({
       where: { id: "sub-1" },
@@ -82,7 +85,7 @@ describe("Webhook lifecycle events", () => {
       },
     }
 
-    await applyEvent(mockTx as any, "subscription_cancelled", payload)
+    await applyEvent(mockTx, "subscription_cancelled", payload)
 
     expect(mockTx.subscription.update).toHaveBeenCalledWith({
       where: { id: "sub-1" },
@@ -111,7 +114,7 @@ describe("Webhook lifecycle events", () => {
       },
     }
 
-    await applyEvent(mockTx as any, "subscription_resumed", payload)
+    await applyEvent(mockTx, "subscription_resumed", payload)
 
     expect(mockTx.subscription.update).toHaveBeenCalledWith({
       where: { id: "sub-1" },
@@ -139,7 +142,7 @@ describe("Webhook lifecycle events", () => {
       },
     }
 
-    await applyEvent(mockTx as any, "subscription_expired", payload)
+    await applyEvent(mockTx, "subscription_expired", payload)
 
     expect(mockTx.subscription.update).toHaveBeenCalledWith({
       where: { id: "sub-1" },
@@ -166,7 +169,7 @@ describe("Webhook lifecycle events", () => {
       },
     }
 
-    await applyEvent(mockTx as any, "subscription_paused", payload)
+    await applyEvent(mockTx, "subscription_paused", payload)
 
     expect(mockTx.subscription.update).toHaveBeenCalledWith({
       where: { id: "sub-1" },
@@ -194,7 +197,7 @@ describe("Webhook lifecycle events", () => {
       },
     }
 
-    await applyEvent(mockTx as any, "subscription_unpaused", payload)
+    await applyEvent(mockTx, "subscription_unpaused", payload)
 
     expect(mockTx.subscription.update).toHaveBeenCalledWith({
       where: { id: "sub-1" },
@@ -210,7 +213,7 @@ describe("Webhook lifecycle events", () => {
     mockTx.subscription.update.mockResolvedValue({})
 
     // First: cancelled
-    await applyEvent(mockTx as any, "subscription_cancelled", {
+    await applyEvent(mockTx, "subscription_cancelled", {
       meta: { event_name: "subscription_cancelled", custom_data: { org_id: "org-1" } },
       data: {
         id: "123",
@@ -220,7 +223,7 @@ describe("Webhook lifecycle events", () => {
     })
 
     // Then: resumed (later event)
-    await applyEvent(mockTx as any, "subscription_resumed", {
+    await applyEvent(mockTx, "subscription_resumed", {
       meta: { event_name: "subscription_resumed", custom_data: { org_id: "org-1" } },
       data: {
         id: "124",
@@ -253,7 +256,7 @@ describe("Webhook lifecycle events", () => {
       },
     }
 
-    await applyEvent(mockTx as any, "subscription_updated", payload)
+    await applyEvent(mockTx, "subscription_updated", payload)
 
     // Should not update subscription for unrecognized status
     expect(mockTx.subscription.update).not.toHaveBeenCalled()
@@ -269,7 +272,7 @@ describe("Webhook lifecycle events", () => {
       },
     }
 
-    await applyEvent(mockTx as any, "order_created", payload)
+    await applyEvent(mockTx, "order_created", payload)
 
     expect(mockTx.subscription.update).not.toHaveBeenCalled()
   })
@@ -299,7 +302,7 @@ describe("Webhook lifecycle events", () => {
         },
       }
 
-      await applyEvent(mockTx as any, eventName, payload)
+      await applyEvent(mockTx, eventName, payload)
 
       // Should acknowledge (return without error) but NOT update subscription
       expect(mockTx.subscription.update).not.toHaveBeenCalled()

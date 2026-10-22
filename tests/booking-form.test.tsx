@@ -44,9 +44,14 @@ describe("shared booking mode", () => {
     expect(new FormData(container.querySelector("form")!).get("bookingMode")).toBe("whole")
 
     chooseBedsMode()
-    // Three of five beds taken: only the free ones are selectable, and the
-    // capacity readout is the segments' accessible label, not prose.
-    expect(screen.getByLabelText(/Bed 1/)).toBeDisabled()
+    // Three of five beds taken: taken beds are not offered for selection at
+    // all — only the free ones exist as checkboxes — and the capacity readout
+    // is the segments' accessible label, not prose.
+    expect(screen.queryByLabelText(/Bed 1/)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/Bed 2/)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/Bed 3/)).not.toBeInTheDocument()
+    expect(screen.getByLabelText(/Bed 4/)).toBeInTheDocument()
+    expect(screen.getByLabelText(/Bed 5/)).toBeInTheDocument()
     expect(screen.getByRole("img", { name: "3 of 5 beds occupied" })).toBeInTheDocument()
 
     fireEvent.click(screen.getByLabelText(/Bed 4/))
@@ -79,11 +84,26 @@ describe("shared booking mode", () => {
   })
 
   it("a taken bed blocks submission even when others are free", () => {
-    render(<BookingForm {...props} />)
+    const { container } = render(
+      <BookingForm
+        {...props}
+        busy={[
+          ...props.busy,
+          // Bed 4 is also taken Sep 6-10 by another guest, which the default
+          // fixture does not cover.
+          { propertyId: "p1", type: "WHOLE_UNIT" as const, unitId: "bed-3", bedIds: [], startDate: new Date(2026, 8, 6), endDate: new Date(2026, 8, 10) },
+        ]}
+      />
+    )
     dates()
     chooseBedsMode()
     fireEvent.click(screen.getByLabelText(/Bed 4/))
-    fireEvent.click(screen.getByLabelText(/Bed 1/))
+    expect(new FormData(container.querySelector("form")!).getAll("bedIds")).toEqual(["bed-3"])
+    // Slide the stay onto the nights when Bed 4 itself is held by another
+    // guest. The chosen slot becomes unavailable and the bed list drops it,
+    // so submission is refused even though every other bed in the window is
+    // free — Bed 1-3's Sep 1-5 holds have lapsed by then.
+    dates("2026-09-06", "2026-09-10")
     expect(screen.getByRole("alert")).toHaveTextContent(getDictionary("en").availability.occupied)
     expect(screen.getByRole("button", { name: "Add booking" })).toBeDisabled()
   })

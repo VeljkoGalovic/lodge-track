@@ -152,8 +152,9 @@ export function SetupWizard({ onComplete, subscriptionTier = "STARTER" }: SetupW
 
   const walkthroughStep = WALKTHROUGH_STEPS.find((s) => s.step === step)
 
+  // Controlled open, never closes until complete
   return (
-    <Dialog open onOpenChange={() => {}}>  // Controlled open, never closes until complete
+    <Dialog open onOpenChange={() => {}}>
       <DialogContent className="max-w-xl sm:max-w-2xl">
         <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-6">
           {/* Progress Indicator */}
@@ -336,7 +337,7 @@ export function SetupWizard({ onComplete, subscriptionTier = "STARTER" }: SetupW
                     </p>
                     <div className="flex items-center gap-2 text-xs text-subtle-foreground">
                       <Sparkles className="h-3.5 w-3.5 text-primary" />
-                      <span>This is a guided preview — no action needed. Click "Next" to continue.</span>
+                      <span>This is a guided preview — no action needed. Click &quot;Next&quot; to continue.</span>
                     </div>
                   </div>
 
@@ -711,14 +712,20 @@ function CalendarPreview() {
   )
 }
 
+/**
+ * Demonstration rows for the walkthrough preview. Computed once at module load
+ * instead of on every render — `Date.now()` inside the component body violates
+ * React's purity rules (react-hooks/purity).
+ */
+const mockExpenses = [
+  { date: new Date(), property: "Sunset Villa", category: "MAINTENANCE", description: "AC unit repair", amount: 350, hasReceipt: true },
+  { date: new Date(Date.now() - 2 * 86400000), property: "Mountain Cabin", category: "UTILITIES", description: "Electric bill", amount: 120, hasReceipt: true },
+  { date: new Date(Date.now() - 5 * 86400000), property: "Downtown Loft", category: "CLEANING", description: "Deep clean between guests", amount: 85, hasReceipt: false },
+  { date: new Date(Date.now() - 10 * 86400000), property: "Sunset Villa", category: "SUPPLIES", description: "Toiletries restock", amount: 45, hasReceipt: true },
+]
+
 function ExpensesPreview() {
   const t = useDictionary()
-  const mockExpenses = [
-    { date: new Date(), property: "Sunset Villa", category: "MAINTENANCE", description: "AC unit repair", amount: 350, hasReceipt: true },
-    { date: new Date(Date.now() - 2 * 86400000), property: "Mountain Cabin", category: "UTILITIES", description: "Electric bill", amount: 120, hasReceipt: true },
-    { date: new Date(Date.now() - 5 * 86400000), property: "Downtown Loft", category: "CLEANING", description: "Deep clean between guests", amount: 85, hasReceipt: false },
-    { date: new Date(Date.now() - 10 * 86400000), property: "Sunset Villa", category: "SUPPLIES", description: "Toiletries restock", amount: 45, hasReceipt: true },
-  ]
 
   const categoryColors: Record<string, string> = {
     MAINTENANCE: "bg-amber-500",

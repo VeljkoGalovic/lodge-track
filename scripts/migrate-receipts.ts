@@ -7,13 +7,16 @@
  */
 
 import { PrismaClient } from "@prisma/client"
+import { PrismaPg } from "@prisma/adapter-pg"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 import { promises as fs } from "fs"
 import { randomUUID } from "crypto"
 import { createHash } from "crypto"
 import path from "path"
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+})
 const supabase = createSupabaseServerClient()
 
 const STORAGE_ROOT = process.env.RECEIPT_STORAGE_DIR || ".data/receipts"

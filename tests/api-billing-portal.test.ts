@@ -49,7 +49,7 @@ describe("GET /api/billing/portal", () => {
     db.user.findUnique.mockResolvedValue({
       orgId: "org-123",
       role: "OWNER",
-    } as any)
+    })
     mockCreateCustomerPortalUrl.mockResolvedValue(null)
 
     const response = await GET(makeRequest())
@@ -63,7 +63,7 @@ describe("GET /api/billing/portal", () => {
     db.user.findUnique.mockResolvedValue({
       orgId: "org-123",
       role: "MEMBER",
-    } as any)
+    })
 
     const response = await GET(makeRequest())
 
@@ -76,7 +76,7 @@ describe("GET /api/billing/portal", () => {
     db.user.findUnique.mockResolvedValue({
       orgId: "org-123",
       role: "OWNER",
-    } as any)
+    })
     mockCreateCustomerPortalUrl.mockResolvedValue("https://lemonsqueezy.com/portal/abc")
 
     const response = await GET(makeRequest())

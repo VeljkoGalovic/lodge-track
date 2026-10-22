@@ -15,8 +15,8 @@ vi.mock("@/lib/prisma", () => ({ prisma: db }))
 vi.mock("@/auth", () => ({ auth: vi.fn() }))
 vi.mock("@/lib/billing", () => ({ billingStatus: vi.fn() }))
 vi.mock("@/lib/i18n/server", () => ({ currentLocale: async () => "en" }))
-vi.mock("@/components/i18n/LocaleProvider", () => {
-  const React = require("react")
+vi.mock("@/components/i18n/LocaleProvider", async () => {
+  const React = await import("react")
   return {
     useI18n: () => ({ locale: "en", t: getDictionary("en") }),
     useDictionary: () => getDictionary("en"),
@@ -50,7 +50,13 @@ import BillingPage from "@/app/dashboard/billing/page"
 const mockAuth = auth as vi.Mock
 const mockBillingStatus = billingStatus as vi.Mock
 
-async function renderBillingPage(overrides: { org?: any; searchParams?: any } = {}) {
+async function renderBillingPage(
+  overrides: {
+    /** Fields to deep-merge into the organization row the page loads. */
+    org?: Record<string, unknown>
+    searchParams?: { error?: string; checkout?: string }
+  } = {}
+) {
   mockAuth.mockResolvedValue({ user: { email: "owner@test.com" } })
   mockBillingStatus.mockReturnValue({ canCheckout: true, canReceiveWebhooks: true, missing: [] })
 

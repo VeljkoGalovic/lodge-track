@@ -1,11 +1,10 @@
 datasource db {
   provider = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x"]
 }
 
 enum Role {
@@ -479,6 +478,7 @@ model Booking {
  * the pre-refactor meaning of every row is unchanged. A property that opts in
  * later already lists its capacity as "Bed N" units (the bed-count feature), so
  * turning the flag on reinterprets those rows as slots with no data migration.
+ */
 
 /**
  * A cost incurred against a property — maintenance, utilities, supplies.

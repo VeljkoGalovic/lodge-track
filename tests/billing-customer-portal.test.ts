@@ -27,7 +27,7 @@ describe("createCustomerPortalUrl", () => {
     vi.mocked(prisma.subscription.findUnique).mockResolvedValue({
       billingCustomerId: null,
       billingSubscriptionId: "sub-123",
-    } as any)
+    })
     const url = await createCustomerPortalUrl("org-123")
     expect(url).toBeNull()
   })
@@ -39,7 +39,7 @@ describe("createCustomerPortalUrl", () => {
     vi.mocked(prisma.subscription.findUnique).mockResolvedValue({
       billingCustomerId: "cus_123",
       billingSubscriptionId: "sub_123",
-    } as any)
+    })
 
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
@@ -73,7 +73,7 @@ describe("createCustomerPortalUrl", () => {
     vi.mocked(prisma.subscription.findUnique).mockResolvedValue({
       billingCustomerId: "cus_123",
       billingSubscriptionId: "sub_123",
-    } as any)
+    })
 
     global.fetch = vi.fn().mockResolvedValue({
       ok: false,
@@ -102,7 +102,7 @@ describe("createCustomerPortalUrl", () => {
     vi.mocked(prisma.subscription.findUnique).mockResolvedValue({
       billingCustomerId: "cus_123",
       billingSubscriptionId: "sub_123",
-    } as any)
+    })
 
     global.fetch = vi.fn().mockRejectedValue(new Error("Network error"))
 
