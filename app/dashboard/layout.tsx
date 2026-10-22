@@ -22,6 +22,7 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
     redirect("/signin")
   }
 
+  // Fetch user first (needed for orgId)
   const user = await prisma.user.findUnique({
     where: { email: session.user.email },
     include: {
@@ -46,6 +47,33 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
 
   const org = user.organization
   const subscription = org.subscription
+
+  // Now fetch bookings and preferences in parallel with locale/theme
+  const now = new Date()
+  const preferences = {
+    notifyCheckInsDue: user.notifyCheckInsDue,
+    notifyStaysEnding: user.notifyStaysEnding,
+    notifyMissingRate: user.notifyMissingRate,
+  }
+
+  const [bookingsResult, locale, theme] = await Promise.all([
+    prisma.booking.findMany({
+      where: { property: { orgId: org.id } },
+      select: {
+        id: true,
+        guestName: true,
+        startDate: true,
+        endDate: true,
+        status: true,
+        totalAmount: true,
+        property: { select: { id: true, name: true } },
+      },
+    }),
+    currentLocale(user.locale),
+    currentThemePreference(user.theme),
+  ])
+
+  const attentionCount = buildActivity(bookingsResult, preferences, now).length
 
   // Subscription payment guard: ensure paid tiers have completed checkout
   // If user has a paid tier (STARTER, PRO, BUSINESS) but subscription lacks billing identifiers,
@@ -105,40 +133,6 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
     subscription?.maxPropertiesOverride ?? undefined,
     subscription?.hasApiAccessOverride
   )
-
-  // The bell's count obeys the same preferences as the feed itself, so the two
-  // can never disagree about how much is waiting.
-  const preferences = {
-    notifyCheckInsDue: user.notifyCheckInsDue,
-    notifyStaysEnding: user.notifyStaysEnding,
-    notifyMissingRate: user.notifyMissingRate,
-  }
-
-  const bookings = await prisma.booking.findMany({
-    where: { property: { orgId: org.id } },
-    select: {
-      id: true,
-      guestName: true,
-      startDate: true,
-      endDate: true,
-      status: true,
-      totalAmount: true,
-      property: { select: { id: true, name: true } },
-    },
-  })
-
-  const attentionCount = buildActivity(bookings, preferences, new Date()).length
-
-  /**
-   * Both preferences are read here and handed to the shell as its starting
-   * state. The cookie is authoritative — it is what `BootScript` already painted
-   * the page with — and the user row is the fallback for a member signing in on
-   * a device that has never seen either cookie. The row is what the setters in
-   * app/actions/preferences.ts write, so the two only disagree for one request
-   * after a write on another device.
-   */
-  const locale = await currentLocale(user.locale)
-  const theme = await currentThemePreference(user.theme)
 
   return (
     <DashboardShell
