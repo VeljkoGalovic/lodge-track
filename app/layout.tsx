@@ -59,6 +59,8 @@ export default function RootLayout({
     >
       <head>
         <BootScript />
+        {/* Viewport meta tag - allows zoom for accessibility (WCAG 1.4.4) */}
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         {/* Termly CMP - Cookie Consent Management Platform */}
         <script
           type="text/javascript"

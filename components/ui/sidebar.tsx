@@ -229,12 +229,12 @@ const SidebarTrigger = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttri
       ref={ref}
       type="button"
       className={clsx(
-        "flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-subtle-foreground transition-colors hover:bg-raised hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none",
+        "flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-subtle-foreground transition-colors hover:bg-raised hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none touch-manipulation",
         className
       )}
       {...props}
     >
-      {children ?? <X className="h-4 w-4" />}
+      {children ?? <X className="h-5 w-5" />}
       <span className="sr-only">Close sidebar</span>
     </button>
   )
@@ -255,13 +255,13 @@ const SidebarRail = React.forwardRef<HTMLButtonElement, SidebarRailProps>(
       aria-expanded={!collapsed}
       title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       className={clsx(
-        "absolute top-20 z-30 hidden h-7 w-7 items-center justify-center rounded-full border border-border bg-popover text-subtle-foreground shadow-lg transition-colors hover:border-primary/40 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 md:flex",
+        "absolute top-20 z-30 hidden h-11 w-11 items-center justify-center rounded-full border border-border bg-popover text-subtle-foreground shadow-lg transition-colors hover:border-primary/40 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 md:flex touch-manipulation",
         "-right-3.5",
         className
       )}
       {...props}
     >
-      {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+      {collapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
     </button>
   )
 )
