@@ -5,7 +5,7 @@ import { useTransition } from "react"
 import { Monitor, Moon, Sun } from "lucide-react"
 import { setThemePreference } from "@/app/actions/preferences"
 import { useTheme } from "@/components/theme/ThemeProvider"
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useDictionary } from "@/components/i18n/LocaleProvider"
 import { THEMES, type ThemePreference } from "@/lib/theme"
 import { Button } from "@/components/ui/Button"
 import {
@@ -44,7 +44,7 @@ const ICONS: Record<ThemePreference, React.ComponentType<{ className?: string }>
  */
 export function ThemeMenu() {
   const { preference, setPreference } = useTheme()
-  const { t } = useI18n()
+  const t = useDictionary()
   const [pending, startTransition] = useTransition()
 
   const TriggerIcon = ICONS[preference]

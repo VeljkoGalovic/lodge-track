@@ -4,7 +4,7 @@ import { useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Languages } from "lucide-react"
 import { setLocalePreference } from "@/app/actions/preferences"
-import { useI18n } from "@/components/i18n/LocaleProvider"
+import { useLocale, useDictionary } from "@/components/i18n/LocaleProvider"
 import { LOCALES, LOCALE_LABELS } from "@/lib/i18n/locales"
 import type { Locale } from "@/lib/i18n/locales"
 import { Button } from "@/components/ui/Button"
@@ -31,7 +31,8 @@ import {
  * a full page reload, avoiding the "destination stream closed early" error.
  */
 export function LanguageMenu() {
-  const { locale, t, setLocale } = useI18n()
+  const { locale, setLocale } = useLocale()
+  const t = useDictionary()
   const router = useRouter()
   const [pending, startTransition] = useTransition()
 

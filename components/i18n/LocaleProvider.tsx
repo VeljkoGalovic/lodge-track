@@ -4,15 +4,22 @@ import * as React from "react"
 import { getDictionary, type Dictionary } from "@/lib/i18n/dictionaries"
 import type { Locale } from "@/lib/i18n/locales"
 
-interface I18nValue {
+/**
+ * Context for locale state and setter — changes only when user switches language.
+ * Components using `useLocale()` only re-render on actual locale change.
+ */
+interface LocaleContextValue {
   locale: Locale
-  /** The dictionary for `locale`. Every nested object is present by type. */
-  t: Dictionary
-  /** Function to dynamically update the locale */
   setLocale: (locale: Locale) => void
 }
 
-const I18nContext = React.createContext<I18nValue | null>(null)
+const LocaleContext = React.createContext<LocaleContextValue | null>(null)
+
+/**
+ * Context for the dictionary — changes when locale changes.
+ * Components using `useDictionary()` re-render when translations update.
+ */
+const DictionaryContext = React.createContext<Dictionary | null>(null)
 
 /**
  * Makes the active language available to client components.
@@ -25,6 +32,10 @@ const I18nContext = React.createContext<I18nValue | null>(null)
  * Server components do not use this. They cannot read a client context, so they
  * call `getDictionary(await currentLocale(...))` directly — same data, same
  * source, resolved one step earlier.
+ *
+ * This provider splits locale state and dictionary into separate contexts so
+ * components can subscribe only to what they need, avoiding unnecessary re-renders
+ * when locale changes.
  */
 export function LocaleProvider({
   locale,
@@ -39,16 +50,49 @@ export function LocaleProvider({
     setCurrentLocale(newLocale)
   }, [])
 
-  const value = React.useMemo<I18nValue>(
-    () => ({ locale: currentLocale, t: getDictionary(currentLocale), setLocale }),
-    [currentLocale]
+  // Dictionary memoized by locale — new reference only when locale actually changes
+  const dictionary = React.useMemo(() => getDictionary(currentLocale), [currentLocale])
+
+  const localeValue = React.useMemo<LocaleContextValue>(
+    () => ({ locale: currentLocale, setLocale }),
+    [currentLocale, setLocale]
   )
 
-  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
+  return (
+    <LocaleContext.Provider value={localeValue}>
+      <DictionaryContext.Provider value={dictionary}>
+        {children}
+      </DictionaryContext.Provider>
+    </LocaleContext.Provider>
+  )
 }
 
-export function useI18n(): I18nValue {
-  const value = React.useContext(I18nContext)
-  if (!value) throw new Error("useI18n must be used inside a LocaleProvider")
+/**
+ * Hook for components that only need the current locale and/or setLocale.
+ * Does NOT re-render when dictionary changes (only on locale change).
+ */
+export function useLocale(): LocaleContextValue {
+  const value = React.useContext(LocaleContext)
+  if (!value) throw new Error("useLocale must be used inside a LocaleProvider")
   return value
+}
+
+/**
+ * Hook for components that only need the dictionary (translations).
+ * Re-renders when locale changes (new dictionary), but not for locale/setLocale updates alone.
+ */
+export function useDictionary(): Dictionary {
+  const value = React.useContext(DictionaryContext)
+  if (!value) throw new Error("useDictionary must be used inside a LocaleProvider")
+  return value
+}
+
+/**
+ * Backward-compatible hook returning both locale and dictionary.
+ * Prefer `useLocale()` or `useDictionary()` for finer-grained subscriptions.
+ */
+export function useI18n(): LocaleContextValue & { t: Dictionary } {
+  const { locale, setLocale } = useLocale()
+  const t = useDictionary()
+  return { locale, setLocale, t }
 }
