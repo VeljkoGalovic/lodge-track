@@ -491,28 +491,28 @@ export function SetupWizard({ onComplete, subscriptionTier = "STARTER" }: SetupW
                 <div className="rounded-lg border border-border/50 bg-muted/30 p-4 space-y-3">
                   <p className="text-sm font-medium">Walkthrough Sample Data</p>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="flex items-start gap-3 rounded-lg border border-border bg-background p-3 cursor-pointer hover:bg-muted/50 transition-colors">
+                    <label className="flex items-start gap-3 rounded-lg border border-border bg-background p-3 cursor-pointer hover:bg-muted/50 transition-colors min-h-[44px] touch-manipulation">
                       <input
                         type="radio"
                         name="mockDataChoice"
                         value="keep"
                         checked={formData.walkthroughCompleted}
                         onChange={() => handleChange("walkthroughCompleted", true)}
-                        className="mt-1 h-4 w-4 shrink-0 cursor-pointer"
+                        className="mt-1 h-4 w-4 shrink-0 cursor-pointer min-w-[44px] min-h-[44px]"
                       />
                       <div>
                         <p className="font-medium text-sm">{t.onboarding.setupWizard?.keepMockData || "Keep sample data"}</p>
                         <p className="text-xs text-muted-foreground">{t.onboarding.setupWizard?.keepMockDataHelp || "Save the sample properties, bookings, and expenses created during the walkthrough."}</p>
                       </div>
                     </label>
-                    <label className="flex items-start gap-3 rounded-lg border border-border bg-background p-3 cursor-pointer hover:bg-muted/50 transition-colors">
+                    <label className="flex items-start gap-3 rounded-lg border border-border bg-background p-3 cursor-pointer hover:bg-muted/50 transition-colors min-h-[44px] touch-manipulation">
                       <input
                         type="radio"
                         name="mockDataChoice"
                         value="discard"
                         checked={!formData.walkthroughCompleted}
                         onChange={() => handleChange("walkthroughCompleted", false)}
-                        className="mt-1 h-4 w-4 shrink-0 cursor-pointer"
+                        className="mt-1 h-4 w-4 shrink-0 cursor-pointer min-w-[44px] min-h-[44px]"
                       />
                       <div>
                         <p className="font-medium text-sm">{t.onboarding.setupWizard?.discardMockData || "Start fresh"}</p>

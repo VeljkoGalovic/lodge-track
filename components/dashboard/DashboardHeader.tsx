@@ -32,10 +32,10 @@ export function DashboardHeader({ orgName, features, userName, userEmail, attent
         variant="ghost"
         size="icon"
         onClick={onMenuClick}
-        className="md:hidden"
+        className="md:hidden min-h-[44px] min-w-[44px] p-2"
         aria-label={t.header.openNavigation}
       >
-        <Menu className="h-5 w-5" />
+        <Menu className="h-5 w-5" aria-hidden="true" />
       </Button>
 
       <div className="flex flex-1 items-center justify-between gap-4">
@@ -59,9 +59,9 @@ export function DashboardHeader({ orgName, features, userName, userEmail, attent
                 ? format(t.header.notificationsWithCount, { count: attentionCount })
                 : t.header.notifications
             }
-            className="relative"
+            className="relative min-h-[44px] min-w-[44px] p-2"
           >
-            <Bell className="h-5 w-5" />
+            <Bell className="h-5 w-5" aria-hidden="true" />
             {attentionCount > 0 ? (
               <span
                 aria-hidden="true"
@@ -77,7 +77,7 @@ export function DashboardHeader({ orgName, features, userName, userEmail, attent
               <button
                 type="button"
                 aria-label={t.header.account}
-                className="flex h-9 w-9 items-center justify-center rounded-full ring-1 ring-input transition-all hover:ring-ring/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                className="flex h-11 w-11 items-center justify-center rounded-full ring-1 ring-input transition-all hover:ring-ring/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 touch-manipulation"
               >
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary to-brand-purple text-sm font-semibold text-[#07090E]">
                   {userName?.charAt(0).toUpperCase() || "U"}

@@ -80,8 +80,10 @@
      Those three literal steps are collapsed into this one: a fourth near-identical
      grey would be a name nobody could choose between, and the collapsed value is
      the brightest of the three, so dark-mode hint text gets slightly more legible
-     rather than slightly less. */
-  --color-subtle-foreground: #475569;
+     rather than slightly less.
+
+     Light mode: #334155 (slate-700) ensures 4.5:1 contrast on #f6f7f9 background (WCAG AA). */
+  --color-subtle-foreground: #334155;
   --color-accent: #0f172a0a;
   --color-accent-foreground: #0f172a;
   --color-destructive: #dc2626;
@@ -290,4 +292,13 @@ html {
 
 section {
   scroll-margin-top: 5rem;
+}
+
+/* Hide scrollbar for horizontal chart scrolling on mobile */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }

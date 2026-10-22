@@ -65,6 +65,7 @@ export function UsageMeter({
         <Progress
           value={isUnlimited ? 0 : percentage}
           className={clsx("h-1.5", getProgressColor())}
+          aria-label={label}
         />
         {isAtLimit && action && (
           <Button variant="ghost" size="sm" href={action.href} className="w-full justify-start gap-1 text-xs p-1 text-destructive hover:bg-destructive/10">
@@ -102,6 +103,7 @@ export function UsageMeter({
         <Progress
           value={isUnlimited ? 0 : percentage}
           className={clsx("h-3", getProgressColor())}
+          aria-label={label}
         />
         <div className="flex items-center justify-between text-xs">
           <span className="text-subtle-foreground">

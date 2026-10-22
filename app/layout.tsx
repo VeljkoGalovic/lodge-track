@@ -73,6 +73,12 @@ export default function RootLayout({
         ></script>
       </head>
       <body className="min-h-screen bg-background font-sans text-foreground antialiased selection:bg-primary/30">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-lg focus:font-medium focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          Skip to main content
+        </a>
         <SessionProvider>
           {children}
         </SessionProvider>

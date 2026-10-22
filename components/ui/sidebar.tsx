@@ -7,7 +7,7 @@ import { clsx } from "clsx"
 import { ChevronLeft, ChevronRight, X } from "lucide-react"
 
 const sidebarMenuButtonVariants = cva(
-  "flex w-full items-center gap-2 overflow-hidden rounded-xl p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding,background-color,color] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:justify-center [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
+  "flex w-full items-center gap-2 overflow-hidden rounded-xl p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding,background-color,color] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:justify-center [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 touch-manipulation",
   {
     variants: {
       variant: {
@@ -15,8 +15,8 @@ const sidebarMenuButtonVariants = cva(
         outline: "bg-muted ring-1 ring-input",
       },
       size: {
-        default: "h-10 px-3",
-        sm: "h-9 px-2",
+        default: "h-11 px-3",
+        sm: "h-10 px-2",
         lg: "h-12 px-3",
       },
     },
@@ -55,7 +55,7 @@ const SidebarMenuSubButton = React.forwardRef<
     <a
       ref={ref}
       className={clsx(
-        "flex w-full items-center gap-2 overflow-hidden rounded-lg px-2 py-1.5 text-xs text-sidebar-foreground outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-data-[collapsible=icon]:size-9 group-data-[collapsible=icon]:justify-center [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
+        "flex w-full items-center gap-2 overflow-hidden rounded-lg px-2 py-3 text-xs text-sidebar-foreground outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-data-[collapsible=icon]:size-11 group-data-[collapsible=icon]:justify-center [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 touch-manipulation min-h-[44px]",
         className
       )}
       {...props}
@@ -138,7 +138,7 @@ const SidebarGroupLabel = React.forwardRef<HTMLDivElement, SidebarGroupLabelProp
       <Comp
         ref={ref}
         className={clsx(
-          "flex h-8 shrink-0 items-center rounded-lg px-3 text-[11px] font-semibold uppercase tracking-wider text-subtle-foreground outline-none ring-sidebar-ring transition-[margin,opacity] hover:text-sidebar-foreground group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0",
+          "flex h-11 shrink-0 items-center rounded-lg px-3 text-[11px] font-semibold uppercase tracking-wider text-subtle-foreground outline-none ring-sidebar-ring transition-[margin,opacity] hover:text-sidebar-foreground group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0",
           className
         )}
         {...props}
@@ -229,7 +229,7 @@ const SidebarTrigger = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttri
       ref={ref}
       type="button"
       className={clsx(
-        "flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-subtle-foreground transition-colors hover:bg-raised hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none touch-manipulation",
+        "flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-subtle-foreground transition-colors hover:bg-raised hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none touch-manipulation min-h-[44px] min-w-[44px]",
         className
       )}
       {...props}
@@ -255,7 +255,7 @@ const SidebarRail = React.forwardRef<HTMLButtonElement, SidebarRailProps>(
       aria-expanded={!collapsed}
       title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       className={clsx(
-        "absolute top-20 z-30 hidden h-11 w-11 items-center justify-center rounded-full border border-border bg-popover text-subtle-foreground shadow-lg transition-colors hover:border-primary/40 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 md:flex touch-manipulation",
+        "absolute top-20 z-30 hidden h-11 w-11 items-center justify-center rounded-full border border-border bg-popover text-subtle-foreground shadow-lg transition-colors hover:border-primary/40 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 md:flex touch-manipulation min-h-[44px] min-w-[44px]",
         "-right-3.5",
         className
       )}

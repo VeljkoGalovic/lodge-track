@@ -99,6 +99,7 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
     booking?.type === "SHARED_BED" ? booking.bedIds : []
   )
   const [status, setStatus] = useState<BookingStatus>(booking?.status ?? "PENDING")
+  const [focusedBedIndex, setFocusedBedIndex] = useState<number>(0)
 
   const unitsHere = useMemo(
     () => units.filter((unit) => unit.propertyId === propertyId),
@@ -184,6 +185,49 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
     )
   }
 
+  function handleBedKeyDown(event: React.KeyboardEvent<HTMLInputElement>, index: number, availableBeds: typeof availability) {
+    if (!availableBeds) return
+    const nonDisabledBeds = availableBeds.filter((entry) => entry.available)
+    const totalNonDisabled = nonDisabledBeds.length
+    if (totalNonDisabled === 0) return
+
+    let newIndex = focusedBedIndex
+    switch (event.key) {
+      case "ArrowRight":
+      case "ArrowDown":
+        event.preventDefault()
+        newIndex = (focusedBedIndex + 1) % totalNonDisabled
+        break
+      case "ArrowLeft":
+      case "ArrowUp":
+        event.preventDefault()
+        newIndex = (focusedBedIndex - 1 + totalNonDisabled) % totalNonDisabled
+        break
+      case "Home":
+        event.preventDefault()
+        newIndex = 0
+        break
+      case "End":
+        event.preventDefault()
+        newIndex = totalNonDisabled - 1
+        break
+      case " ":
+      case "Enter":
+        event.preventDefault()
+        const bedId = nonDisabledBeds[focusedBedIndex]?.unit.id
+        if (bedId) toggleBed(bedId)
+        break
+      default:
+        return
+    }
+    setFocusedBedIndex(newIndex)
+    // Focus the new checkbox
+    const nextInput = document.querySelector(
+      `input[name="bedIds"][value="${nonDisabledBeds[newIndex].unit.id}"]`
+    ) as HTMLInputElement
+    nextInput?.focus()
+  }
+
   return (
     <form action={formAction} className="space-y-5">
       {booking && <input type="hidden" name="id" value={booking.id} />}
@@ -228,6 +272,7 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
             value={start}
             onChange={(event) => setStart(event.target.value)}
             required
+            className="min-h-[44px]"
           />
         </div>
         <div className="space-y-2">
@@ -241,6 +286,7 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
             value={end}
             onChange={(event) => setEnd(event.target.value)}
             required
+            className="min-h-[44px]"
           />
         </div>
       </div>
@@ -259,7 +305,7 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
           <div className="grid gap-2 sm:grid-cols-2">
             <label
               className={cn(
-                "flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition-colors",
+                "flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition-colors min-h-[44px]",
                 mode === "whole" ? "border-primary/40 bg-primary/[0.06]" : "border-border bg-muted"
               )}
             >
@@ -269,7 +315,7 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
                 value="whole"
                 checked={mode === "whole"}
                 onChange={() => setMode("whole")}
-                className="mt-1 h-4 w-4 accent-[color:var(--primary)]"
+                className="mt-1 h-4 w-4 min-w-[44px] min-h-[44px] accent-[color:var(--primary)]"
               />
               <span>
                 <span className="block text-sm font-medium text-foreground">{t.forms.modeWholeProperty}</span>
@@ -278,7 +324,7 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
             </label>
             <label
               className={cn(
-                "flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition-colors",
+                "flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition-colors min-h-[44px]",
                 mode === "beds" ? "border-primary/40 bg-primary/[0.06]" : "border-border bg-muted"
               )}
             >
@@ -288,7 +334,7 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
                 value="beds"
                 checked={mode === "beds"}
                 onChange={() => setMode("beds")}
-                className="mt-1 h-4 w-4 accent-[color:var(--primary)]"
+                className="mt-1 h-4 w-4 min-w-[44px] min-h-[44px] accent-[color:var(--primary)]"
               />
               <span>
                 <span className="block text-sm font-medium text-foreground">{t.forms.modeBeds}</span>
@@ -307,38 +353,42 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
               </div>
 
               {availability ? (
-                <div className="grid gap-1.5 sm:grid-cols-2">
-                  {availability.map((entry) => {
-                    const taken = !entry.available
-                    const checked = selectedBeds.includes(entry.unit.id)
-                    return (
-                      <label
-                        key={entry.unit.id}
-                        className={cn(
-                          "flex items-center gap-2 rounded-xl border px-3 py-2 text-sm",
-                          checked
-                            ? "border-primary/40 bg-primary/[0.08] text-foreground"
-                            : "border-border bg-card text-muted-foreground",
-                          taken && !checked && "opacity-50"
-                        )}
-                      >
-                        <input
-                          type="checkbox"
-                          name="bedIds"
-                          value={entry.unit.id}
-                          checked={checked}
-                          onChange={() => toggleBed(entry.unit.id)}
-                          /* A bed another guest holds cannot be newly claimed. */
-                          disabled={taken && !checked}
-                          className="h-4 w-4 accent-[color:var(--primary)]"
-                        />
-                        {entry.unit.name}
-                        {taken ? (
-                          <span className="ml-auto text-xs text-subtle-foreground">{t.availability.occupied}</span>
-                        ) : null}
-                      </label>
-                    )
-                  })}
+                <div
+                  className="grid gap-1.5 sm:grid-cols-2"
+                  role="group"
+                  aria-label={t.forms.beds}
+                >
+                  {availability
+                    .filter((entry) => entry.available)
+                    .map((entry, nonDisabledIndex) => {
+                      const checked = selectedBeds.includes(entry.unit.id)
+                      const isFirst = nonDisabledIndex === 0
+                      return (
+                        <label
+                          key={entry.unit.id}
+                          className={cn(
+                            "flex items-center gap-2 rounded-xl border px-3 py-3 text-sm min-h-[44px]",
+                            checked
+                              ? "border-primary/40 bg-primary/[0.08] text-foreground"
+                              : "border-border bg-card text-muted-foreground"
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            name="bedIds"
+                            value={entry.unit.id}
+                            checked={checked}
+                            onChange={() => toggleBed(entry.unit.id)}
+                            onKeyDown={(event) => handleBedKeyDown(event, nonDisabledIndex, availability)}
+                            className="h-4 w-4 min-w-[44px] min-h-[44px] accent-[color:var(--primary)]"
+                            // Roving tabindex: only first non-disabled checkbox is in tab order
+                            tabIndex={isFirst ? 0 : -1}
+                            onFocus={() => setFocusedBedIndex(nonDisabledIndex)}
+                          />
+                          {entry.unit.name}
+                        </label>
+                      )
+                    })}
                 </div>
               ) : (
                 <p className="text-xs text-subtle-foreground">{t.forms.chooseDates}</p>
@@ -370,7 +420,7 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
           </div>
 
           {/* Property changes reset this controlled selection. */}
-          <Select id="unitId" name="unitId" value={unitId} onChange={event => setUnitId(event.target.value)}>
+          <Select id="unitId" name="unitId" value={unitId} onChange={event => setUnitId(event.target.value)} className="min-h-[44px]">
             <option value="" disabled={status !== "CANCELLED" && wholeUnavailable}>{t.forms.unitWholeProperty}</option>
             {unitsHere.map((unit) => {
               const taken = statusByUnitId.get(unit.id)?.available === false
@@ -436,6 +486,7 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
           placeholder="John Smith"
           required
           maxLength={120}
+          className="min-h-[44px]"
         />
       </div>
 
@@ -444,7 +495,7 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
           <label htmlFor="status" className="text-sm font-medium text-muted-foreground">
             {t.forms.status}
           </label>
-          <Select id="status" name="status" value={status} onChange={event => setStatus(event.target.value as BookingStatus)}>
+          <Select id="status" name="status" value={status} onChange={event => setStatus(event.target.value as BookingStatus)} className="min-h-[44px]">
             {Object.values(BookingStatus).map((status) => (
               <option key={status} value={status}>
                 {t.pages.bookings.statuses[status]}
@@ -462,6 +513,7 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
             defaultValue={booking?.source ?? "Direct"}
             list="booking-sources"
             maxLength={60}
+            className="min-h-[44px]"
           />
           <datalist id="booking-sources">
             {SOURCE_SUGGESTIONS.map((source) => (
@@ -486,19 +538,21 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
           value={amount}
           onChange={(event) => setAmount(event.target.value)}
           placeholder="450.00"
+          className="min-h-[44px]"
         />
         <p className="text-xs text-subtle-foreground">{t.forms.rateHelp}</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-3 pt-2">
         {selectionUnavailable && (
-          <p role="alert" className="inline-flex items-center justify-center rounded-full border border-red-500/25 bg-red-500/10 px-4 py-2 text-center text-xs font-medium text-red-400">
+          <p role="alert" className="inline-flex items-center justify-center rounded-full border border-red-500/25 bg-red-500/10 px-4 py-2 text-center text-xs font-medium text-red-400 min-h-[44px]">
             {t.availability.occupied}
           </p>
         )}
         <SubmitButton
           pendingLabel={t.common.saving}
           disabled={!propertyId || !(nights > 0) || selectionUnavailable || bedsSubmitBlocked}
+          className="min-h-[44px]"
         >
           {booking ? t.forms.saveChanges : t.forms.addBooking}
         </SubmitButton>

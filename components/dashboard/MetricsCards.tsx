@@ -17,6 +17,8 @@ interface MetricCardProps {
   isAtLimit?: boolean
   action?: { label: string; href: string }
   className?: string
+  /** When true, the entire card becomes a touch target (for kiosk/touch-first layouts). */
+  touchTarget?: boolean
 }
 
 export function MetricCard({
@@ -28,16 +30,30 @@ export function MetricCard({
   progress,
   isAtLimit,
   action,
-  className
+  className,
+  touchTarget = false
 }: MetricCardProps) {
   const { t } = useI18n()
+
+  // When touchTarget is true, make the entire card focusable with proper touch targets
+  const cardProps = touchTarget ? {
+    role: "region",
+    tabIndex: 0,
+    "aria-label": title,
+    className: clsx(
+      "relative overflow-hidden rounded-2xl border border-border bg-card p-6 backdrop-blur-xl transition-all duration-300 hover:border-border hover:bg-accent min-h-[44px]",
+      "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background",
+      className
+    )
+  } : {
+    className: clsx(
+      "relative overflow-hidden rounded-2xl border border-border bg-card p-6 backdrop-blur-xl transition-all duration-300 hover:border-border hover:bg-accent",
+      className
+    )
+  }
+
   return (
-    <div
-      className={clsx(
-        "relative overflow-hidden rounded-2xl border border-border bg-card p-6 backdrop-blur-xl transition-all duration-300 hover:border-border hover:bg-accent",
-        className
-      )}
-    >
+    <div {...cardProps}>
       <div className="flex items-start justify-between gap-4">
         <p className="text-sm font-medium text-subtle-foreground">{title}</p>
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-muted">
@@ -59,6 +75,7 @@ export function MetricCard({
           <Progress
             value={progress.max === Infinity ? 0 : Math.min(100, (progress.current / progress.max) * 100)}
             className="h-2"
+            aria-label={progress.label}
           />
           {isAtLimit && (
             <div className="flex items-center gap-2 text-xs text-warning">

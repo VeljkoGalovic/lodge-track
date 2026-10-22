@@ -97,6 +97,9 @@ const CHART_HEIGHT = 160
 /** Responsive chart height: 160px base, 200px on md, 240px on lg. */
 const chartHeightClass = `h-[${CHART_HEIGHT}px] md:h-[200px] lg:h-[240px]`
 
+/** Minimum bar width for touch targets (44px for accessibility) */
+const MIN_BAR_WIDTH = 44
+
 interface ChartPanelProps {
   title: string
   badge: string
@@ -203,14 +206,17 @@ function ChartPanel({
 
               {/* Bars */}
               <div
-                className="relative flex items-end justify-around gap-2 px-2"
+                className="relative flex items-end justify-around gap-2 px-2 overflow-x-auto pb-4 scrollbar-hide"
                 style={{ height: CHART_HEIGHT }}
+                role="region"
+                aria-label={t.pages.analytics.chartScrollRegion}
+                tabIndex={0}
               >
                {all.map((point, index) => {
                   const isProjected = projected?.includes(point) ?? false
                   const isActive = activeMonth === point.month
                   return (
-                    <div key={`${point.month}-${index}`} className="flex flex-1 flex-col items-center self-stretch">
+                    <div key={`${point.month}-${index}`} className="flex flex-1 flex-col items-center self-stretch min-w-[44px]">
                       <div className="flex w-full flex-1 items-end">
                         <div
                           title={`${point.month}: ${formatFor(point)}`}

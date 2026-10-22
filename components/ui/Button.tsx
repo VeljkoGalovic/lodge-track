@@ -61,7 +61,7 @@ export function Button({
       "bg-destructive hover:bg-destructive-hover text-foreground shadow-[0_0_20px_rgba(239,68,68,0.4)] hover:shadow-[0_0_30px_rgba(239,68,68,0.6)]",
   };
 
-  const disabledStyles = "opacity-50 cursor-not-allowed pointer-events-none";
+  const disabledStyles = "cursor-not-allowed pointer-events-none text-muted-foreground bg-muted border-border";
 
   const finalClassName = cn(
     base,

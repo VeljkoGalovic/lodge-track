@@ -7,6 +7,11 @@ interface FocusTrapProps {
   children: React.ReactNode
   active?: boolean
   onDeactivate?: () => void
+  /**
+   * When true, renders children in a portal to document.body (for modals/dialogs).
+   * When false, keeps children in normal document flow (for sidebars, drawers).
+   */
+  usePortal?: boolean
 }
 
 /**
@@ -14,7 +19,7 @@ interface FocusTrapProps {
  * Focus cycles through focusable elements inside the trap.
  * Restores focus to previous element on deactivation.
  */
-export function FocusTrap({ children, active = true, onDeactivate }: FocusTrapProps) {
+export function FocusTrap({ children, active = true, onDeactivate, usePortal = false }: FocusTrapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const previousActiveElement = useRef<HTMLElement | null>(null)
 
@@ -64,8 +69,12 @@ export function FocusTrap({ children, active = true, onDeactivate }: FocusTrapPr
 
   if (!active) return <>{children}</>
 
-  return createPortal(
-    <div ref={containerRef} className="contents">{children}</div>,
-    document.body
-  )
+  if (usePortal) {
+    return createPortal(
+      <div ref={containerRef} className="contents">{children}</div>,
+      document.body
+    )
+  }
+
+  return <div ref={containerRef} className="contents">{children}</div>
 }

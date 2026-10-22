@@ -22,9 +22,9 @@ const VARIANTS = {
 }
 
 const SIZES = {
-  default: "px-6 py-3 text-sm",
-  sm: "px-4 py-2 text-xs",
-  lg: "px-8 py-4 text-base",
+  default: "px-6 py-3 text-sm min-h-[44px]",
+  sm: "px-4 py-2 text-xs min-h-[44px]",
+  lg: "px-8 py-4 text-base min-h-[44px]",
 }
 
 /**

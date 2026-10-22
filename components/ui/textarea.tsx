@@ -14,6 +14,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           "placeholder:text-subtle-foreground",
           "focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/30",
           "disabled:cursor-not-allowed disabled:opacity-50",
+          "touch-manipulation",
           className
         )}
         ref={ref}
