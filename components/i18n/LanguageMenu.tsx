@@ -25,27 +25,28 @@ import {
  * "Serbian" — since someone who reads only Serbian cannot find their language in
  * a list written in English.
  *
- * The choice is a server round trip through `setLocalePreference`, exactly as
- * the settings page's segmented control: the preference is persisted, then the
- * dashboard segment re-renders from the server so every translated string on
- * the page is produced in the new language at once. Swapping the dictionary
- * client-side would leave server-rendered copy in the old language until
- * a reload.
+ * Like the theme switcher, we apply the locale to the client context immediately
+ * so the UI updates instantly (including the dropdown selection), then persist
+ * to the server. We use router.refresh() to re-fetch server components without
+ * a full page reload, avoiding the "destination stream closed early" error.
  */
 export function LanguageMenu() {
-  const { locale, t } = useI18n()
+  const { locale, t, setLocale } = useI18n()
   const router = useRouter()
   const [pending, startTransition] = useTransition()
 
   function choose(next: string) {
     const value = next as Locale
     if (value === locale) return
+    // Update client context immediately so the dropdown and all client components
+    // reflect the new language instantly (fixes the "stuck on original language" bug)
+    setLocale(value)
     startTransition(async () => {
       const result = await setLocalePreference(value)
       if (!result.error) {
-        // Reload the page to pick up the new locale from the cookie
-        // Server components read the cookie, so a full reload is needed
-        window.location.reload()
+        // Re-fetch server components to update server-rendered content
+        // without a full page reload (avoids "destination stream closed early")
+        router.refresh()
       }
     })
   }
