@@ -1,6 +1,7 @@
 "use client"
 
 import { useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { Languages } from "lucide-react"
 import { setLocalePreference } from "@/app/actions/preferences"
 import { useI18n } from "@/components/i18n/LocaleProvider"
@@ -33,13 +34,19 @@ import {
  */
 export function LanguageMenu() {
   const { locale, t } = useI18n()
+  const router = useRouter()
   const [pending, startTransition] = useTransition()
 
   function choose(next: string) {
     const value = next as Locale
     if (value === locale) return
     startTransition(async () => {
-      await setLocalePreference(value)
+      const result = await setLocalePreference(value)
+      if (!result.error) {
+        // Reload the page to pick up the new locale from the cookie
+        // Server components read the cookie, so a full reload is needed
+        window.location.reload()
+      }
     })
   }
 
