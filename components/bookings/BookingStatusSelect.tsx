@@ -1,9 +1,10 @@
 "use client"
 
 import { startTransition, useActionState } from "react"
-import { BookingStatus } from "@prisma/client"
+import type { BookingStatus } from "@prisma/client"
 import { setBookingStatus } from "@/app/actions/bookings"
 import { EMPTY_ACTION_STATE } from "@/lib/action-state"
+import { BOOKING_STATUSES } from "@/lib/booking-status-values"
 import { getBookingStatusStyle } from "@/lib/booking-status"
 import { Select } from "@/components/ui/select"
 import { FormMessage } from "@/components/dashboard/FormMessage"
@@ -35,7 +36,7 @@ export function BookingStatusSelect({ bookingId, status, guestName }: {
           startTransition(() => dispatch(data))
         }}
       >
-        {Object.values(BookingStatus).map(value => (
+        {BOOKING_STATUSES.map(value => (
           <option key={value} value={value}>{t.pages.bookings.statuses[value]}</option>
         ))}
       </Select>

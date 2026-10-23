@@ -1,9 +1,10 @@
 "use client"
 
 import { useActionState, useMemo, useState } from "react"
-import { BookingStatus } from "@prisma/client"
+import type { BookingStatus } from "@prisma/client"
 import { createBooking, updateBooking } from "@/app/actions/bookings"
 import { EMPTY_ACTION_STATE } from "@/lib/action-state"
+import { BOOKING_STATUSES } from "@/lib/booking-status-values"
 import { useActionRedirect } from "@/lib/use-action-redirect"
 import { unitAvailability, rangesOverlap, claimsSameSlot, type BusyInterval } from "@/lib/availability"
 import { toMajorUnits } from "@/lib/currency"
@@ -497,7 +498,7 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
             {t.forms.status}
           </label>
           <Select id="status" name="status" value={status} onChange={event => setStatus(event.target.value as BookingStatus)} className="min-h-[44px]">
-            {Object.values(BookingStatus).map((status) => (
+            {BOOKING_STATUSES.map((status) => (
               <option key={status} value={status}>
                 {t.pages.bookings.statuses[status]}
               </option>
