@@ -5,6 +5,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  release:
+    types: [published]
 
 env:
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -53,17 +55,16 @@ jobs:
         run: npm run test
 
   # =========================================================================
-  # Deploy to Cloudflare Pages (Preview on PR, Production on merge to main)
+  # Deploy to Cloudflare Workers via @opennextjs/cloudflare
   # =========================================================================
   deploy:
-    name: Deploy to Cloudflare Pages
+    name: Deploy to Cloudflare (OpenNext Workers)
     needs: ci
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
-      deployments: write
 
     steps:
       - name: Checkout repository
@@ -78,10 +79,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Generate Prisma Client
-        run: npx prisma generate
-
-      - name: Build application for Cloudflare Pages
+      # Runs `prisma generate && next build`, then adapts the standalone
+      # output into `.open-next/` (worker.js + assets) for the Workers runtime.
+      - name: Build OpenNext bundle for Cloudflare
         run: npm run build:cf
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -94,13 +94,12 @@ jobs:
           LEMON_SQUEEZY_BUSINESS_VARIANT_ID: ${{ secrets.LEMON_SQUEEZY_BUSINESS_VARIANT_ID }}
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
 
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@1
+      # prisma generate happens inside the build above; the worker bundle is
+      # fully engine-free (WASM query compiler inlined as base64), so nothing
+      # native ships and no post-deploy steps are needed.
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: lodgetrack
-          directory: .vercel/output
-          branch: ${{ github.ref == 'refs/heads/main' && 'main' || github.head_ref }}
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          wranglerVersion: '3'
+          command: deploy
