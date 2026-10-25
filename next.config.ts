@@ -18,6 +18,14 @@ const nextConfig: NextConfig = {
   },
   // Cloudflare Pages requires output: 'standalone' for edge deployment
   output: 'standalone',
+  // `pg` loads its optional `pg-cloudflare` connector (the Cloudflare-aware
+  // socket implementation) only from behind a `try { require(...) }`, so
+  // Next's dependency tracer misses it and OpenNext's copied node_modules
+  // ends up without it — breaking the Workers build with
+  // `Could not resolve "pg-cloudflare"`. Force it into every server trace.
+  outputFileTracingIncludes: {
+    '/*': ['./node_modules/pg-cloudflare/**/*'],
+  },
 };
 
 export default nextConfig;

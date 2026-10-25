@@ -1,0 +1,37 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // OpenNext (https://opennext.js.org/cloudflare) turns the Next.js build into
+  // `.open-next/worker.js` + `.open-next/assets`; wrangler deploys both.
+  "main": ".open-next/worker.js",
+  "name": "lodge-track",
+  "compatibility_date": "2026-10-19",
+  "compatibility_flags": [
+    // Required so the Node-oriented runtime (pg driver adapter, Buffer, etc.)
+    // works in the Workers runtime.
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  // OpenNext uses a self-reference to re-enter the worker (on-demand
+  // revalidation, queue handoff). Must match "name" above.
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "lodge-track"
+    }
+  ],
+  // Non-secret server-side vars. Secrets (DATABASE_URL, AUTH_SECRET,
+  // RESEND_API_KEY, LEMON_SQUEEZY_*) live in the Workers dashboard
+  // (Workers & Pages -> lodge-track -> Settings -> Variables & Secrets) or
+  // via `wrangler secret put` — they are never committed to this file.
+  "vars": {
+    "NEXT_PUBLIC_APP_URL": "https://www.lodgetrack.com/"
+  },
+  // next/image optimization backed by Cloudflare Images.
+  "images": {
+    "binding": "IMAGES"
+  }
+}
