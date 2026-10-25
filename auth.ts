@@ -43,6 +43,10 @@ class EmailNotVerified extends CredentialsSignin {
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" }, // Required when using Credentials provider
+  // On Cloudflare Workers the deployment platform is not detected, so Auth.js
+  // refuses every request with `UntrustedHost`. The Host header is supplied by
+  // the edge network, so trusting it is the accepted Workers setup.
+  trustHost: true,
   providers: [
     CredentialsProvider({
       name: "Credentials",

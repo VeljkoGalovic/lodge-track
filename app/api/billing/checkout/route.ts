@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { canAdminister } from "@/lib/authorization"
 import { createCheckoutUrl } from "@/lib/billing"
 import { absoluteUrl } from "@/lib/origin"
+import { guardApiRateLimit } from "@/lib/api-guard"
 
 /**
  * Starts a subscription purchase.
@@ -18,6 +19,9 @@ import { absoluteUrl } from "@/lib/origin"
  * in the store, including ones this app does not sell.
  */
 export async function GET(request: Request) {
+  const rateLimited = await guardApiRateLimit(request)
+  if (rateLimited) return rateLimited
+
   const session = await auth()
   if (!session?.user?.email) {
     return NextResponse.redirect(absoluteUrl("/signin", request))

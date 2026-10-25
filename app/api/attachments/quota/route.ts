@@ -2,8 +2,12 @@ import { NextResponse } from "next/server"
 import { currentMembership } from "@/lib/authorization"
 import { attachmentQuota } from "@/lib/attachment-quota"
 import { formatBytes } from "@/lib/subscriptions"
+import { guardApiRateLimit } from "@/lib/api-guard"
 
-export async function GET() {
+export async function GET(request: Request) {
+  const rateLimited = await guardApiRateLimit(request)
+  if (rateLimited) return rateLimited
+
   const membership = await currentMembership()
   if (!membership) {
     return NextResponse.json({ error: "Your session has expired. Please sign in again." }, { status: 401 })

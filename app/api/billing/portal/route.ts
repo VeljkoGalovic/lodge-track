@@ -4,8 +4,12 @@ import { prisma } from "@/lib/prisma"
 import { canAdminister } from "@/lib/authorization"
 import { createCustomerPortalUrl } from "@/lib/billing"
 import { absoluteUrl } from "@/lib/origin"
+import { guardApiRateLimit } from "@/lib/api-guard"
 
 export async function GET(request: Request) {
+  const rateLimited = await guardApiRateLimit(request)
+  if (rateLimited) return rateLimited
+
   const session = await auth()
   if (!session?.user?.email) {
     return NextResponse.redirect(absoluteUrl("/signin", request))

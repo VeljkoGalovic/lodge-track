@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { hasValidAccess } from "@/lib/billing"
+import { guardApiRateLimit } from "@/lib/api-guard"
 
 /**
  * Development fallback: if NODE_ENV=development and checkout=complete with mock=true,
@@ -51,6 +52,9 @@ async function ensureMockSubscription(user: { orgId: string; email: string }, ti
 }
 
 export async function GET(request: Request) {
+  const rateLimited = await guardApiRateLimit(request)
+  if (rateLimited) return rateLimited
+
   const session = await auth()
   if (!session?.user?.email) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 })

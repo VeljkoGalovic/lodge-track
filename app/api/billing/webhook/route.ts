@@ -8,6 +8,7 @@ import {
   verifyWebhookSignature,
   type WebhookPayload,
 } from "@/lib/billing"
+import { guardApiRateLimit } from "@/lib/api-guard"
 
 /**
  * Lemon Squeezy webhook receiver.
@@ -18,6 +19,9 @@ import {
  * payload decides who is on which plan.
  */
 export async function POST(request: Request) {
+  const rateLimited = await guardApiRateLimit(request)
+  if (rateLimited) return rateLimited
+
   // The raw text is what was signed. Parsing first and re-serialising would
   // change key order and whitespace, and the digest would never match.
   const rawBody = await request.text()

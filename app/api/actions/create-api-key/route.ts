@@ -3,6 +3,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { getOrgFeatures } from "@/lib/subscriptions"
 import { generateApiKey } from "@/lib/crypto"
+import { guardApiRateLimit } from "@/lib/api-guard"
 
 /**
  * POST /api/actions/create-api-key
@@ -11,6 +12,9 @@ import { generateApiKey } from "@/lib/crypto"
  * Returns the raw key (only shown once) and the key metadata.
  */
 export async function POST(req: NextRequest) {
+  const rateLimited = await guardApiRateLimit(req)
+  if (rateLimited) return rateLimited
+
   const session = await auth()
 
   if (!session?.user?.email) {

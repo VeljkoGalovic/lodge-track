@@ -4,8 +4,12 @@ import { prisma } from "@/lib/prisma"
 import { getAttachmentSignedUrl, deleteAttachment } from "@/lib/storage"
 import { serializable } from "@/lib/transaction"
 import { Prisma } from "@prisma/client"
+import { guardApiRateLimit } from "@/lib/api-guard"
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const rateLimited = await guardApiRateLimit(request)
+  if (rateLimited) return rateLimited
+
   const membership = await currentMembership()
   if (!membership) {
     return NextResponse.json({ error: "Your session has expired. Please sign in again." }, { status: 401 })
@@ -45,6 +49,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const rateLimited = await guardApiRateLimit(request)
+  if (rateLimited) return rateLimited
+
   const membership = await currentMembership()
   if (!membership) {
     return NextResponse.json({ error: "Your session has expired. Please sign in again." }, { status: 401 })

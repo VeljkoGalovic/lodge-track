@@ -1,158 +1,44 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { enforceRateLimit, getRateLimitIdentifier, RATE_LIMIT_CONFIGS } from "@/lib/rate-limit"
-import { auth } from "@/auth"
 
 /**
- * Next.js Proxy for rate limiting and auth protection.
+ * Next.js Proxy for security headers.
+ *
+ * IMPORTANT: this middleware must stay free of database imports. The
+ * middleware bundle is compiled to a self-contained Worker function (OpenNext
+ * "node middleware"), whose async-module loading machinery breaks in workerd
+ * when prisma/pg (or anything else that compiles to async turbopack modules)
+ * is pulled in. Rate limiting and auth gating therefore live in
+ * `lib/api-guard.ts` and run inside the API route handlers.
  */
 
-// Paths that require authentication
-const PROTECTED_API_PREFIXES = [
-  "/api/expenses",
-  "/api/properties",
-  "/api/bookings",
-  "/api/invitations",
-  "/api/billing",
-  "/api/analytics",
-  "/api/team",
-  "/api/subscription",
+// Paths that skip the proxy entirely (static assets, Next.js internals, public pages)
+const SKIPPED_PREFIXES = [
+  "/_next",
+  "/static",
+  "/favicon",
+  "/robots.txt",
+  "/sitemap.xml",
+  "/signin",
+  "/register",
+  "/onboarding",
+  "/forgot-password",
+  "/reset-password",
+  "/verify-email",
+  "/accept-invitation",
 ]
-
-// Auth endpoints that need rate limiting
-const AUTH_ENDPOINTS = [
-  "/api/auth/signin",
-  "/api/auth/register",
-  "/api/auth/password-reset",
-  "/api/auth/verify-email",
-  "/api/auth/two-factor",
-]
-
-interface RateLimitError extends Error {
-  code: string
-  retryAfterSeconds: number
-}
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? request.headers.get("x-real-ip") ?? "unknown"
 
-  ///RATE LIMITING BYPASS
+  // Development bypass
   if (process.env.LOCAL_DEVELOPMENT === "true") {
     return NextResponse.next()
   }
 
   // Skip proxy for static assets, Next.js internals, and public pages
-  if (
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/static") ||
-    pathname.startsWith("/favicon") ||
-    pathname === "/robots.txt" ||
-    pathname === "/sitemap.xml" ||
-    pathname.startsWith("/signin") ||
-    pathname.startsWith("/register") ||
-    pathname.startsWith("/onboarding") ||
-    pathname.startsWith("/forgot-password") ||
-    pathname.startsWith("/reset-password") ||
-    pathname.startsWith("/verify-email") ||
-    pathname.startsWith("/accept-invitation")
-  ) {
+  if (SKIPPED_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
     return NextResponse.next()
-  }
-
-  // =========================================================================
-  // Rate limiting for auth endpoints
-  // =========================================================================
-  if (pathname.startsWith("/api/auth/")) {
-    // Skip session checks and CSRF from strict auth endpoint rate limiting
-    if (pathname === "/api/auth/session" || pathname === "/api/auth/csrf") {
-      return NextResponse.next()
-    }
-
-    const subAction = pathname.replace("/api/auth/", "").split("/")[0]
-    const config = RATE_LIMIT_CONFIGS[subAction] || RATE_LIMIT_CONFIGS.register
-    const identifier = getRateLimitIdentifier(ip)
-
-    try {
-      await enforceRateLimit(identifier, config)
-    } catch (error) {
-      if (error instanceof Error && "code" in error && (error as RateLimitError).code === "RATE_LIMIT_EXCEEDED") {
-        const retryAfter = (error as RateLimitError).retryAfterSeconds ?? config.windowMinutes * 60
-        return new NextResponse(
-          JSON.stringify({
-            error: "Too many requests. Please try again later.",
-            retryAfter,
-          }),
-          {
-            status: 429,
-            headers: {
-              "Content-Type": "application/json",
-              "Retry-After": String(retryAfter),
-              "X-RateLimit-Limit": String(config.maxAttempts),
-              "X-RateLimit-Remaining": "0",
-              "X-RateLimit-Reset": String(Math.floor(Date.now() / 1000) + retryAfter),
-            },
-          }
-        )
-      }
-      throw error
-    }
-  }
-
-  // =========================================================================
-  // Rate limiting for API routes (general)
-  // =========================================================================
-  if (pathname.startsWith("/api/")) {
-    const apiConfig = {
-      maxAttempts: 100,
-      windowMinutes: 15,
-      action: "api_general",
-    }
-    const identifier = getRateLimitIdentifier(ip)
-
-    try {
-      await enforceRateLimit(identifier, apiConfig)
-    } catch (error) {
-      if (error instanceof Error && "code" in error && (error as RateLimitError).code === "RATE_LIMIT_EXCEEDED") {
-        const retryAfter = (error as RateLimitError).retryAfterSeconds ?? apiConfig.windowMinutes * 60
-        return new NextResponse(
-          JSON.stringify({
-            error: "Too many requests. Please try again later.",
-            retryAfter,
-          }),
-          {
-            status: 429,
-            headers: {
-              "Content-Type": "application/json",
-              "Retry-After": String(retryAfter),
-              "X-RateLimit-Limit": String(apiConfig.maxAttempts),
-              "X-RateLimit-Remaining": "0",
-              "X-RateLimit-Reset": String(Math.floor(Date.now() / 1000) + retryAfter),
-            },
-          }
-        )
-      }
-      throw error
-    }
-  }
-
-  // =========================================================================
-  // Auth protection for protected API routes
-  // =========================================================================
-  const isProtectedApi = PROTECTED_API_PREFIXES.some((prefix) => pathname.startsWith(prefix))
-
-  if (isProtectedApi) {
-    const session = await auth()
-
-    if (!session?.user?.email) {
-      return new NextResponse(
-        JSON.stringify({ error: "Authentication required" }),
-        {
-          status: 401,
-          headers: { "Content-Type": "application/json" },
-        }
-      )
-    }
   }
 
   // =========================================================================

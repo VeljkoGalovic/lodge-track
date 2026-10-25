@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { currentMembership } from "@/lib/authorization"
 import { prisma } from "@/lib/prisma"
 import { getAttachmentSignedUrl } from "@/lib/storage"
+import { guardApiRateLimit } from "@/lib/api-guard"
 
 /**
  * Serves an expense receipt (legacy endpoint).
@@ -10,7 +11,10 @@ import { getAttachmentSignedUrl } from "@/lib/storage"
  * from the unified Attachment table. Maintains backward compatibility for
  * existing links during the migration period.
  */
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const rateLimited = await guardApiRateLimit(request)
+  if (rateLimited) return rateLimited
+
   const membership = await currentMembership()
   if (!membership) {
     return NextResponse.json({ error: "Not signed in" }, { status: 401 })

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
+import { guardApiRateLimit } from "@/lib/api-guard"
 
 /**
  * POST /api/actions/revoke-api-key
@@ -8,6 +9,9 @@ import { prisma } from "@/lib/prisma"
  * Only the owner or creator can revoke.
  */
 export async function POST(req: NextRequest) {
+  const rateLimited = await guardApiRateLimit(req)
+  if (rateLimited) return rateLimited
+
   const session = await auth()
 
   if (!session?.user?.email) {

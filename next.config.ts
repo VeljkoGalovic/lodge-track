@@ -18,6 +18,12 @@ const nextConfig: NextConfig = {
   },
   // Cloudflare Pages requires output: 'standalone' for edge deployment
   output: 'standalone',
+  // OpenNext: importers must treat the Prisma client as external so its wasm
+  // query compiler is bundled as a static .wasm module import. Bundling it
+  // inlines the wasm as base64 executed via `new WebAssembly.Module()` at
+  // runtime, which workerd forbids ("Wasm code generation disallowed by
+  // embedder") and every DB-backed route 500s.
+  serverExternalPackages: ["@prisma/client", ".prisma/client"],
   // `pg` loads its optional `pg-cloudflare` connector (the Cloudflare-aware
   // socket implementation) only from behind a `try { require(...) }`, so
   // Next's dependency tracer misses it and OpenNext's copied node_modules

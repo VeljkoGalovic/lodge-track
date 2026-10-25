@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { currentMembership } from "@/lib/authorization"
 import { prisma } from "@/lib/prisma"
+import { guardApiRateLimit } from "@/lib/api-guard"
 
 export async function GET(request: NextRequest) {
+  const rateLimited = await guardApiRateLimit(request)
+  if (rateLimited) return rateLimited
+
   const membership = await currentMembership()
   if (!membership) {
     return NextResponse.json({ error: "Your session has expired. Please sign in again." }, { status: 401 })
