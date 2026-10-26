@@ -1,0 +1,36 @@
+[Unit]
+Description=LodgeTrack Next.js app (standalone server)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# The app user created in the runbook (owns /opt/lodgetrack).
+User=lodgetrack
+Group=lodgetrack
+WorkingDirectory=/opt/lodgetrack
+# next build with output:'standalone' produces .next/standalone/server.js
+ExecStart=/opt/lodgetrack/node_modules/.bin/next start -H 127.0.0.1 -p 3001
+Environment=PORT=3001
+Environment=NEXT_TELEMETRY_DISABLED=1
+Environment=NODE_ENV=production
+# Hardening: no write access outside the app dir
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/lodgetrack
+
+# Crash-only restarts plus backoff, same as a Worker would recover
+Restart=always
+RestartSec=3
+KillSignal=SIGTERM
+TimeoutStopSec=15
+
+# Keep a modest log journal
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=lodgetrack
+
+[Install]
+WantedBy=multi-user.target
