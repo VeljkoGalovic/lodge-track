@@ -18,7 +18,8 @@ env:
   LEMON_SQUEEZY_PRO_VARIANT_ID: ${{ secrets.LEMON_SQUEEZY_PRO_VARIANT_ID }}
   LEMON_SQUEEZY_BUSINESS_VARIANT_ID: ${{ secrets.LEMON_SQUEEZY_BUSINESS_VARIANT_ID }}
   NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
-  NODE_VERSION: '20.x'
+  # wrangler 4 requires Node >= 22 (local dev runs 22).
+  NODE_VERSION: '22.x'
 
 jobs:
   # =========================================================================
