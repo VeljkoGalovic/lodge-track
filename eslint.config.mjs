@@ -17,6 +17,8 @@ const eslintConfig = defineConfig([
     ".next/**",
     // OpenNext Cloudflare worker bundle (build output — never lint):
     ".open-next/**",
+    // Wrangler dev preview/CDN bundles and local state (worker.js + maps — never lint):
+    ".wrangler/**",
     "out/**",
     "build/**",
     "next-env.d.ts",

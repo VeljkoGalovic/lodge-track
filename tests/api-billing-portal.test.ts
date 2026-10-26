@@ -5,6 +5,15 @@ const db = vi.hoisted(() => ({
   user: {
     findUnique: vi.fn(),
   },
+  // The route handler runs guardApiRateLimit itself (no more DB-free proxy),
+  // so the handler hits the RateLimit model before the auth checks.
+  // count -> 0 keeps the guard on its "allowed" path.
+  rateLimit: {
+    deleteMany: vi.fn(async () => ({})),
+    count: vi.fn(async () => 0),
+    findFirst: vi.fn(async () => null),
+    create: vi.fn(async () => ({})),
+  },
 }))
 
 vi.mock("server-only", () => ({}))

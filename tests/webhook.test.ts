@@ -5,6 +5,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 const db = vi.hoisted(() => ({
   webhookEvent: { create: vi.fn() },
   subscription: { findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn() },
+  // The route handler runs guardApiRateLimit itself (no more DB-free proxy),
+  // so the handler hits the RateLimit model before any webhook logic.
+  // count -> 0 keeps the guard on its "allowed" path.
+  rateLimit: {
+    deleteMany: vi.fn(async () => ({})),
+    count: vi.fn(async () => 0),
+    findFirst: vi.fn(async () => null),
+    create: vi.fn(async () => ({})),
+  },
   $transaction: vi.fn(),
 }))
 vi.mock("server-only", () => ({}))
