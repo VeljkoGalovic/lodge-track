@@ -1,5 +1,11 @@
 # Oracle Cloud Free Tier — runbook for lodge-track
 
+> **Superseded 2026‑10‑26:** Oracle Free Tier A1 capacity is exhausted in this
+> account. The identical architecture (tunnel → localhost next server →
+> Supabase) now runs from the existing local Fedora box — see
+> **[`deploy/local/README.md`](../local/README.md)**. Kept for reference if
+> capacity frees up later.
+
 Target shape: a single **always-free ARM VM** running `next start -H 127.0.0.1`,
 public traffic arriving through a **Cloudflare Tunnel** (no open ports, no
 static IP needed, TLS terminated at Cloudflare edge). Postgres stays at

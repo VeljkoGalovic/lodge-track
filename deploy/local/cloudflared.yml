@@ -1,0 +1,14 @@
+# Template for /etc/cloudflared/config.yml (Fedora local-server runtime).
+#
+# After `cloudflared tunnel create lodge-track`:
+#   1. Look up the tunnel UUID:   sudo cloudflared tunnel list
+#      (credentials land in /root/.cloudflared/<uuid>.json because the tunnel
+#       commands run under sudo — see README step 4)
+#   2. Replace <TUNNEL-UUID> below (twice).
+#   3. cp this file to /etc/cloudflared/config.yml and restart the service.
+tunnel: <TUNNEL-UUID>
+credentials-file: /root/.cloudflared/<TUNNEL-UUID>.json
+ingress:
+  - hostname: www.lodgetrack.com
+    service: http://127.0.0.1:3001
+  - service: http_status:404

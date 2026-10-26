@@ -1,0 +1,31 @@
+[Unit]
+Description=LodgeTrack Next.js standalone server (local box behind Cloudflare Tunnel)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Runs as the normal desktop user — the app only needs the repo dir + outbound DB access.
+User=veljkogalovic
+Group=veljkogalovic
+WorkingDirectory=/home/veljkogalovic/LodgeTracker/lodge-track/.next/standalone
+# Fedora's packaged Node 22 (nodejs22). Standalone server binds HOSTNAME/PORT below.
+ExecStart=/usr/bin/node-22 server.js
+Environment=PORT=3001
+Environment=HOSTNAME=127.0.0.1
+Environment=NODE_ENV=production
+Environment=NEXT_TELEMETRY_DISABLED=1
+# NOTE: no ProtectHome/ReadWritePaths hardening — the app *is* in the home dir.
+NoNewPrivileges=true
+PrivateTmp=true
+
+Restart=always
+RestartSec=3
+KillSignal=SIGTERM
+TimeoutStopSec=20
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=lodgetrack
+
+[Install]
+WantedBy=multi-user.target
