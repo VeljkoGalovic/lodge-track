@@ -15,6 +15,22 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  // Attach the public hostname to this worker as a Cloudflare Custom Domain
+  // (CF creates the DNS record itself). Declared here so the domain binding
+  // is version-controlled and reproducible on any deploy. Keep the
+  // workers.dev subdomain enabled as a secondary entry point.
+  "workers_dev": true,
+  // Secrets (DATABASE_URL, AUTH_SECRET, ...) live in the dashboard, outside
+  // this file. wrangler deploy with the default keep_vars=false DELETES any
+  // dashboard-set var/secret that is not declared here — so every redeploy
+  // nuked auth with it. Preserve instead.
+  "keep_vars": true,
+  "routes": [
+    {
+      "pattern": "www.lodgetrack.com",
+      "custom_domain": true
+    }
+  ],
   // OpenNext uses a self-reference to re-enter the worker (on-demand
   // revalidation, queue handoff). Must match "name" above.
   "services": [
