@@ -53,7 +53,10 @@ cd /opt/lodgetrack
 nano .env                      # paste the values from CF dashboard -> Workers ->
                                #   lodge-track -> Variables & Secrets:
                                #   DATABASE_URL(+DIRECT_URL), AUTH_SECRET,
-                               #   RESEND_API_KEY, LEMON_SQUEEZY_* (4 ids), NEXTJS_ENV
+                               #   RESEND_API_KEY, LEMON_SQUEEZY_* (4 ids),
+                               #   NEXT_PUBLIC_APP_URL=https://www.lodgetrack.com/
+                               #   (inlined at BUILD time — email/checkout links
+                               #   break without it; do not skip)
 chmod 600 .env                 # postgres creds; never commit
 
 ./deploy/oracle/deploy.sh      # npm ci + prisma generate + build + service
@@ -84,10 +87,14 @@ Later deploys: `ssh server` → `sudo -iu lodgetrack /opt/lodgetrack/deploy/orac
 
 ```bash
 sudo apt -y install cloudflared
-cloudflared tunnel login                 # prints a URL; open it in any browser, pick your zone
-cloudflared tunnel create lodge-track
-cloudflared tunnel route dns lodge-track www.lodgetrack.com
-sudo cloudflared service install         # installs cloudflared.service (systemd)
+# Run login/create/route WITH sudo so credentials land in /root/.cloudflared/ —
+# that is where the systemd service (and config.yml below) expect them. If you
+# run them as the plain ubuntu user, cert.pem/<uuid>.json sit in
+# /home/ubuntu/.cloudflared/ and the service fails with "file not found".
+sudo cloudflared tunnel login              # prints a URL; open it in any browser, pick lodgetrack.com
+sudo cloudflared tunnel create lodge-track
+sudo cloudflared tunnel route dns lodge-track www.lodgetrack.com
+sudo cloudflared service install           # installs cloudflared.service (systemd)
 ```
 
 Config `/etc/cloudflared/config.yml`:
