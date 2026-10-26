@@ -17,7 +17,10 @@ env:
   LEMON_SQUEEZY_STORE_ID: ${{ secrets.LEMON_SQUEEZY_STORE_ID }}
   LEMON_SQUEEZY_PRO_VARIANT_ID: ${{ secrets.LEMON_SQUEEZY_PRO_VARIANT_ID }}
   LEMON_SQUEEZY_BUSINESS_VARIANT_ID: ${{ secrets.LEMON_SQUEEZY_BUSINESS_VARIANT_ID }}
-  NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+  # NEXT_PUBLIC_* values are INLINED into the Next build, so this must be a
+  # repo *variable* (ci/vars), not a secret; empty at build time broke every
+  # absolute link generated client- and server-side (see lib/email.ts).
+  NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL }}
   # wrangler 4 requires Node >= 22 (local dev runs 22).
   NODE_VERSION: '22.x'
 
@@ -93,7 +96,7 @@ jobs:
           LEMON_SQUEEZY_STORE_ID: ${{ secrets.LEMON_SQUEEZY_STORE_ID }}
           LEMON_SQUEEZY_PRO_VARIANT_ID: ${{ secrets.LEMON_SQUEEZY_PRO_VARIANT_ID }}
           LEMON_SQUEEZY_BUSINESS_VARIANT_ID: ${{ secrets.LEMON_SQUEEZY_BUSINESS_VARIANT_ID }}
-          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+          NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL }}
 
       # prisma generate happens inside the build above; the worker bundle is
       # fully engine-free (WASM query compiler inlined as base64), so nothing
