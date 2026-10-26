@@ -97,9 +97,13 @@ jobs:
       # prisma generate happens inside the build above; the worker bundle is
       # fully engine-free (WASM query compiler inlined as base64), so nothing
       # native ships and no post-deploy steps are needed.
+      #
+      # Deploy directly with the project's pinned wrangler (package.json,
+      # installed by `npm ci`). The wrangler-action v3 by default forced its
+      # own wrangler@3.90.0 into node_modules, which predates `wrangler.jsonc`
+      # support and failed with "Missing entry-point" despite the `main` field.
       - name: Deploy to Cloudflare Workers
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
