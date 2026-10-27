@@ -26,12 +26,6 @@
   // dashboard-set var/secret that is not declared here — so every redeploy
   // nuked auth with it. Preserve instead.
   "keep_vars": true,
-  "routes": [
-    {
-      "pattern": "www.lodgetrack.com",
-      "custom_domain": true
-    }
-  ],
   // OpenNext uses a self-reference to re-enter the worker (on-demand
   // revalidation, queue handoff). Must match "name" above.
   "services": [
