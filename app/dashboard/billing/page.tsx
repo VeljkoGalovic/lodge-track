@@ -1,6 +1,6 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
-import { billingStatus } from "@/lib/billing"
+import { billingStatus, hasValidAccess } from "@/lib/billing"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/Button"
@@ -129,6 +129,26 @@ export default async function BillingPage({
 
   const org = user.organization
   const subscription = org.subscription
+
+  // Post-checkout handling: Lemon Squeezy sends the buyer back with
+  // ?checkout=complete, and the polling banner below covers the seconds
+  // until the webhook applies the subscription. Once the webhook HAS applied
+  // it (or the buyer re-opens this URL hours later), re-rendering that banner
+  // would loop: every poll sees access and reloads this same URL, which mounts
+  // the banner again. The banner's own success condition is
+  // "hasAccess && billingSubscriptionId", so the server must never render it
+  // under those conditions — send the user on to the dashboard instead (the
+  // layout there opens the setup wizard for paid tiers).
+  if (params.checkout === "complete") {
+    const checkoutAccess = hasValidAccess(
+      subscription?.status ?? "CANCELED",
+      subscription?.trialEndsAt ?? null
+    )
+    if (checkoutAccess && subscription?.billingSubscriptionId) {
+      redirect("/dashboard")
+    }
+  }
+
   const currentTier: Tier = subscription?.tier ?? "STARTER"
 
   const features = getOrgFeatures(

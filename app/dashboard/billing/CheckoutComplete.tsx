@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Loader2 } from "lucide-react"
 
 interface CheckoutCompleteProps {
@@ -8,32 +8,54 @@ interface CheckoutCompleteProps {
   pollingMessage: string
 }
 
+/**
+ * Shown right after Lemon Squeezy returns the buyer to
+ * /dashboard/billing?checkout=complete. The webhook usually applies the
+ * subscription within seconds; this banner polls /api/billing/status until
+ * that lands, then sends the browser on to the dashboard.
+ *
+ * The polling is deliberately owned by exactly ONE interval that stops once:
+ * - keying the effect on a poll counter re-created the interval on every tick,
+ *   and the original "stop" branch only hid the spinner while a fresh interval
+ *   went on polling forever — one request per second, indefinitely;
+ * - success must not silently `window.location.reload()`: the checkout param
+ *   is still in the URL, so reloading re-renders this same banner and starts
+ *   the cycle over. `location.replace` to the dashboard (which the server
+ *   redirects paid tiers into anyway) ends the flow for good.
+ */
 export function CheckoutComplete({ message, pollingMessage }: CheckoutCompleteProps) {
   const [isPolling, setIsPolling] = useState(true)
-  const [pollCount, setPollCount] = useState(0)
-  const MAX_POLLS = 30 // 30 seconds max
-  const POLL_INTERVAL = 1000 // 1 second
+  // Mutable polling state lives in refs so the effect runs once with a stable
+  // interval instead of being torn down and re-created after every poll.
+  const pollCountRef = useRef(0)
+  const stoppedRef = useRef(false)
 
   useEffect(() => {
-    const intervalIdRef = { current: null as NodeJS.Timeout | null }
+    const MAX_POLLS = 30 // 30 seconds max
+    const POLL_INTERVAL = 1000
 
     const pollStatus = async () => {
+      if (stoppedRef.current) return
+
       try {
-        // In development, add mock=true after first few polls to auto-grant access
+        // In development, add mock=true after the first few polls to auto-grant
+        // access without live webhooks.
         const isDev = process.env.NODE_ENV === "development"
-        const url = isDev && pollCount >= 3
+        const url = isDev && pollCountRef.current >= 3
           ? "/api/billing/status?checkout=complete&mock=true"
           : "/api/billing/status?checkout=complete"
 
-        const response = await fetch(url, {
-          cache: "no-store",
-        })
+        const response = await fetch(url, { cache: "no-store" })
 
         if (response.ok) {
           const data = await response.json()
           if (data.hasAccess && data.billingSubscriptionId) {
-            // Subscription is active, reload the page
-            window.location.reload()
+            // The billing page never re-renders this banner once the
+            // subscription has access, but a plain reload of this URL would
+            // still carry ?checkout=complete — navigate to where the flow
+            // actually continues instead.
+            stoppedRef.current = true
+            window.location.replace("/dashboard")
             return
           }
         }
@@ -41,28 +63,25 @@ export function CheckoutComplete({ message, pollingMessage }: CheckoutCompletePr
         console.error("Polling error:", error)
       }
 
-      setPollCount((prev) => prev + 1)
+      pollCountRef.current += 1
 
-      if (pollCount >= MAX_POLLS - 1) {
+      if (pollCountRef.current >= MAX_POLLS) {
+        stoppedRef.current = true
+        // Bounded give-up: stop the network activity and leave the static
+        // completion message instead of polling forever.
         setIsPolling(false)
-        if (intervalIdRef.current) {
-          clearInterval(intervalIdRef.current)
-        }
       }
     }
 
-    // Start polling
-    intervalIdRef.current = setInterval(pollStatus, POLL_INTERVAL)
-
-    // Also poll immediately on mount
     pollStatus()
 
+    const intervalId = setInterval(pollStatus, POLL_INTERVAL)
+
     return () => {
-      if (intervalIdRef.current) {
-        clearInterval(intervalIdRef.current)
-      }
+      stoppedRef.current = true
+      clearInterval(intervalId)
     }
-  }, [pollCount])
+  }, [])
 
   if (!isPolling) {
     return (
