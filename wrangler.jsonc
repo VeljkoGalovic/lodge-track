@@ -15,10 +15,11 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
-  // Attach the public hostname to this worker as a Cloudflare Custom Domain
-  // (CF creates the DNS record itself). Declared here so the domain binding
-  // is version-controlled and reproducible on any deploy. Keep the
-  // workers.dev subdomain enabled as a secondary entry point.
+  // The public hostname (www.lodgetrack.com) is served through the
+  // dashboard-managed Cloudflare Tunnel to the self-hosted server
+  // (see deploy/vps/README.md). Do NOT declare a custom_domain route here —
+  // a CI deploy would re-attach it and steal DNS back from the tunnel.
+  // Keep the workers.dev subdomain enabled as the fallback entry point.
   "workers_dev": true,
   // Secrets (DATABASE_URL, AUTH_SECRET, ...) live in the dashboard, outside
   // this file. wrangler deploy with the default keep_vars=false DELETES any
