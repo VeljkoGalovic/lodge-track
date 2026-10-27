@@ -174,7 +174,7 @@ describe("Fix 2: Rate limiting on auth endpoints", () => {
     expect(db.rateLimit.create).toHaveBeenCalled()
   })
 
-  it("registerUser rejects when rate limit exceeded", async () => {
+  it("registerUser redirects to /rate-limit when rate limit exceeded", async () => {
     db.rateLimit.count.mockResolvedValue(5) // At limit
     db.rateLimit.findFirst.mockResolvedValue({
       createdAt: new Date(Date.now() - 30 * 60 * 1000),
@@ -187,9 +187,52 @@ describe("Fix 2: Rate limiting on auth endpoints", () => {
     formData.set("termsAccepted", "on")
     formData.set("isOver18", "on")
 
-    const result = await registerUser({}, formData)
-    expect(result.error).toMatch(/Too many registration attempts/)
+    // New behavior: rate-limit refusals send the user to the dedicated
+    // /rate-limit page (with a live countdown) instead of an inline error.
+    let caught: { digest?: string } | null = null
+    try {
+      await registerUser({}, formData)
+    } catch (error) {
+      caught = error as { digest?: string }
+    }
+    expect(caught?.digest).toContain("/rate-limit?action=register")
+    expect(caught?.digest).toContain("retry=")
     // Should not proceed to create user
+  })
+
+  it("registerUser re-sends verification for an existing unverified email without spending the register quota", async () => {
+    db.user.findUnique.mockResolvedValue({
+      email: "new@example.com",
+      emailVerified: null,
+    })
+
+    const formData = new FormData()
+    formData.set("email", "new@example.com")
+    formData.set("password", "ValidPass123!")
+    formData.set("name", "Test User")
+    formData.set("termsAccepted", "on")
+    formData.set("isOver18", "on")
+
+    const result = await registerUser({}, formData)
+    expect(result.success).toMatch(/verification email/i)
+
+    // The recovery send is billed against the email_verification bucket...
+    expect(db.rateLimit.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ action: "email_verification" }),
+      })
+    )
+    expect(db.rateLimit.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ action: "email_verification" }),
+      })
+    )
+    // ...and the register quota is never touched for a duplicate signup.
+    expect(db.rateLimit.count).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ action: "register" }),
+      })
+    )
   })
 
   it("sendPasswordReset rate limits by email", async () => {
@@ -239,6 +282,9 @@ describe("Fix 2: Rate limiting on auth endpoints", () => {
   })
 
   it("sendVerificationEmailAction rejects when rate limit exceeded", async () => {
+    // The quota is only consumed for an account that will actually receive a
+    // mail, so the recovery test needs an existing unverified user.
+    db.user.findUnique.mockResolvedValue({ email: "test@example.com", emailVerified: null })
     db.rateLimit.count.mockResolvedValue(3) // At limit for email_verification (max 3)
     db.rateLimit.findFirst.mockResolvedValue({
       createdAt: new Date(Date.now() - 30 * 60 * 1000),
@@ -247,6 +293,17 @@ describe("Fix 2: Rate limiting on auth endpoints", () => {
     const result = await sendVerificationEmailAction("test@example.com")
     expect(result.success).toBe(false)
     expect(result.error).toMatch(/Too many verification email requests/)
+    // Carries the server-computed wait back so the UI can show a countdown.
+    expect(result.retryAfterSeconds).toBeGreaterThan(0)
+  })
+
+  it("sendVerificationEmailAction answers generic success for unknown emails without spending any quota", async () => {
+    db.user.findUnique.mockResolvedValue(null) // No such user
+
+    const result = await sendVerificationEmailAction("nobody@example.com")
+    expect(result.success).toBe(true)
+    // Enumeration-proof: the buckets are never touched for unknown addresses.
+    expect(db.rateLimit.count).not.toHaveBeenCalled()
   })
 })
 

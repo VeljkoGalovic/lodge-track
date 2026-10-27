@@ -125,3 +125,20 @@ export async function enforceRateLimit(
     throw error
   }
 }
+/**
+ * Human-readable duration for retry messages ("59 min 12 s", "1 h 5 min").
+ * Locale-neutral on purpose: numbers carry the meaning, so callers can splice
+ * it into any localized sentence without a second formatting layer.
+ */
+export function humanizeRetrySeconds(seconds: number): string {
+  const s = Math.max(0, Math.ceil(seconds))
+  if (s === 0) return "a few seconds"
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  const sec = s % 60
+  const parts: string[] = []
+  if (h > 0) parts.push(`${h} h`)
+  if (m > 0) parts.push(`${m} min`)
+  if (sec > 0 || parts.length === 0) parts.push(`${sec} s`)
+  return parts.join(" ")
+}

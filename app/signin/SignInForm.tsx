@@ -26,6 +26,8 @@ export function SignInForm() {
   const [resending, setResending] = useState(false)
   /** Resend success message */
   const [resendSuccess, setResendSuccess] = useState("")
+  /** Live countdown while the verification resend is rate-limited (seconds). */
+  const [resendRetrySeconds, setResendRetrySeconds] = useState(0)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -82,6 +84,7 @@ export function SignInForm() {
 
   const handleResendVerification = async () => {
     if (!email) return
+    if (resendRetrySeconds > 0) return
     setResending(true)
     setResendSuccess("")
     try {
@@ -90,6 +93,9 @@ export function SignInForm() {
         setResendSuccess(t.auth.verificationEmailSent || "Verification email sent! Please check your inbox.")
       } else {
         setError(result.error || "Failed to send verification email")
+        if (result.retryAfterSeconds) {
+          setResendRetrySeconds(result.retryAfterSeconds)
+        }
       }
     } catch {
       setError(t.auth.unexpected)
@@ -104,6 +110,14 @@ export function SignInForm() {
       router.refresh()
     }
   }, [shouldRedirect, router])
+
+  // Tick the resend rate-limit countdown once a second, clamping at zero.
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setResendRetrySeconds((s) => Math.max(0, s - 1))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [])
 
   // Clear email verification state when email changes
   useEffect(() => {
@@ -212,10 +226,14 @@ export function SignInForm() {
               <button
                 type="button"
                 onClick={handleResendVerification}
-                disabled={resending || !email}
+                disabled={resending || !email || resendRetrySeconds > 0}
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-[#36bfae] to-[#ba87ff] text-[#07090E] font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
               >
-                {resending ? t.auth.sendingVerification : t.auth.resendVerification}
+                {resending
+                  ? t.auth.sendingVerification
+                  : resendRetrySeconds > 0
+                    ? `${t.auth.tryAgainPrefix} ${fmtResendTimer(resendRetrySeconds)}`
+                    : t.auth.resendVerification}
               </button>
 
               <button
@@ -279,4 +297,12 @@ export function SignInForm() {
       </div>
     </section>
   )
+}
+
+function fmtResendTimer(seconds: number): string {
+  const minutes = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return minutes > 99
+    ? `${Math.floor(minutes / 60)}h ${minutes % 60}m`
+    : `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`
 }

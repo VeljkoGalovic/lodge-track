@@ -10,6 +10,7 @@ import { createCheckoutUrl } from "@/lib/billing"
 import { redirect } from "next/navigation"
 import { requestOrigin } from "@/lib/origin"
 import { isRedirectError } from "next/dist/client/components/redirect-error"
+import { ResendVerificationForm } from "./ResendVerificationForm"
 
 interface VerifyEmailPageProps {
   searchParams: Promise<{ token?: string }>
@@ -130,12 +131,15 @@ export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageP
           )}
 
           {!token && !verificationResult && (
-            <p className="text-slate-300 mb-6">
-              {locale === "sr"
-                ? "Nije pronađen verifikacioni token. Molimo vas da kliknete na link u emailu koji ste primili."
-                : "No verification token found. Please click the link in the email you received."
-              }
-            </p>
+            <>
+              <p className="text-slate-300 mb-6">
+                {locale === "sr"
+                  ? "Nije pronađen verifikacioni token. Molimo vas da kliknete na link u emailu koji ste primili. Ako ste izgubili email, zatražite novi ispod."
+                  : "No verification token found. Please click the link in the email you received. If you lost the email, request a fresh one below."
+                }
+              </p>
+              <ResendVerificationForm />
+            </>
           )}
 
           <div className="space-y-4">

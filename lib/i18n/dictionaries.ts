@@ -154,6 +154,21 @@ export const en = {
     emailNotVerifiedTitle: "Email not verified",
     emailNotVerifiedMessage: "Please verify your email address before signing in. Check your inbox for the verification link.",
     sendingVerification: "Sending...",
+    // Rate limiting (too many attempts)
+    rateLimitedTitle: "Too many attempts",
+    rateLimitedBody: "Email actions are limited for short windows to keep accounts safe. Nothing is wrong with your account — wait for the timer below, then try again.",
+    rateLimitAppliesTo: "The limit currently applies to:",
+    rateLimitActionRegister: "Creating new accounts",
+    rateLimitActionVerification: "Verification emails",
+    rateLimitActionReset: "Password reset emails",
+    rateLimitActionLogin: "Sign-in attempts",
+    rateLimitActionDefault: "This action",
+    tryAgainPrefix: "You can try again in",
+    retryNow: "You can try again now.",
+    resendVerificationInfo: "We've sent a fresh verification email to your address. Click the link in it to activate your account (check spam if you don't see it).",
+    pendingAccountVerification: "This email already has an account, but it hasn't been verified yet. A fresh verification email is on its way — click the link in it to activate your account (check spam if you don't see it).",
+    verificationResendFailed: "We couldn't send the verification email right now. Please try again in a minute.",
+    backToRegister: "Back to registration",
   },
 
   forms: {
@@ -1318,6 +1333,21 @@ const sr: Dictionary = {
     emailNotVerifiedTitle: "Email nije verifikovan",
     emailNotVerifiedMessage: "Molimo vas da verifikujete vašu email adresu pre prijave. Proverite vaš inbox za link za verifikaciju.",
     sendingVerification: "Slanje...",
+    // Rate limiting (previše pokušaja)
+    rateLimitedTitle: "Previše pokušaja",
+    rateLimitedBody: "Radnje vezane za email su vremenski ograničene radi zaštite naloga. Ništa nije pokvareno sa vašim nalogom — sačekajte odbrojavanje ispod pa probajte ponovo.",
+    rateLimitAppliesTo: "Ograničenje trenutno važi za:",
+    rateLimitActionRegister: "Kreiranje novih naloga",
+    rateLimitActionVerification: "Slanje verifikacionih emailova",
+    rateLimitActionReset: "Emailovi za reset lozinke",
+    rateLimitActionLogin: "Pokušaji prijave",
+    rateLimitActionDefault: "Ova radnja",
+    tryAgainPrefix: "Možete pokušati ponovo za",
+    retryNow: "Možete pokušati ponovo.",
+    resendVerificationInfo: "Poslali smo svež verifikacioni email na vašu adresu. Kliknite na link u njemu da aktivirate nalog (ako ga ne vidite, proverite i spam).",
+    pendingAccountVerification: "Sa ovim emailom već postoji nalog, ali nije verifikovan. Svež verifikacioni email je na putu — kliknite na link u njemu da aktivirate nalog (ako ga ne vidite, proverite i spam).",
+    verificationResendFailed: "Trenutno nismo mogli poslati verifikacioni email. Molimo pokušajte ponovo za minut.",
+    backToRegister: "Nazad na registraciju",
   },
 
   forms: {
