@@ -45,28 +45,21 @@ curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3001/signin
 `Ctrl-C`/kill the manual server, then continue. Later deploys are just
 `./deploy/local/deploy.sh` (it restarts the service).
 
-## 2) Install the systemd service (needs sudo, once)
+## 2) One-shot bootstrap (needs sudo, once)
 
 ```bash
-sudo install -m 644 \
-  /home/veljkogalovic/LodgeTracker/lodge-track/deploy/local/lodgetrack.service \
-  /etc/systemd/system/lodgetrack.service
-sudo systemctl daemon-reload
-sudo systemctl enable --now lodgetrack.service
-systemctl status lodgetrack --no-pager    # active (running)
-journalctl -u lodgetrack -f               # live logs (or: journalctl -t lodgetrack)
+cd /home/veljkogalovic/LodgeTracker/lodge-track
+sudo bash deploy/local/bootstrap.sh
 ```
 
-## 3) Install cloudflared (needs sudo, once)
+Does everything root-owned in one go: installs `cloudflared` to
+`/usr/local/bin`, installs + starts the `lodgetrack` systemd service and
+health-checks it, masks suspend/hibernate targets (a KDE desktop that naps
+would take prod down; reversible with `unmask`), and stages
+`/etc/cloudflared/config.yml` with placeholders. The script prints the exact
+remaining commands when it finishes.
 
-```bash
-sudo curl -fL -o /usr/local/bin/cloudflared \
-  https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-x86_64
-sudo chmod +x /usr/local/bin/cloudflared
-cloudflared --version
-```
-
-## 4) Create the tunnel (needs sudo + one browser click)
+## 3) Create the tunnel (needs sudo + one browser click)
 
 Run under `sudo` so credentials land in `/root/.cloudflared/`:
 
@@ -86,7 +79,7 @@ sudo nano /etc/cloudflared/config.yml     # replace <TUNNEL-UUID> (twice) with t
 Do **not** run `tunnel route dns` yet — the `www` DNS record is still owned by
 the Worker's custom domain and the claim only succeeds at cutover (§5).
 
-## 5) Cutover (order matters)
+## 4) Cutover (order matters)
 
 1. **First** verify the backend is green: `curl -s http://127.0.0.1:3001/api/auth/session` → `{}`.
 2. **Dashboard → Workers & Pages → lodge-track → Settings → Domains & Routes →
@@ -105,7 +98,7 @@ Delete the `<uuid>.cfargotunnel.com` CNAME for `www` in the DNS panel, then
 re-add `www.lodgetrack.com` as the Worker's custom domain — done, back on the
 Worker in ~1 minute.
 
-## 6) Keep the box awake (desktop pitfall)
+## 5) Suspend already handled by bootstrap (desktop pitfall)
 
 A KDE desktop suspends when idle → prod goes dark. Make it server-like:
 
@@ -116,7 +109,7 @@ sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.ta
 (Reversible with `unmask`.) Also: the service re-starts automatically after
 reboots (`WantedBy=multi-user.target`).
 
-## 7) Ops notes
+## 6) Ops notes
 
 - **Logs:** `journalctl -u lodgetrack -f` (app), `journalctl -u cloudflared -f` (tunnel).
 - **Restart app after a change:** `./deploy/local/deploy.sh`.
