@@ -1,7 +1,10 @@
 import Image from "next/image";
 import { GlassCard } from "@/components/ui/GlassCard";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import type { Locale } from "@/lib/i18n/locales";
 
-export function About() {
+export function About({ locale = "en" }: { locale?: Locale }) {
+  const t = getDictionary(locale).marketing.about;
   return (
     <section id="about" className="relative isolate py-24 md:py-32 overflow-hidden">
       <div className="absolute inset-0 -z-20">
@@ -17,7 +20,7 @@ export function About() {
       <div className="container mx-auto px-6 md:px-10 max-w-4xl">
         <div className="text-center mb-8">
           <span className="inline-flex px-5 py-2 rounded-full border border-[#36BFAE]/40 bg-[#36BFAE]/10 text-sm font-semibold text-[#36BFAE]">
-            About us
+            {t.badge}
           </span>
         </div>
 
@@ -27,10 +30,10 @@ export function About() {
         >
           <div className="space-y-5 text-center">
             <p className="text-xl md:text-2xl leading-relaxed text-slate-200 font-medium">
-              LodgeTrack was created as a solution to the problem of the lack of availability of tools to help small to medium size rental businesses.
+              {t.body1}
             </p>
             <p className="text-base md:text-lg leading-relaxed text-slate-400">
-              The app is currently being run by its founder Veljko Galović, with plans for expansion in the near future.
+              {t.body2}
             </p>
           </div>
         </GlassCard>

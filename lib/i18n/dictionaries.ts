@@ -1170,6 +1170,111 @@ const booking = await api("/bookings", {
     allBedsBlocked: "Every bed is booked for these dates",
   },
 
+  marketing: {
+    // The anonymous brand page (app/page.tsx) resolves its language per
+    // visitor — explicit cookie first, then the visitor's country as reported
+    // by the Cloudflare tunnel — rather than per member preference, so its
+    // copy lives apart from the dashboard surface groups. Titles that style a
+    // phrase with the gradient span are split into prefix/accent/suffix
+    // strings: the accent is a <span>, so it cannot pass through format().
+    navbar: {
+      features: "Features",
+      pricing: "Pricing",
+      about: "About",
+      signIn: "Sign in",
+      signUp: "Sign up",
+      toggleMenu: "Toggle menu",
+      language: "Language",
+    },
+
+    hero: {
+      badge: "Next-Gen Property Operations",
+      title: "LodgeTrack — the platform that scales your rental business",
+      subtitle:
+        "Manage properties, automated bookings, and unified revenue streams from a single, high-performance platform built for modern operators.",
+      ctaPrimary: "Start free trial",
+      ctaSecondary: "Explore the platform",
+    },
+
+    features: {
+      badge: "Core Platform Features",
+      titlePrefix: "Manage properties, bookings, and revenue in ",
+      titleAccent: "one unified platform",
+      titleSuffix: "",
+      items: [
+        "Track bookings with an automated calendar",
+        "Take control of your finances with detailed analytics",
+        "Multi-tenant tracking supported",
+        "Seamlessly import your existing data",
+      ],
+      bookingTitle: "Smart Booking Sync",
+      bookingBody:
+        "Automatically sync calendar schedules across multiple channels with zero double-booking friction.",
+      revenueTitle: "Unified Revenue Stream",
+      revenueBody:
+        "Track payouts, occupancy rates, and operational expenses in real-time with granular precision.",
+    },
+
+    cta: {
+      titlePrefix: "Ready to streamline your ",
+      titleAccent: "rental workflow",
+      titleSuffix: "?",
+      body: "Join modern operators scaling their portfolios efficiently. No credit card required to start your 14-day trial.",
+      ctaPrimary: "Start free trial",
+    },
+
+    pricing: {
+      badge: "Flexible Pricing",
+      titlePrefix: "Choose the tier which ",
+      titleAccent: "best suits you",
+      titleSuffix: "",
+      subtitle: "Transparent plans designed to scale alongside your property portfolio.",
+      mostPopular: "Most popular",
+      perMonth: "/month",
+      tiers: {
+        starter: {
+          description: "Ideal for individual hosts managing 1–3 properties.",
+          features: [
+            "Up to 3 properties",
+            "Automated booking calendar",
+            "Basic revenue reports",
+            "Email support",
+          ],
+          cta: "Start free trial",
+        },
+        pro: {
+          description: "For growing managers who need deeper insight and automation.",
+          features: [
+            "Up to 15 properties",
+            "Detailed financial analytics",
+            "Multi-tenant tracking",
+            "Data import & export",
+            "Priority support",
+          ],
+          cta: "Get started",
+        },
+        business: {
+          description: "Custom solutions for large rental portfolios and teams.",
+          features: [
+            "Unlimited properties",
+            "Dedicated account manager",
+            "Custom integrations & API",
+            "SSO and role-based access",
+          ],
+          cta: "Contact sales",
+        },
+      },
+    },
+
+    about: {
+      badge: "About us",
+      body1:
+        "LodgeTrack was created as a solution to the problem of the lack of availability of tools to help small to medium size rental businesses.",
+      body2:
+        "The app is currently being run by its founder Veljko Galović, with plans for expansion in the near future.",
+    },
+  },
+
   footer: {
     columns: {
       product: "Product",
@@ -2347,6 +2452,105 @@ const booking = await api("/bookings", {
     modeSharedHelp:
       "Svaki izabrani ležaj se drži za ove datume. Preostali ležajevi ostaju otvoreni za druge goste dok ih sve ne nestane.",
     allBedsBlocked: "Svi ležajevi su rezervisani za ove datume",
+  },
+
+  marketing: {
+    navbar: {
+      features: "Funkcije",
+      pricing: "Cenovnik",
+      about: "O nama",
+      signIn: "Prijava",
+      signUp: "Registracija",
+      toggleMenu: "Meni",
+      language: "Jezik",
+    },
+
+    hero: {
+      badge: "Sledeća generacija upravljanja objektima",
+      title: "LodgeTrack — platforma koja skalira vaše poslovanje izdavanja",
+      subtitle:
+        "Upravljajte objektima, automatizovanim rezervacijama i objedinjenim tokovima prihoda sa jedne platforme visokih performansi, stvorene za moderne operatere.",
+      ctaPrimary: "Započnite besplatnu probu",
+      ctaSecondary: "Istražite platformu",
+    },
+
+    features: {
+      badge: "Osnovne funkcije platforme",
+      titlePrefix: "Upravljajte objektima, rezervacijama i prihodima ",
+      titleAccent: "na jednoj objedinjenoj platformi",
+      titleSuffix: "",
+      items: [
+        "Pratite rezervacije kroz automatizovani kalendar",
+        "Preuzmite kontrolu nad finansijama detaljnom analitikom",
+        "Podržano je praćenje više zakupaca",
+        "Uvezite postojeće podatke bez ikakvih prepreka",
+      ],
+      bookingTitle: "Pametna sinhronizacija rezervacija",
+      bookingBody:
+        "Automatski sinhronizujte kalendare preko više kanala, bez ikakvog rizika od dvostrukih rezervacija.",
+      revenueTitle: "Objedinjeni tok prihoda",
+      revenueBody:
+        "Pratite isplate, stopu zauzetosti i operativne troškove u realnom vremenu, do poslednjeg detalja.",
+    },
+
+    cta: {
+      titlePrefix: "Spremni da pojednostavite ",
+      titleAccent: "svoje poslovanje izdavanja",
+      titleSuffix: "?",
+      body: "Pridružite se modernim operaterima koji efikasno skaliraju svoj portfolio. Za početak probnog perioda od 14 dana nije potrebna kreditna kartica.",
+      ctaPrimary: "Započnite besplatnu probu",
+    },
+
+    pricing: {
+      badge: "Fleksibilan cenovnik",
+      titlePrefix: "Izaberite plan koji ",
+      titleAccent: "najbolje odgovara vama",
+      titleSuffix: "",
+      subtitle: "Transparentni planovi oblikovani da prate rast vašeg portfolija objekata.",
+      mostPopular: "Najpopularniji",
+      perMonth: "/mesec",
+      tiers: {
+        starter: {
+          description: "Idealno za pojedinačne izdavaoce koji upravljaju sa 1–3 objekta.",
+          features: [
+            "Do 3 objekta",
+            "Automatizovani kalendar rezervacija",
+            "Osnovni izveštaji o prihodima",
+            "Podrška putem imejla",
+          ],
+          cta: "Započnite besplatnu probu",
+        },
+        pro: {
+          description: "Za rastuće menadžere kojima treba dublji uvid i automatizacija.",
+          features: [
+            "Do 15 objekata",
+            "Detaljna finansijska analitika",
+            "Praćenje više zakupaca",
+            "Uvoz i izvoz podataka",
+            "Prioritetna podrška",
+          ],
+          cta: "Započnite odmah",
+        },
+        business: {
+          description: "Prilagođena rešenja za velike portfolije objekata i timove.",
+          features: [
+            "Neograničen broj objekata",
+            "Posvećeni menadžer naloga",
+            "Prilagođene integracije i API",
+            "SSO i pristup baziran na ulogama",
+          ],
+          cta: "Kontaktirajte prodaju",
+        },
+      },
+    },
+
+    about: {
+      badge: "O nama",
+      body1:
+        "LodgeTrack je nastao kao rešenje za problem nedostatka dostupnih alata koji pomažu malim i srednjim poslovanjima za izdavanje objekata.",
+      body2:
+        "Aplikaciju trenutno vodi njen osnivač Veljko Galović, sa planovima za širenje u bliskoj budućnosti.",
+    },
   },
 
   footer: {

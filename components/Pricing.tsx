@@ -1,66 +1,33 @@
-import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { Check } from "lucide-react";
 import { clsx } from "clsx";
 import { CtaBanner } from "@/components/CtaBanner";
+import { getAccountManagerEmail } from "@/lib/subscriptions";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import type { Locale } from "@/lib/i18n/locales";
+
+/** Plan identity is brand-stable: only the copy around it translates. */
+const TIER_META = [
+  { key: "starter", name: "Starter", price: "$19.99", featured: false },
+  { key: "pro", name: "Pro", price: "$49.99", featured: true },
+  { key: "business", name: "Business", price: "$99.99", featured: false },
+] as const;
+
+type TierKey = (typeof TIER_META)[number]["key"];
 
 interface PricingTier {
+  key: TierKey;
   name: string;
   price: string;
   period: string;
   description: string;
   features: string[];
   cta: string;
+  href: string;
   featured: boolean;
 }
 
-const TIERS: PricingTier[] = [
-  {
-    name: "Starter",
-    price: "$19.99",
-    period: "/month",
-    description: "Ideal for individual hosts managing 1–3 properties.",
-    features: [
-      "Up to 3 properties",
-      "Automated booking calendar",
-      "Basic revenue reports",
-      "Email support",
-    ],
-    cta: "Start free trial",
-    featured: false,
-  },
-  {
-    name: "Pro",
-    price: "$49.99",
-    period: "/month",
-    description: "For growing managers who need deeper insight and automation.",
-    features: [
-      "Up to 15 properties",
-      "Detailed financial analytics",
-      "Multi-tenant tracking",
-      "Data import & export",
-      "Priority support",
-    ],
-    cta: "Get started",
-    featured: true,
-  },
-  {
-    name: "Business",
-    price: "$99.99",
-    period: "",
-    description: "Custom solutions for large rental portfolios and teams.",
-    features: [
-      "Unlimited properties",
-      "Dedicated account manager",
-      "Custom integrations & API",
-      "SSO and role-based access",
-    ],
-    cta: "Contact sales",
-    featured: false,
-  },
-];
-
-function PricingCard({ tier }: { tier: PricingTier }) {
+function PricingCard({ tier, mostPopular }: { tier: PricingTier; mostPopular: string }) {
   return (
     <div
       className={clsx(
@@ -72,7 +39,7 @@ function PricingCard({ tier }: { tier: PricingTier }) {
     >
       {tier.featured && (
         <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#BA87FF] text-[#07090E] shadow-lg">
-          Most popular
+          {mostPopular}
         </span>
       )}
 
@@ -100,6 +67,7 @@ function PricingCard({ tier }: { tier: PricingTier }) {
 
       <Button
         variant={tier.featured ? "primary" : "glass"}
+        href={tier.href}
         className="w-full text-base py-3"
       >
         {tier.cta}
@@ -108,10 +76,32 @@ function PricingCard({ tier }: { tier: PricingTier }) {
   );
 }
 
-export function Pricing() {
+export function Pricing({ locale = "en" }: { locale?: Locale }) {
+  const m = getDictionary(locale).marketing;
+  const t = m.pricing;
+
+  // Self-serve tiers funnel into registration; "Contact sales" reaches the
+  // BUSINESS account manager directly, old page had no working CTA at all.
+  const salesEmail = getAccountManagerEmail("BUSINESS");
+
+  const tiers: PricingTier[] = TIER_META.map((meta) => {
+    const copy = t.tiers[meta.key];
+    return {
+      ...meta,
+      // The business tier is contact-driven, so it carries no billing period.
+      period: meta.key === "business"
+        ? ""
+        : t.perMonth,
+      description: copy.description,
+      features: copy.features,
+      cta: copy.cta,
+      href: meta.key === "business" && salesEmail ? `mailto:${salesEmail}` : "/register",
+    };
+  });
+
   return (
-    <section 
-      id="pricing" 
+    <section
+      id="pricing"
       className="relative py-28 md:py-40 overflow-hidden bg-[#07090E] bg-cover bg-center bg-no-repeat"
       style={{ backgroundImage: "url('/images/backgrounds/3rd.jpg')" }}
     >
@@ -119,24 +109,24 @@ export function Pricing() {
       <div className="absolute inset-0 bg-[#07090E]/85 backdrop-blur-[2px] -z-10" />
 
       <div className="relative z-10 flex flex-col justify-center">
-        <CtaBanner />
+        <CtaBanner locale={locale} />
 
         <div className="container mx-auto px-6 md:px-10 text-center">
           <div className="max-w-4xl mx-auto mb-16 space-y-4">
             <span className="text-xs font-semibold uppercase tracking-widest text-[#36BFAE]">
-              Flexible Pricing
+              {t.badge}
             </span>
             <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-white">
-              Choose the tier which <span className="text-gradient-teal">best suits you</span>
+              {t.titlePrefix}<span className="text-gradient-teal">{t.titleAccent}</span>{t.titleSuffix}
             </h2>
             <p className="text-slate-300 text-base md:text-lg">
-              Transparent plans designed to scale alongside your property portfolio.
+              {t.subtitle}
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
-            {TIERS.map((tier) => (
-              <PricingCard key={tier.name} tier={tier} />
+            {tiers.map((tier) => (
+              <PricingCard key={tier.key} tier={tier} mostPopular={t.mostPopular} />
             ))}
           </div>
         </div>

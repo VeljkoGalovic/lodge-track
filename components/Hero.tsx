@@ -3,8 +3,12 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
 import { ArrowRight} from "lucide-react";
 import { DashboardMockup } from "@/components/DashboardMockup";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import type { Locale } from "@/lib/i18n/locales";
 
-export function Hero() {
+export function Hero({ locale = "en" }: { locale?: Locale }) {
+  const t = getDictionary(locale).marketing.hero;
+
   return (
     <section id="hero" className="relative isolate py-16 md:py-24 lg:min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background image & deep dark gradient overlay */}
@@ -30,23 +34,23 @@ export function Hero() {
           <GlassCard className="lg:col-span-7 p-6 sm:p-8 md:p-12 border-white/15 shadow-2xl space-y-5 md:space-y-6 flex flex-col justify-center" hover={false}>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md w-fit">
               <span className="w-2 h-2 rounded-full bg-[#36BFAE] animate-pulse" />
-              <span className="text-xs font-medium text-slate-300">Next-Gen Property Operations</span>
+              <span className="text-xs font-medium text-slate-300">{t.badge}</span>
             </div>
 
             <h1 className="text-3xl sm:text-5xl lg:text-7xl font-bold tracking-tight text-white leading-[1.15] sm:leading-[1.1]">
-              LodgeTrack — the platform that scales your rental business
+              {t.title}
             </h1>
 
             <p className="text-slate-300 text-base sm:text-lg md:text-xl max-w-2xl leading-relaxed">
-              Manage properties, automated bookings, and unified revenue streams from a single, high-performance platform built for modern operators.
+              {t.subtitle}
             </p>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 pt-2">
               <Button variant="primary" href="/register" className="gap-2 px-6 py-3.5 sm:py-4 text-base justify-center">
-                Start free trial <ArrowRight size={18} />
+                {t.ctaPrimary} <ArrowRight size={18} />
               </Button>
               <Button variant="glass" href="#features" className="px-6 py-3.5 sm:py-4 text-base justify-center">
-                Explore the platform
+                {t.ctaSecondary}
               </Button>
             </div>
           </GlassCard>

@@ -5,6 +5,8 @@ import { Pricing } from "@/components/Pricing";
 import { About } from "@/components/About";
 import { Footer } from "@/components/Footer";
 import { LenisProvider } from "@/components/LenisProvider";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { visitorLocale } from "@/lib/i18n/server";
 
 /**
  * The marketing page is a fixed dark brand experience.
@@ -18,19 +20,38 @@ import { LenisProvider } from "@/components/LenisProvider";
  * The background is restated rather than inherited from `<body>`, because
  * `Features` and `About` have no background of their own and would otherwise
  * show whatever the application's theme paints behind them.
+ *
+ * Language is per visitor, not per member: an explicit choice (cookie) wins,
+ * otherwise Cloudflare's tunnel tells us the visitor's country and Serbian
+ * visitors get the Serbian page. It also becomes the `lang` hint for this
+ * subtree's screen readers.
  */
-export default function Home() {
+export default async function Home() {
+  const locale = await visitorLocale();
+  const m = getDictionary(locale).marketing;
+
   return (
-    <div className="dark min-h-screen bg-background text-foreground">
+    <div lang={locale} className="dark min-h-screen bg-background text-foreground">
       <LenisProvider />
-      <Navbar />
+      <Navbar
+        currentLocale={locale}
+        links={[
+          { label: m.navbar.features, href: "#features" },
+          { label: m.navbar.pricing, href: "#pricing" },
+          { label: m.navbar.about, href: "#about" },
+        ]}
+        signIn={m.navbar.signIn}
+        signUp={m.navbar.signUp}
+        toggleMenu={m.navbar.toggleMenu}
+        languageLabel={m.navbar.language}
+      />
       <main>
-        <Hero />
-        <Features />
-        <Pricing />
-        <About />
+        <Hero locale={locale} />
+        <Features locale={locale} />
+        <Pricing locale={locale} />
+        <About locale={locale} />
       </main>
-      <Footer />
+      <Footer locale={locale} />
     </div>
   );
 }
