@@ -1,6 +1,7 @@
 name: CI/CD Pipeline
 
 on:
+  workflow_dispatch: {}
   push:
     branches: [main]
   pull_request:
@@ -15,6 +16,7 @@ env:
   LEMON_SQUEEZY_API_KEY: ${{ secrets.LEMON_SQUEEZY_API_KEY }}
   LEMON_SQUEEZY_WEBHOOK_SECRET: ${{ secrets.LEMON_SQUEEZY_WEBHOOK_SECRET }}
   LEMON_SQUEEZY_STORE_ID: ${{ secrets.LEMON_SQUEEZY_STORE_ID }}
+  LEMON_SQUEEZY_STARTER_VARIANT_ID: ${{ secrets.LEMON_SQUEEZY_STARTER_VARIANT_ID }}
   LEMON_SQUEEZY_PRO_VARIANT_ID: ${{ secrets.LEMON_SQUEEZY_PRO_VARIANT_ID }}
   LEMON_SQUEEZY_BUSINESS_VARIANT_ID: ${{ secrets.LEMON_SQUEEZY_BUSINESS_VARIANT_ID }}
   # NEXT_PUBLIC_* values are INLINED into the Next build, so this must be a
@@ -94,6 +96,7 @@ jobs:
           LEMON_SQUEEZY_API_KEY: ${{ secrets.LEMON_SQUEEZY_API_KEY }}
           LEMON_SQUEEZY_WEBHOOK_SECRET: ${{ secrets.LEMON_SQUEEZY_WEBHOOK_SECRET }}
           LEMON_SQUEEZY_STORE_ID: ${{ secrets.LEMON_SQUEEZY_STORE_ID }}
+          LEMON_SQUEEZY_STARTER_VARIANT_ID: ${{ secrets.LEMON_SQUEEZY_STARTER_VARIANT_ID }}
           LEMON_SQUEEZY_PRO_VARIANT_ID: ${{ secrets.LEMON_SQUEEZY_PRO_VARIANT_ID }}
           LEMON_SQUEEZY_BUSINESS_VARIANT_ID: ${{ secrets.LEMON_SQUEEZY_BUSINESS_VARIANT_ID }}
           NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL }}
@@ -111,3 +114,63 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  # =========================================================================
+  # Sync Lemon Squeezy runtime secrets into the Worker (manual trigger)
+  # =========================================================================
+  # The Worker fallback reads LEMON_SQUEEZY_* at request time from dashboard
+  # secret storage; those values drift when billing config changes (e.g. the
+  # switch from Test to Live + the single-subscription product). This job
+  # re-pushes them with `wrangler secret put` (value via stdin) using the
+  # repo's CLOUDFLARE_API_TOKEN — it requires that token to have the
+  # "Workers Secrets: Edit" permission.
+  sync-worker-secrets:
+    name: Sync Worker LS secrets
+    needs: ci
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Push Lemon Squeezy secrets to the Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          LEMON_SQUEEZY_API_KEY: ${{ secrets.LEMON_SQUEEZY_API_KEY }}
+          LEMON_SQUEEZY_WEBHOOK_SECRET: ${{ secrets.LEMON_SQUEEZY_WEBHOOK_SECRET }}
+          LEMON_SQUEEZY_STORE_ID: ${{ secrets.LEMON_SQUEEZY_STORE_ID }}
+          LEMON_SQUEEZY_STARTER_VARIANT_ID: ${{ secrets.LEMON_SQUEEZY_STARTER_VARIANT_ID }}
+          LEMON_SQUEEZY_PRO_VARIANT_ID: ${{ secrets.LEMON_SQUEEZY_PRO_VARIANT_ID }}
+          LEMON_SQUEEZY_BUSINESS_VARIANT_ID: ${{ secrets.LEMON_SQUEEZY_BUSINESS_VARIANT_ID }}
+        run: |
+          set -euo pipefail
+          ok=0
+          for NAME in \
+            LEMON_SQUEEZY_API_KEY \
+            LEMON_SQUEEZY_WEBHOOK_SECRET \
+            LEMON_SQUEEZY_STORE_ID \
+            LEMON_SQUEEZY_STARTER_VARIANT_ID \
+            LEMON_SQUEEZY_PRO_VARIANT_ID \
+            LEMON_SQUEEZY_BUSINESS_VARIANT_ID; do
+            if printf '%s' "${!NAME}" | npx wrangler secret put "$NAME"; then
+              echo "pushed $NAME"
+              ok=$((ok+1))
+            else
+              echo "FAILED: $NAME"
+              exit 1
+            fi
+          done
+          echo "synced $ok/6 worker secrets"
