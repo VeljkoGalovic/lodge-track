@@ -34,8 +34,20 @@ function clientInstance(): PrismaClient {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) return unavailableClient;
 
-  const client = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
-  if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = client;
+  const client = new PrismaClient({
+    // Cap the driver pool: Supabase's session-mode pooler allows only 15
+    // clients per user across ALL consumers (this app, the workers.dev
+    // fallback, ops scripts). Without an explicit max, the adapter defaults
+    // high; combined with any parallel render the pooler returns
+    // EMAXCONNSESSION and pages 500. 6 keeps ample headroom for the others.
+    adapter: new PrismaPg({ connectionString, max: 6 }),
+  });
+  // Cache in every environment: this process is long-lived, so per-call
+  // construction would hoist a brand-new pg pool onto every prisma access
+  // and slam through the session-mode client cap (seen as EMAXCONNSESSION
+  // bursts right after go-live). Tests that mock `@/lib/prisma` never run
+  // this path either way.
+  globalForPrisma.prisma = client;
   return client;
 }
 
