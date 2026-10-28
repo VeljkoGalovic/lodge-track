@@ -30,13 +30,14 @@ echo "==> rsync to $TARGET:$DEST"
 # /opt/lodgetrack/.env is the durable record — it holds server-only keys
 # (AUTH_URL, RATE_LIMIT_DISABLED) that the repo env must not clobber or lose.
 # After the rsync, repo keys absent on the server are merged in below; existing
-# server keys always win.
-rsync -a --delete .next/standalone/ "$TARGET:$DEST/"
+# server keys always win. The .env exclude keeps --delete from removing the
+# server's own file as "extraneous" now that the bundle no longer carries it.
+rsync -a --delete --exclude='.env' .next/standalone/ "$TARGET:$DEST/"
 
 echo "==> merge repo env keys missing on the server"
 scp -q .env "$TARGET:/tmp/lodgetrack-repo.env"
 ssh "$TARGET" 'bash -s' <<'MERGE'
-# The repo .env has no trailing newline than once; a merged line must not start
+# The repo .env may lack a trailing newline; a merged line must not start
 # on the same line as the last key, so terminate the file first.
 [ -n "$(tail -c1 /opt/lodgetrack/.env)" ] && printf '\n' >> /opt/lodgetrack/.env
 cp /opt/lodgetrack/.env /opt/lodgetrack-ops/env.bak
