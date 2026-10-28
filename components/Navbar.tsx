@@ -3,10 +3,19 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/Button";
-import { Menu, X } from "lucide-react";
+import { Languages, Menu, X, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import type { Locale } from "@/lib/i18n/locales";
-import { LOCALES } from "@/lib/i18n/locales";
+import { LOCALES, LOCALE_LABELS } from "@/lib/i18n/locales";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface NavbarProps {
   links: { label: string; href: string }[];
@@ -32,6 +41,15 @@ function setVisitorLocaleCookie(locale: Locale) {
   window.location.reload();
 }
 
+/**
+ * The landing page's language control.
+ *
+ * A dropdown rather than the dashboard's radio pills — a visitor's eye should
+ * find the words part of the navigational furniture, and six codes were a
+ * second row of buttons to parse. Options are autonyms for the same reason the
+ * dashboard's picker is: someone reading only Spanish finds "Español", not
+ * five letters of abbreviations.
+ */
 function LanguageToggle({
   currentLocale,
   languageLabel,
@@ -42,25 +60,34 @@ function LanguageToggle({
   className?: string;
 }) {
   return (
-    <div
-      role="group"
-      aria-label={languageLabel}
-      className={`flex items-center rounded-full border border-white/10 bg-white/5 p-0.5 text-xs ${className}`}
-    >
-      {LOCALES.map((code) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild className={className}>
         <button
-          key={code}
           type="button"
-          onClick={() => setVisitorLocaleCookie(code)}
-          aria-pressed={currentLocale === code}
-          className={`rounded-full px-2 py-1 font-medium transition-colors ${
-            currentLocale === code ? "bg-white/10 text-white" : "text-slate-400 hover:text-white"
-          }`}
+          aria-label={languageLabel}
+          aria-haspopup="menu"
+          className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-slate-400 hover:text-white hover:border-white/20 transition-colors duration-200"
         >
-          {code.toUpperCase()}
+          <Languages className="h-3.5 w-3.5" />
+          <span className="font-medium">{LOCALE_LABELS[currentLocale]}</span>
+          <ChevronDown className="h-3 w-3 opacity-70" aria-hidden="true" />
         </button>
-      ))}
-    </div>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-44">
+        <DropdownMenuLabel>{languageLabel}</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuRadioGroup
+          value={currentLocale}
+          onValueChange={(value) => setVisitorLocaleCookie(value as Locale)}
+        >
+          {LOCALES.map((code) => (
+            <DropdownMenuRadioItem key={code} value={code} className="cursor-pointer">
+              {LOCALE_LABELS[code]}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
