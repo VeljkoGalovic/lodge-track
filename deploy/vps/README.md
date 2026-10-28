@@ -21,7 +21,7 @@ www.lodgetrack.com (CF edge, TLS) → tunnel → cloudflared (token-managed syst
 | Thing | Where |
 |---|---|
 | App (standalone Next build, self-contained) | `/opt/lodgetrack` |
-| Runtime env | `/opt/lodgetrack/.env` (mode 600, copied from the local repo `.env`) |
+| Runtime env | `/opt/lodgetrack/.env` (mode 600) — **server-owned**; deploys only merge missing repo keys in |
 | Service | `/etc/systemd/system/lodgetrack.service` (`User=lodgetrack`, port 3001) |
 | Tunnel connector | `cloudflared service install <token>` → `/etc/cloudflared/config.json`; ingress lives in the **Zero Trust dashboard** (Public Hostname: `www.lodgetrack.com → http://localhost:3001`) |
 | Logs | `journalctl -u lodgetrack -f` (app), `journalctl -u cloudflared -f` (tunnel) |
@@ -109,7 +109,24 @@ before calling the cutover done.
   without it auth.js writes signed-in visitors a redirect cookie pointing at
   `localhost:3001/signin` — literally what sign-out landed on before this was
   added. When editing the file, make sure the last line ends with a newline:
-  the file is append-fed, and two keys merging onto one line turns both
+  the file is append-fed, and two keys merging onto one line turns both.
+
+- `RATE_LIMIT_DISABLED=true` in the server's `/opt/lodgetrack/.env` disables
+  all auth rate limiting at runtime (kill-switch for phone-testing sessions —
+  validated by `tests/rate-limit-kill-switch.test.ts`). It is a server-only
+  key: the repo's dev env must never carry it, and it comes off the moment
+  real-user testing ends so prod buckets resume.
+
+- Environment history, for the record: the repo `.env` used to be copied over
+  the server's on every deploy, which silently erased the server-only keys
+  (`AUTH_URL`, `RATE_LIMIT_DISABLED`) — twice. `next build` itself emits the
+  repo `.env` into `.next/standalone`, so even removing the manual copy wasn't
+  enough, and once the bundle stopped carrying it, `rsync --delete` treated
+  the server file as extraneous and removed it. The deploy now does all three:
+  strips the build-emitted copy, excludes `.env` from the rsync, and merges
+  missing repo keys into the server's file (server keys always win, appended
+  after a trailing-newline check, pre-deploy backup at
+  `/opt/lodgetrack-ops/env.bak`).
   unread.
 - The `lodgetrack` nologin user owns `/opt/lodgetrack`; the unit runs root-less
   with `NoNewPrivileges`/`PrivateTmp`.
