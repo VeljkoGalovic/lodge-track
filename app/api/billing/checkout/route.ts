@@ -24,12 +24,12 @@ export async function GET(request: Request) {
 
   const session = await auth()
   if (!session?.user?.email) {
-    return NextResponse.redirect(absoluteUrl("/signin", request))
+    return NextResponse.redirect((await absoluteUrl("/signin")))
   }
 
   const tier = new URL(request.url).searchParams.get("tier")
   if (tier !== "PRO" && tier !== "BUSINESS") {
-    return NextResponse.redirect(absoluteUrl("/dashboard/billing?error=unknown_tier", request))
+    return NextResponse.redirect((await absoluteUrl("/dashboard/billing?error=unknown_tier")))
   }
 
   const user = await prisma.user.findUnique({
@@ -37,25 +37,25 @@ export async function GET(request: Request) {
     include: { organization: true },
   })
   if (!user) {
-    return NextResponse.redirect(absoluteUrl("/signin", request))
+    return NextResponse.redirect((await absoluteUrl("/signin")))
   }
 
   // Buying a plan commits the organization, not the person clicking.
   if (!canAdminister(user.role)) {
-    return NextResponse.redirect(absoluteUrl("/dashboard/billing?error=not_owner", request))
+    return NextResponse.redirect((await absoluteUrl("/dashboard/billing?error=not_owner")))
   }
 
   const checkoutUrl = await createCheckoutUrl({
     tier: tier as SubscriptionTier,
     email: user.email,
     orgId: user.orgId,
-    redirectUrl: absoluteUrl("/dashboard/billing?checkout=complete", request),
+    redirectUrl: (await absoluteUrl("/dashboard/billing?checkout=complete")),
   })
 
   // Also the path taken when the deployment simply has no Lemon Squeezy
   // credentials yet, which the billing page reports in full.
   if (!checkoutUrl) {
-    return NextResponse.redirect(absoluteUrl("/dashboard/billing?error=not_configured", request))
+    return NextResponse.redirect((await absoluteUrl("/dashboard/billing?error=not_configured")))
   }
 
   const response = NextResponse.redirect(checkoutUrl)

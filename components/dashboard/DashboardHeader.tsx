@@ -106,7 +106,15 @@ export function DashboardHeader({ orgName, features, userName, userEmail, attent
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onSelect={() => signOut({ callbackUrl: "/signin" })}
+                onSelect={() =>
+                  signOut({
+                    // Absolute on purpose: auth.js resolves a relative callback
+                    // against the *server-side* detected origin, which behind
+                    // the tunnel is not the host the visitor is on. The browser
+                    // always knows its own origin.
+                    callbackUrl: `${window.location.origin}/signin`,
+                  })
+                }
                 className="text-destructive focus:bg-destructive/10 focus:text-destructive"
               >
                 <LogOut className="mr-2 h-4 w-4" />

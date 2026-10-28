@@ -20,11 +20,22 @@ export async function requestOrigin(): Promise<string> {
 }
 
 /**
- * An absolute URL for a redirect target, resolved against the request being
- * handled. `NextResponse.redirect` rejects relative URLs, and a route handler is
- * already holding the request, so this needs no `headers()` round trip and no
- * configured base URL to fall out of sync.
+ * An absolute URL for a redirect target, resolved against the *current request's
+ * real origin* (see `requestOrigin`).
+ *
+ * `NextResponse.redirect` rejects relative URLs. The naive fix — `new
+ * URL(request.url).origin` — is a trap behind a reverse proxy: Next fabricates
+ * `req.url` from the server's own binding rather than the incoming Host header,
+ * so behind the tunnel it is `http://localhost:3001` no matter what the visitor
+ * actually typed (which is exactly how auth.js sign-out ended up at
+ * localhost:3001/signin). Reading the headers is what every other origin
+ * builder in this app does, so this matches `requestOrigin`… which needs an
+ * await, hence the change of shape.
  */
-export function absoluteUrl(path: string, request: Request): string {
-  return new URL(path, new URL(request.url).origin).toString()
+export async function absoluteUrl(path: string): Promise<string> {
+  // Last-ditch fallback keeps the URL absolute (NextResponse.redirect needs
+  // one); it is only reachable when no host and no AUTH_URL could be found,
+  // i.e. never in a working deployment.
+  const base = (await requestOrigin()) || "http://localhost:3001"
+  return new URL(path, base).toString()
 }

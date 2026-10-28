@@ -103,6 +103,14 @@ before calling the cutover done.
   services (`WantedBy=multi-user.target`).
 - Current app build inlines `NEXT_PUBLIC_APP_URL=https://www.lodgetrack.com/`
   at build time — never delete it from the repo `.env`.
+- `AUTH_URL=https://www.lodgetrack.com/` **must stay** in the server's
+  `/opt/lodgetrack/.env`. Next fabricates the route handlers' request URL from
+  the server binding (`localhost:3001`) rather than the incoming `Host`, so
+  without it auth.js writes signed-in visitors a redirect cookie pointing at
+  `localhost:3001/signin` — literally what sign-out landed on before this was
+  added. When editing the file, make sure the last line ends with a newline:
+  the file is append-fed, and two keys merging onto one line turns both
+  unread.
 - The `lodgetrack` nologin user owns `/opt/lodgetrack`; the unit runs root-less
   with `NoNewPrivileges`/`PrivateTmp`.
 - Tunnel connector uses a dashboard-managed token. Rotate it anytime from the

@@ -12,7 +12,7 @@ export async function GET(request: Request) {
 
   const session = await auth()
   if (!session?.user?.email) {
-    return NextResponse.redirect(absoluteUrl("/signin", request))
+    return NextResponse.redirect((await absoluteUrl("/signin")))
   }
 
   const user = await prisma.user.findUnique({
@@ -20,16 +20,16 @@ export async function GET(request: Request) {
     include: { organization: true },
   })
   if (!user) {
-    return NextResponse.redirect(absoluteUrl("/signin", request))
+    return NextResponse.redirect((await absoluteUrl("/signin")))
   }
 
   if (!canAdminister(user.role)) {
-    return NextResponse.redirect(absoluteUrl("/dashboard/billing?error=not_owner", request))
+    return NextResponse.redirect((await absoluteUrl("/dashboard/billing?error=not_owner")))
   }
 
   const portalUrl = await createCustomerPortalUrl(user.orgId)
   if (!portalUrl) {
-    return NextResponse.redirect(absoluteUrl("/dashboard/billing?error=portal_unavailable", request))
+    return NextResponse.redirect((await absoluteUrl("/dashboard/billing?error=portal_unavailable")))
   }
 
   return NextResponse.redirect(portalUrl)
