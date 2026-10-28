@@ -45,6 +45,15 @@ export async function checkRateLimit(
   identifier: string,
   config: RateLimitConfig
 ): Promise<RateLimitResult> {
+  // Testing kill-switch, set as a runtime env var on the box being tested
+  // against (never in the repo's dev env, never in prod defaults): every
+  // auth action reports allowed and writes nothing. The env var, not a code
+  // difference, is what makes this auditable — the flag must be visible in
+  // the environment to be off, and turning it off restores all buckets.
+  if (process.env.RATE_LIMIT_DISABLED === "true") {
+    return { allowed: true, remaining: Number.MAX_SAFE_INTEGER }
+  }
+
   const windowStart = new Date(Date.now() - config.windowMinutes * 60 * 1000)
 
   // Clean up expired records for this identifier and action
