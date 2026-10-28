@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/Button";
 import { Check } from "lucide-react";
 import { clsx } from "clsx";
 import { CtaBanner } from "@/components/CtaBanner";
-import { getAccountManagerEmail } from "@/lib/subscriptions";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
 
@@ -80,22 +79,21 @@ export function Pricing({ locale = "en" }: { locale?: Locale }) {
   const m = getDictionary(locale).marketing;
   const t = m.pricing;
 
-  // Self-serve tiers funnel into registration; "Contact sales" reaches the
-  // BUSINESS account manager directly, old page had no working CTA at all.
-  const salesEmail = getAccountManagerEmail("BUSINESS");
-
+  // Every plan button says "Start free trial", so they all funnel into
+  // registration.
   const tiers: PricingTier[] = TIER_META.map((meta) => {
     const copy = t.tiers[meta.key];
     return {
       ...meta,
-      // The business tier is contact-driven, so it carries no billing period.
+      // The business plan's price is quoted individually, so it carries no
+      // billing period.
       period: meta.key === "business"
         ? ""
         : t.perMonth,
       description: copy.description,
       features: copy.features,
       cta: copy.cta,
-      href: meta.key === "business" && salesEmail ? `mailto:${salesEmail}` : "/register",
+      href: "/register",
     };
   });
 

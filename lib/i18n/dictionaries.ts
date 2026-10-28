@@ -1219,7 +1219,7 @@ const booking = await api("/bookings", {
       titlePrefix: "Ready to streamline your ",
       titleAccent: "rental workflow",
       titleSuffix: "?",
-      body: "Join modern operators scaling their portfolios efficiently. No credit card required to start your 14-day trial.",
+      body: "Join modern operators scaling their portfolios efficiently.",
       ctaPrimary: "Start free trial",
     },
 
@@ -1251,7 +1251,7 @@ const booking = await api("/bookings", {
             "Data import & export",
             "Priority support",
           ],
-          cta: "Get started",
+          cta: "Start free trial",
         },
         business: {
           description: "Custom solutions for large rental portfolios and teams.",
@@ -1261,7 +1261,7 @@ const booking = await api("/bookings", {
             "Custom integrations & API",
             "SSO and role-based access",
           ],
-          cta: "Contact sales",
+          cta: "Start free trial",
         },
       },
     },
@@ -2466,10 +2466,10 @@ const booking = await api("/bookings", {
     },
 
     hero: {
-      badge: "Sledeća generacija upravljanja objektima",
-      title: "LodgeTrack — platforma koja skalira vaše poslovanje izdavanja",
+      badge: "Poslovni softver nove generacije",
+      title: "LodgeTrack — platforma za lakše upravljanje nekretninama",
       subtitle:
-        "Upravljajte objektima, automatizovanim rezervacijama i objedinjenim tokovima prihoda sa jedne platforme visokih performansi, stvorene za moderne operatere.",
+        "Upravljajte nekretninama, automatskim rezervacijama i objedinjenim tokovima prihoda sa jedne moderne platforme.",
       ctaPrimary: "Započnite besplatnu probu",
       ctaSecondary: "Istražite platformu",
     },
@@ -2482,7 +2482,7 @@ const booking = await api("/bookings", {
       items: [
         "Pratite rezervacije kroz automatizovani kalendar",
         "Preuzmite kontrolu nad finansijama detaljnom analitikom",
-        "Podržano je praćenje više zakupaca",
+        "Pratite više zakupaca istovremeno",
         "Uvezite postojeće podatke bez ikakvih prepreka",
       ],
       bookingTitle: "Pametna sinhronizacija rezervacija",
@@ -2497,7 +2497,7 @@ const booking = await api("/bookings", {
       titlePrefix: "Spremni da pojednostavite ",
       titleAccent: "svoje poslovanje izdavanja",
       titleSuffix: "?",
-      body: "Pridružite se modernim operaterima koji efikasno skaliraju svoj portfolio. Za početak probnog perioda od 14 dana nije potrebna kreditna kartica.",
+      body: "Postanite član grupe poslodavaca koji efikasno proširuju svoj portfolio.",
       ctaPrimary: "Započnite besplatnu probu",
     },
 
@@ -2506,7 +2506,7 @@ const booking = await api("/bookings", {
       titlePrefix: "Izaberite plan koji ",
       titleAccent: "najbolje odgovara vama",
       titleSuffix: "",
-      subtitle: "Transparentni planovi oblikovani da prate rast vašeg portfolija objekata.",
+      subtitle: "Transparentni planovi osmišljeni da prate rast vašeg biznisa.",
       mostPopular: "Najpopularniji",
       perMonth: "/mesec",
       tiers: {
@@ -2529,17 +2529,17 @@ const booking = await api("/bookings", {
             "Uvoz i izvoz podataka",
             "Prioritetna podrška",
           ],
-          cta: "Započnite odmah",
+          cta: "Započnite besplatnu probu",
         },
         business: {
-          description: "Prilagođena rešenja za velike portfolije objekata i timove.",
+          description: "Prilagođena rešenja za velike timove i njihove portfolije.",
           features: [
             "Neograničen broj objekata",
-            "Posvećeni menadžer naloga",
+            "Lični menadžer zadužen za vašu organizaciju",
             "Prilagođene integracije i API",
             "SSO i pristup baziran na ulogama",
           ],
-          cta: "Kontaktirajte prodaju",
+          cta: "Započnite besplatnu probu",
         },
       },
     },
@@ -2547,7 +2547,7 @@ const booking = await api("/bookings", {
     about: {
       badge: "O nama",
       body1:
-        "LodgeTrack je nastao kao rešenje za problem nedostatka dostupnih alata koji pomažu malim i srednjim poslovanjima za izdavanje objekata.",
+        "LodgeTrack je nastao kao rešenje problema nedostatka alata koji pomažu malim i srednjim upraviteljima smeštajnih jedinica.",
       body2:
         "Aplikaciju trenutno vodi njen osnivač Veljko Galović, sa planovima za širenje u bliskoj budućnosti.",
     },
@@ -2574,7 +2574,7 @@ const booking = await api("/bookings", {
       linkedin: "LinkedIn",
     },
     tagline:
-      "Najmoderijniji softver za upravljanje objektima, rezervacijama i prihodom na jednom mestu. Izgrađen za male i srednje rent poslove.",
+      "Najmoderniji softver za upravljanje smeštajnim jedinicama, rezervacijama i prihodom na jednom mestu. Izgrađen za male i srednje biznise u oblasti izdavanja nekretnina.",
     status: "Svi sistemi su operativni",
     copyright: "© 2026 LodgeTrack by Veljko Galović. Sva prava zadržana.",
   },
