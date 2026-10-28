@@ -1,0 +1,11 @@
+[Unit]
+Description=LodgeTrack release monitor (pull-deploy newest GitHub Release)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/lodgetrack-ops/release-monitor.sh
+
+[Install]
+WantedBy=multi-user.target

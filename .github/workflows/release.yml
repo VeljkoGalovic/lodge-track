@@ -1,0 +1,123 @@
+name: Release (build & publish VPS bundle)
+
+# Releases follow tags, not commits: a push to main is checked by CI, and the
+# production server deploys only when a v* tag is pushed.
+#
+# The built bundle is "staged" twice: as a GitHub workflow artifact (30 days),
+# and as a GitHub Release asset — the server-side release monitor (see
+# deploy/vps/release-monitor.sh) watches /releases/latest and deploys it.
+# Secrets never enter the bundle: the server keeps its own /opt/lodgetrack/.env.
+#
+# workflow_dispatch (no tag) builds an artifact only — useful to test the
+# pipeline without cutting a release.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch: {}
+
+# Creating the Release and uploading the asset needs contents: write on the
+# default GITHUB_TOKEN.
+permissions:
+  contents: write
+
+env:
+  NODE_VERSION: '22.x'
+  NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL }}
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+  RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+  LEMON_SQUEEZY_API_KEY: ${{ secrets.LEMON_SQUEEZY_API_KEY }}
+  LEMON_SQUEEZY_WEBHOOK_SECRET: ${{ secrets.LEMON_SQUEEZY_WEBHOOK_SECRET }}
+  LEMON_SQUEEZY_STORE_ID: ${{ secrets.LEMON_SQUEEZY_STORE_ID }}
+  LEMON_SQUEEZY_STARTER_VARIANT_ID: ${{ secrets.LEMON_SQUEEZY_STARTER_VARIANT_ID }}
+  LEMON_SQUEEZY_PRO_VARIANT_ID: ${{ secrets.LEMON_SQUEEZY_PRO_VARIANT_ID }}
+  LEMON_SQUEEZY_BUSINESS_VARIANT_ID: ${{ secrets.LEMON_SQUEEZY_BUSINESS_VARIANT_ID }}
+
+jobs:
+  verify:
+    name: CI gate (${{ github.ref_name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Run tests
+        run: npm run test
+
+  build:
+    name: Build VPS bundle (${{ github.ref_name }})
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Build standalone server
+        run: NODE_ENV=production npx next build
+
+      # Mirrors deploy/vps/deploy-remote.sh's assembly steps WITHOUT the
+      # `.env` copy: the bundle must stay secret-free; the server preserves
+      # its own /opt/lodgetrack/.env across deploys.
+      - name: Assemble standalone bundle
+        run: |
+          set -euo pipefail
+          cp -r public .next/standalone/
+          cp -r .next/static .next/standalone/.next/
+          tar -czf "lodgetrack-vps-${{ github.ref_name }}.tar.gz" -C .next/standalone .
+
+      - name: Stage bundle as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vps-bundle-${{ github.ref_name }}
+          path: lodgetrack-vps-${{ github.ref_name }}.tar.gz
+          retention-days: 30
+
+      - name: Publish GitHub Release with bundle
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TGZ: lodgetrack-vps-${{ github.ref_name }}.tar.gz
+        run: |
+          set -euo pipefail
+          TAG="${{ github.ref_name }}"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "release $TAG already exists — replacing its bundle asset"
+            gh release upload "$TAG" "$TGZ" --clobber
+          else
+            gh release create "$TAG" "$TGZ" --title "LodgeTrack $TAG" --generate-notes
+          fi

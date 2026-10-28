@@ -38,6 +38,35 @@ bundle; only ~65 MB ships over rsync.
 
 Green check afterwards: `curl -sI https://www.lodgetrack.com/api/auth/session | head -1`.
 
+## Tag-driven release pipeline (GitHub → server)
+
+The normal path no longer requires the desktop at all:
+
+1. Push to `main` → CI (typecheck, lint, tests) must pass. Nothing deploys —
+   green main is just the gate ("staged" state).
+2. Push a tag: `git tag v1.x.y && git push origin v1.x.y` →
+   `.github/workflows/release.yml` re-verifies, builds the standalone bundle
+   **without secrets**, stages it as a workflow artifact (30 days), and
+   publishes it to the matching GitHub Release (`lodgetrack-vps-v1.x.y.tar.gz`).
+3. On the server, `lodgetrack-release-monitor.timer` polls the newest release
+   every 3 min (`/opt/lodgetrack-ops/release-monitor.sh`): it downloads the
+   asset into `/opt/lodgetrack-ops/staging/<tag>/`, verifies the bundle,
+   swaps `/opt/lodgetrack` atomically (keeping `/opt/lodgetrack-ops/prev`),
+   preserves the server's own `.env`, restarts, and health-checks. A failed
+   health check rolls back to `prev` automatically; the failed bundle is kept
+   at `/opt/lodgetrack-ops/broken-<tag>/`.
+4. The workflow creates the GitHub Release itself; `cat
+   /opt/lodgetrack-ops/DEPLOYED` shows what is live (tag, commit, time).
+
+Server-side files (installed from this repo): `deploy/vps/release-monitor.sh`,
+`deploy/vps/lodgetrack-release-monitor.service`, and
+`deploy/vps/lodgetrack-release-monitor.timer`. Because the repo is private,
+the server needs a **fine-grained PAT with read-only Contents access** at
+`/etc/lodgetrack/github-deploy-token` (chmod 600) to download release assets.
+
+Re-running the monitor manually re-checks immediately; re-pushing a tag
+re-replaces its release asset and redeploys it.
+
 ## Rollback to the Worker (~1 minute, if the box dies)
 
 1. Zero Trust → Tunnels → lodge-track → Public Hostnames → **remove** the
