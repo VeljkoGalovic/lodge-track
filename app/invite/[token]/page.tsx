@@ -2,7 +2,7 @@ import Link from "next/link"
 import { prisma } from "@/lib/prisma"
 import { AcceptInviteForm } from "@/components/invite/AcceptInviteForm"
 import { LocaleProvider } from "@/components/i18n/LocaleProvider"
-import { currentLocale } from "@/lib/i18n/server"
+import { visitorLocale } from "@/lib/i18n/server"
 import { format, getDictionary, type Dictionary } from "@/lib/i18n/dictionaries"
 
 export const metadata = { title: "Accept your invitation · LodgeTrack" }
@@ -18,7 +18,7 @@ export default async function AcceptInvitePage({ params }: { params: Promise<{ t
   const { token } = await params
   // Read before the lookup so both the failure copy and the form below are in
   // the visitor's language, on a page they reach without a session.
-  const locale = await currentLocale()
+  const locale = await visitorLocale()
   const t = getDictionary(locale)
 
   const invitation = await prisma.invitation.findUnique({

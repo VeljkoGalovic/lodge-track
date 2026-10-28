@@ -59,7 +59,7 @@ export function DashboardShell({
   return (
     <LocaleProvider locale={locale}>
       <ThemeProvider initialPreference={theme}>
-        <div className="relative flex min-h-dvh w-full bg-background md:h-svh md:overflow-hidden">
+        <div className="relative flex min-h-dvh w-full bg-background max-md:overflow-x-hidden md:h-svh md:overflow-hidden">
           {/* Ambient atmosphere — decorative, sits behind all content. */}
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
             <div className="ambient-orb -left-40 -top-40 h-[32rem] w-[32rem] bg-primary/10 blur-[120px]" />

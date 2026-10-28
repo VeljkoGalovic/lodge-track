@@ -4,7 +4,7 @@ import { currentMembership } from "@/lib/authorization"
 import { prisma } from "@/lib/prisma"
 import { OnboardingForm } from "@/components/onboarding/OnboardingForm"
 import { LocaleProvider } from "@/components/i18n/LocaleProvider"
-import { currentLocale } from "@/lib/i18n/server"
+import { visitorLocale } from "@/lib/i18n/server"
 import { format, getDictionary } from "@/lib/i18n/dictionaries"
 
 export const metadata = { title: "Set up your organization · LodgeTrack" }
@@ -24,7 +24,7 @@ export default async function OnboardingPage() {
 
   // No user locale to pass: this page settles which account is signed in, but
   // the language is a cookie read like any other unauthenticated page.
-  const locale = await currentLocale()
+  const locale = await visitorLocale()
   const t = getDictionary(locale)
 
   // Nothing to onboard: send them where they were going. Checked against the row

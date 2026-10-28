@@ -2,7 +2,7 @@ import { Metadata } from "next"
 import Link from "next/link"
 import { readLegalMarkdown, getLegalVersionDate, LegalMarkdown, extractHeadings } from "@/lib/markdown"
 import { TableOfContents } from "@/components/legal/TableOfContents"
-import { currentLocale } from "@/lib/i18n/server"
+import { visitorLocale } from "@/lib/i18n/server"
 
 export const metadata: Metadata = {
   title: "Cookie Policy · LodgeTrack",
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 }
 
 export default async function CookiesPage() {
-  const locale = await currentLocale()
+  const locale = await visitorLocale()
   const { content } = readLegalMarkdown("cookies.md")
   const lastUpdated = getLegalVersionDate("cookies.md")
   const headings = extractHeadings(content)

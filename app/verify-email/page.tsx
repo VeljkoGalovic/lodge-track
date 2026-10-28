@@ -1,6 +1,6 @@
 import { Metadata } from "next"
 import { headers } from "next/headers"
-import { currentLocale } from "@/lib/i18n/server"
+import { visitorLocale } from "@/lib/i18n/server"
 import { getDictionary } from "@/lib/i18n/dictionaries"
 import { LocaleProvider } from "@/components/i18n/LocaleProvider"
 import Link from "next/link"
@@ -17,7 +17,7 @@ interface VerifyEmailPageProps {
 }
 
 export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageProps) {
-  const locale = await currentLocale()
+  const locale = await visitorLocale()
   const t = getDictionary(locale)
   const params = await searchParams
   const token = params.token

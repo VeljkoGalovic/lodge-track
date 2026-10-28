@@ -1,5 +1,5 @@
 import { Metadata } from "next"
-import { currentLocale } from "@/lib/i18n/server"
+import { visitorLocale } from "@/lib/i18n/server"
 import { LocaleProvider } from "@/components/i18n/LocaleProvider"
 import { NotFoundContent } from "./not-found/NotFoundContent"
 
@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 }
 
 export default async function NotFoundPage() {
-  const locale = await currentLocale()
+  const locale = await visitorLocale()
 
   return (
     <LocaleProvider locale={locale}>

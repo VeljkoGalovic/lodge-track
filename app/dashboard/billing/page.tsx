@@ -358,10 +358,18 @@ export default async function BillingPage({
               >
                 {copy.popular && (
                   <>
+                    {/* The wash is clipped inside the card's own bounds: it used
+                        to paint 14rem past the right edge, which on a phone
+                        turned the page into something wider than the screen —
+                        a side-scrolling void and a phantom pinch-zoom. The
+                        card itself stays overflow-visible so the "popular"
+                        badge can float over its top border. */}
                     <div
                       aria-hidden="true"
-                      className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-brand-purple/20 blur-[80px]"
-                    />
+                      className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl"
+                    >
+                      <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-brand-purple/20 blur-[80px]" />
+                    </div>
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                       <Badge className="border-transparent bg-brand-purple text-[#07090E]">
                         {t.pages.billing.popular}

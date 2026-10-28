@@ -1,7 +1,7 @@
 import { Metadata } from "next"
 import Link from "next/link"
 import { Timer } from "lucide-react"
-import { currentLocale } from "@/lib/i18n/server"
+import { visitorLocale } from "@/lib/i18n/server"
 import { getDictionary, format } from "@/lib/i18n/dictionaries"
 import { LocaleProvider } from "@/components/i18n/LocaleProvider"
 import { RateLimitCountdown } from "./RateLimitCountdown"
@@ -24,7 +24,7 @@ const ACTION_LIMITS: Record<string, { maxAttempts: string; window: "hour" | "qua
 }
 
 export default async function RateLimitPage({ searchParams }: RateLimitPageProps) {
-  const locale = await currentLocale()
+  const locale = await visitorLocale()
   const t = getDictionary(locale)
   const params = await searchParams
   const action = params.action ?? "default"
