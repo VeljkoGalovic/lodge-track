@@ -19,10 +19,10 @@ describe("plural rule engine", () => {
     expect(plural(-1, enn)).toBe("-1 night")
   })
 
-  it("French puts 0 in the singular even in the untranslated entry", () => {
-    expect(plural(0, frn)).toBe("0 night")
-    expect(plural(1, frn)).toBe("1 night")
-    expect(plural(2, frn)).toBe("2 nights")
+  it("French puts 0 in the singular", () => {
+    expect(plural(0, frn)).toBe("0 nuit")
+    expect(plural(1, frn)).toBe("1 nuit")
+    expect(plural(2, frn)).toBe("2 nuits")
   })
 
   it("Serbian counts in threes by the last two digits, teens on 'many'", () => {
