@@ -75,6 +75,25 @@ re-replaces its release asset and redeploys it.
    `www.lodgetrack.com` custom domain back (recreates the record; worker
    serves again; test-mode-era builds are current via CI).
 
+## Edge settings (Cloudflare zone, dashboard-managed)
+
+The tunnel serves TLS at the edge — no certificate lives on the box. The zone
+(`lodgetrack.com`, nameservers on Cloudflare, registrar Porkbun) must keep
+these settings; they are not reproducible from this repo, only recorded:
+
+| Setting | Where | Value |
+|---|---|---|
+| Always Use HTTPS | SSL/TLS → Edge Certificates | **On** — every `http://` hit 301s to `https://www.lodgetrack.com` |
+| Apex redirect | Rules → Redirect Rules | **`lodgetrack.com/*` → dynamic 301 `https://www.lodgetrack.com/${1}`** — bare-domain visits land on `www`, path & query preserved |
+| Apex record | DNS | **Proxied placeholder `AAAA` record `@ → 100::`** ("Redirect Rule placeholder") — never reached; exists so the redirect rule has something to fire on |
+| Access LAN box | — | none intended — the tail IP is the only unproxied host, via Tailscale SSH policy |
+
+The `www` proxied record is the tunnel CNAME (`<uuid>.cfargotunnel.com`,
+created by `tunnel route dns`/the Zero Trust public hostname). Do not point the
+apex at the tunnel: serving the site on two hostnames splits canonical SEO;
+redirect only. If the zone is ever rebuilt from scratch, recreate this table
+before calling the cutover done.
+
 ## Ops notes
 
 - OS updates: `unattended-upgrades` is installed; reboots auto-restart both
