@@ -139,7 +139,7 @@ export default async function PropertiesPage() {
                         <Badge variant="secondary">{t.pages.dashboard.recent.available}</Badge>
                       )}
                       <Badge variant="outline">
-                        {plural(bookingCount, BOOKING_COUNT_FORMS[locale], locale)}
+                        {plural(bookingCount, BOOKING_COUNT_FORMS[locale])}
                       </Badge>
                     </div>
 

@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { CreditCard, Check, Lock, AlertTriangle, ArrowUpRight, Settings, XCircle, Clock } from "lucide-react"
 import { currentLocale } from "@/lib/i18n/server"
 import { format, getDictionary, type Dictionary } from "@/lib/i18n/dictionaries"
+import { LOCALE_TAGS } from "@/lib/i18n/locales"
 import { getOrgFeatures, getTierBadgeColor, formatBytes, TIER_PRICES_CENTS, TIER_PRICE_STRINGS, getAccountManagerEmail } from "@/lib/subscriptions"
 import type { Tier } from "@/lib/subscriptions"
 import { CheckoutComplete } from "./CheckoutComplete"
@@ -107,7 +108,7 @@ export default async function BillingPage({
   // in hand. The dashboard layout resolves the same value for the shell.
   const locale = await currentLocale(user.locale)
   const t = getDictionary(locale)
-  const dateLocale = locale === "sr" ? "sr-Latn-RS" : "en-US"
+  const dateLocale = LOCALE_TAGS[locale]
   const price = (amount: number) => new Intl.NumberFormat(dateLocale, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(amount)
   const taglines: Record<Tier, string> = {
     STARTER: t.pages.billing.starterTagline,

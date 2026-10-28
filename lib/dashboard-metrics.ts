@@ -1,7 +1,7 @@
 import type { BookingStatus } from "@prisma/client"
 import { type ExchangeRates, convertAmount } from "@/lib/exchange-rates"
 import type { ChartPoint } from "@/lib/metrics-display"
-import type { Locale } from "@/lib/i18n/locales"
+import { LOCALE_TAGS, type Locale } from "@/lib/i18n/locales"
 
 // `ChartPoint` and `percentChange` now live in the boundary-safe
 // `lib/metrics-display.ts` (importable from client components); they are
@@ -61,7 +61,7 @@ export function monthWindow(reference: Date, offset = 0, locale: Locale = "en"):
   return {
     start,
     end,
-    label: start.toLocaleDateString(locale === "sr" ? "sr-Latn-RS" : "en-US", { month: "short" }),
+    label: start.toLocaleDateString(LOCALE_TAGS[locale], { month: "short" }),
   }
 }
 
@@ -250,7 +250,7 @@ export function formatDateRange(
   const from = new Date(start)
   const to = new Date(end)
 
-  const tag = locale === "sr" ? "sr-Latn-RS" : "en-US"
+  const tag = LOCALE_TAGS[locale]
   const short = (date: Date) => date.toLocaleDateString(tag, { month: "short", day: "numeric" })
   const withYear = (date: Date) =>
     date.toLocaleDateString(tag, { month: "short", day: "numeric", year: "numeric" })

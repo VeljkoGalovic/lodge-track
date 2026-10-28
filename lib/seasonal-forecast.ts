@@ -7,6 +7,7 @@
  */
 
 import type { ChartPoint, ProjectedPoint } from "@/lib/metrics-display"
+import { LOCALE_TAGS, type Locale } from "@/lib/i18n/locales"
 
 /**
  * Industry-standard monthly seasonal indices for hospitality.
@@ -55,7 +56,7 @@ export interface SeasonalForecastOptions {
   /** Reference date for generating month names. Default: current date. */
   referenceDate?: Date
   /** Locale for month names. Default: "en". */
-  locale?: "en" | "sr"
+  locale?: Locale
   /** Maximum month-over-month change as percentage (damping). Default: 15. */
   maxMonthlyChangePct?: number
   /** Whether negative values are allowed (expenses). Default: false. */
@@ -114,11 +115,11 @@ function getMonthIndex(month: string): number {
 function generateFutureMonths(
   referenceDate: Date,
   count: number,
-  locale: "en" | "sr" = "en"
+  locale: Locale = "en"
 ): string[] {
   return Array.from({ length: count }, (_, i) => {
     const date = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1 + i, 1)
-    return date.toLocaleDateString(locale === "sr" ? "sr-Latn-RS" : "en-US", { month: "short" })
+    return date.toLocaleDateString(LOCALE_TAGS[locale], { month: "short" })
   })
 }
 

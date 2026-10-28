@@ -47,7 +47,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 import { formatDistanceToNow } from "date-fns"
-import { srLatn } from "date-fns/locale/sr-Latn"
+import { LOCALE_DATEFNS } from "@/lib/i18n/datefns"
 import { getOrgFeatures, Tier } from "@/lib/subscriptions"
 
 interface ApiKey {
@@ -188,15 +188,10 @@ export default function ApiDashboardClient({
   function formatDate(date: Date | null) {
     if (!date) return t.settings.api.never
 
-    let dateLocale = undefined
-    if (locale === "sr") {
-      // Use the Serbian Latin locale from date-fns to match website script
-      dateLocale = srLatn
-    }
-
     return formatDistanceToNow(new Date(date), {
       addSuffix: true,
-      locale: dateLocale
+      // Language of the "3 days ago" phrase; undefined = enUS default.
+      locale: LOCALE_DATEFNS[locale],
     })
   }
 

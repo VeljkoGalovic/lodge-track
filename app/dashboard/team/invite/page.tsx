@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, Mail } from "lucide-react"
 import { currentLocale } from "@/lib/i18n/server"
+import { LOCALE_TAGS } from "@/lib/i18n/locales"
 import {
   format,
   getDictionary,
@@ -90,7 +91,7 @@ export default async function InviteMemberPage() {
               ? t.pages.team.noPendingInvitations
               : invitations.length === 1
                 ? t.pages.team.pendingLinksOne
-                : format(t.pages.team.pendingLinks, { links: plural(invitations.length, LINK_COUNT_FORMS[locale], locale) })}
+                : format(t.pages.team.pendingLinks, { links: plural(invitations.length, LINK_COUNT_FORMS[locale]) })}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -102,7 +103,7 @@ export default async function InviteMemberPage() {
                 email: invitation.email,
                 role: invitation.role,
                 url: `${origin}/invite/${invitation.token}`,
-                expiresAt: invitation.expiresAt.toLocaleDateString(locale === "sr" ? "sr-Latn-RS" : "en-US", {
+                expiresAt: invitation.expiresAt.toLocaleDateString(LOCALE_TAGS[locale], {
                   month: "short",
                   day: "numeric",
                   year: "numeric",

@@ -95,7 +95,7 @@ export default async function BookingsPage() {
           <CardTitle>{t.pages.bookings.allBookings}</CardTitle>
           <CardDescription>
             {format(t.pages.bookings.totalAcrossProperties, {
-              bookings: plural(allBookings.length, BOOKING_COUNT_FORMS[locale], locale),
+              bookings: plural(allBookings.length, BOOKING_COUNT_FORMS[locale]),
             })}
           </CardDescription>
         </CardHeader>

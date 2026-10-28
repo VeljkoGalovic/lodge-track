@@ -5,6 +5,7 @@ import { useActionState } from "react"
 import { updateOrganization } from "@/app/actions/organization"
 import { EMPTY_ACTION_STATE } from "@/lib/action-state"
 import { SUPPORTED_CURRENCIES } from "@/lib/currency"
+import { LOCALE_TAGS } from "@/lib/i18n/locales"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { FormMessage } from "@/components/dashboard/FormMessage"
@@ -20,7 +21,7 @@ interface OrganizationFormProps {
 export function OrganizationForm({ name, currency, canEdit }: OrganizationFormProps) {
   const { locale } = useLocale()
   const t = useDictionary()
-  const currencies = new Intl.DisplayNames(locale === "sr" ? "sr-Latn-RS" : "en-US", { type: "currency" })
+  const currencies = new Intl.DisplayNames(LOCALE_TAGS[locale], { type: "currency" })
   const [state, formAction] = useActionState(updateOrganization, EMPTY_ACTION_STATE)
 
   return (

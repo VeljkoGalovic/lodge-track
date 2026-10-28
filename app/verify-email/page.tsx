@@ -59,9 +59,7 @@ export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageP
               // Checkout creation failed - variant ID missing or API error
               verificationResult = {
                 success: false,
-                message: locale === "sr"
-                  ? "Nije moguće pokrenuti plaćanje. Molimo vas da kontaktirate podršku ili pokušajte ponovo."
-                  : "Unable to start checkout. Please contact support or try again later.",
+                message: t.verification.checkoutFailed,
               }
             }
           }
@@ -70,17 +68,13 @@ export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageP
         if (!verificationResult) {
           verificationResult = {
             success: true,
-            message: locale === "sr"
-              ? "Vaš email je uspešno verifikovan! Možete se prijaviti."
-              : "Your email has been verified successfully! You can now sign in.",
+            message: t.verification.success,
           }
         }
       } else {
         verificationResult = {
           success: false,
-          message: locale === "sr"
-            ? "Nevažeći ili istekao verifikacioni link. Molimo vas da zatražite novi."
-            : "Invalid or expired verification link. Please request a new one.",
+          message: t.verification.invalidLink,
         }
       }
     } catch (error) {
@@ -91,9 +85,7 @@ export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageP
       console.error("Verification error:", error)
       verificationResult = {
         success: false,
-        message: locale === "sr"
-          ? "Došlo je do greške prilikom verifikacije. Pokušajte ponovo."
-          : "An error occurred during verification. Please try again.",
+        message: t.verification.genericError,
       }
     }
   }
@@ -115,12 +107,12 @@ export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageP
           </div>
 
           <h1 className="text-2xl font-bold text-white mb-4">
-            {locale === "sr" ? "Verifikacija email adrese" : "Verify your email"}
+            {t.verification.title}
           </h1>
 
           {token && !verificationResult && (
             <p className="text-slate-300 mb-6">
-              {locale === "sr" ? "Verifikujem vašu email adresu..." : "Verifying your email address..."}
+              {t.verification.verifying}
             </p>
           )}
 
@@ -132,12 +124,7 @@ export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageP
 
           {!token && !verificationResult && (
             <>
-              <p className="text-slate-300 mb-6">
-                {locale === "sr"
-                  ? "Nije pronađen verifikacioni token. Molimo vas da kliknete na link u emailu koji ste primili. Ako ste izgubili email, zatražite novi ispod."
-                  : "No verification token found. Please click the link in the email you received. If you lost the email, request a fresh one below."
-                }
-              </p>
+              <p className="text-slate-300 mb-6">{t.verification.noToken}</p>
               <ResendVerificationForm />
             </>
           )}
@@ -147,22 +134,19 @@ export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageP
               href="/signin"
               className="w-full py-3 rounded-xl bg-gradient-to-r from-[#36bfae] to-[#ba87ff] text-[#07090E] font-semibold hover:opacity-90 transition-opacity inline-block"
             >
-              {locale === "sr" ? "Prijavite se" : "Sign In"}
+              {t.verification.signIn}
             </Link>
 
             <Link
               href="/register"
               className="w-full py-3 rounded-xl border border-white/10 text-white hover:bg-white/5 transition-colors inline-block"
             >
-              {locale === "sr" ? "Registrujte se ponovo" : "Register again"}
+              {t.verification.registerAgain}
             </Link>
           </div>
 
           <p className="text-xs text-slate-500 mt-6">
-            {locale === "sr"
-              ? "Potrebna je pomoć? Kontaktirajte nas na support@lodgetrack.app"
-              : "Need help? Contact us at support@lodgetrack.app"
-            }
+            {t.verification.contactUs}
           </p>
         </div>
       </section>

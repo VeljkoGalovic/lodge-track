@@ -54,7 +54,7 @@ export function DeletePropertyButton({
           <DialogDescription>
             {bookingCount > 0
               ? format(t.confirm.deletePropertyWithBookings, {
-                  bookings: plural(bookingCount, BOOKING_COUNT_FORMS[locale], locale),
+                  bookings: plural(bookingCount, BOOKING_COUNT_FORMS[locale]),
                 })
               : t.confirm.deletePropertyNoBookings}
           </DialogDescription>

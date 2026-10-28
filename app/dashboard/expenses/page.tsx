@@ -11,11 +11,11 @@ import { cn } from "@/lib/utils"
 import { Paperclip, Plus, Receipt } from "lucide-react"
 import { currentLocale } from "@/lib/i18n/server"
 import { EXPENSE_COUNT_FORMS, format, getDictionary, plural } from "@/lib/i18n/dictionaries"
-import type { Locale } from "@/lib/i18n/locales"
+import { LOCALE_TAGS, type Locale } from "@/lib/i18n/locales"
 
 /** A `Date` as a plain day, in local time — the same clock `dateField` writes on. */
 function formatDay(date: Date, locale: Locale): string {
-  return date.toLocaleDateString(locale === "sr" ? "sr-Latn-RS" : "en-US", { day: "numeric", month: "short", year: "numeric" })
+  return date.toLocaleDateString(LOCALE_TAGS[locale], { day: "numeric", month: "short", year: "numeric" })
 }
 
 export default async function ExpensesPage({
@@ -123,7 +123,7 @@ export default async function ExpensesPage({
                   : format(
                       selectedProperty ? t.pages.expenses.loggedForProperty : t.pages.expenses.loggedAcrossProperties,
                       {
-                        expenses: plural(expenses.length, EXPENSE_COUNT_FORMS[locale], locale),
+                        expenses: plural(expenses.length, EXPENSE_COUNT_FORMS[locale]),
                         property: selectedProperty?.name ?? "",
                       }
                     )}

@@ -149,7 +149,7 @@ export default async function TeamPage() {
         <CardHeader>
           <CardTitle>{t.pages.team.members}</CardTitle>
           <CardDescription>
-            {format(t.pages.team.membersSummary, { members: plural(org.users.length, MEMBER_COUNT_FORMS[locale], locale) })}
+            {format(t.pages.team.membersSummary, { members: plural(org.users.length, MEMBER_COUNT_FORMS[locale]) })}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -182,7 +182,7 @@ export default async function TeamPage() {
           <CardDescription>
             {pendingInvitations === 0
               ? t.pages.team.noPendingInvitations
-              : format(t.pages.team.pendingSummary, { links: plural(pendingInvitations, LINK_COUNT_FORMS[locale], locale) })}
+              : format(t.pages.team.pendingSummary, { links: plural(pendingInvitations, LINK_COUNT_FORMS[locale]) })}
           </CardDescription>
         </CardHeader>
         <CardContent>

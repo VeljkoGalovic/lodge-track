@@ -2,7 +2,7 @@ import { Metadata } from "next"
 import Link from "next/link"
 import { Timer } from "lucide-react"
 import { currentLocale } from "@/lib/i18n/server"
-import { getDictionary } from "@/lib/i18n/dictionaries"
+import { getDictionary, format } from "@/lib/i18n/dictionaries"
 import { LocaleProvider } from "@/components/i18n/LocaleProvider"
 import { RateLimitCountdown } from "./RateLimitCountdown"
 
@@ -16,11 +16,11 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-const ACTION_LIMITS: Record<string, { maxAttempts: string; window: string; windowSr: string }> = {
-  register: { maxAttempts: "5", window: "per hour", windowSr: "na sat" },
-  login: { maxAttempts: "10", window: "per 15 minutes", windowSr: "na 15 minuta" },
-  email_verification: { maxAttempts: "3", window: "per hour", windowSr: "na sat" },
-  password_reset: { maxAttempts: "3", window: "per hour", windowSr: "na sat" },
+const ACTION_LIMITS: Record<string, { maxAttempts: string; window: "hour" | "quarterHour" }> = {
+  register: { maxAttempts: "5", window: "hour" },
+  login: { maxAttempts: "10", window: "quarterHour" },
+  email_verification: { maxAttempts: "3", window: "hour" },
+  password_reset: { maxAttempts: "3", window: "hour" },
 }
 
 export default async function RateLimitPage({ searchParams }: RateLimitPageProps) {
@@ -65,9 +65,10 @@ export default async function RateLimitPage({ searchParams }: RateLimitPageProps
             <span className="font-medium text-white">{actionLabel}</span>
             {limits && (
               <span className="block mt-1 text-xs text-slate-500">
-                {locale === "sr"
-                  ? `${limits.maxAttempts} pokušaja ${limits.windowSr}`
-                  : `${limits.maxAttempts} ${limits.window}`}
+                {format(t.auth.rateLimitAttempts, {
+                  count: limits.maxAttempts,
+                  window: limits.window === "hour" ? t.auth.rateLimitWindowHour : t.auth.rateLimitWindowQuarterHour,
+                })}
               </span>
             )}
           </p>

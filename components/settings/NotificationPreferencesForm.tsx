@@ -50,7 +50,7 @@ export function NotificationPreferencesForm({
               <span className="block font-medium text-foreground">{option.label}</span>
               <span className="block text-sm text-subtle-foreground">{option.description}</span>
               <span className="mt-1 block text-xs text-subtle-foreground">
-                {format(t.pages.notifications.currentItems, { items: plural(counts[option.name], ITEM_COUNT_FORMS[locale], locale) })}
+                {format(t.pages.notifications.currentItems, { items: plural(counts[option.name], ITEM_COUNT_FORMS[locale]) })}
               </span>
             </span>
           </label>

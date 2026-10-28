@@ -1,3 +1,5 @@
+import type { Locale } from "@/lib/i18n/locales"
+
 /** Serialized chart data shared by server calculations and client presentation. */
 export interface ChartPoint {
   month: string
@@ -56,7 +58,7 @@ export interface ProjectionOptions {
   /** Reference date for generating actual month names. Default: current date. */
   referenceDate?: Date
   /** Locale for month names. Default: "en". */
-  locale?: "en" | "sr"
+  locale?: Locale
   /** Full historical series for 24+ month detection. */
   fullHistory?: ChartPoint[]
 }

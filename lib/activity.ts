@@ -1,6 +1,6 @@
 import type { BookingStatus } from "@prisma/client"
 import { format, getDictionary, NIGHT_FORMS, plural } from "@/lib/i18n/dictionaries"
-import type { Locale } from "@/lib/i18n/locales"
+import { LOCALE_TAGS, type Locale } from "@/lib/i18n/locales"
 
 /**
  * The activity feed.
@@ -81,7 +81,7 @@ function relativeDay(date: Date, now: Date, locale: Locale): string {
     new Date(value.getFullYear(), value.getMonth(), value.getDate()).getTime()
   const days = Math.round((startOfDay(date) - startOfDay(now)) / DAY_MS)
 
-  return new Intl.RelativeTimeFormat(locale === "sr" ? "sr-Latn-RS" : "en-US", { numeric: "auto" }).format(days, "day")
+  return new Intl.RelativeTimeFormat(LOCALE_TAGS[locale], { numeric: "auto" }).format(days, "day")
 }
 
 export function buildActivity(
@@ -103,7 +103,7 @@ export function buildActivity(
         id: `check-in-${booking.id}`,
         kind: "CHECK_IN_DUE",
         title: format(t.pages.notifications.arrivalTitle, { guest: booking.guestName, day: relativeDay(booking.startDate, now, locale) }),
-        description: format(t.pages.notifications.arrivalDetail, { property: booking.property.name, nights: plural(nights(booking), NIGHT_FORMS[locale], locale), status: t.pages.bookings.statuses[booking.status] }),
+        description: format(t.pages.notifications.arrivalDetail, { property: booking.property.name, nights: plural(nights(booking), NIGHT_FORMS[locale]), status: t.pages.bookings.statuses[booking.status] }),
         date: booking.startDate,
         href: bookingHref(booking.id),
       })

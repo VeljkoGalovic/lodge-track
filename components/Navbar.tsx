@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import type { Locale } from "@/lib/i18n/locales";
+import { LOCALES } from "@/lib/i18n/locales";
 
 interface NavbarProps {
   links: { label: string; href: string }[];
@@ -46,26 +47,19 @@ function LanguageToggle({
       aria-label={languageLabel}
       className={`flex items-center rounded-full border border-white/10 bg-white/5 p-0.5 text-xs ${className}`}
     >
-      <button
-        type="button"
-        onClick={() => setVisitorLocaleCookie("en")}
-        aria-pressed={currentLocale === "en"}
-        className={`rounded-full px-2.5 py-1 font-medium transition-colors ${
-            currentLocale === "en" ? "bg-white/10 text-white" : "text-slate-400 hover:text-white"
-        }`}
-      >
-        EN
-      </button>
-      <button
-        type="button"
-        onClick={() => setVisitorLocaleCookie("sr")}
-        aria-pressed={currentLocale === "sr"}
-        className={`rounded-full px-2.5 py-1 font-medium transition-colors ${
-            currentLocale === "sr" ? "bg-white/10 text-white" : "text-slate-400 hover:text-white"
-        }`}
-      >
-        SR
-      </button>
+      {LOCALES.map((code) => (
+        <button
+          key={code}
+          type="button"
+          onClick={() => setVisitorLocaleCookie(code)}
+          aria-pressed={currentLocale === code}
+          className={`rounded-full px-2 py-1 font-medium transition-colors ${
+            currentLocale === code ? "bg-white/10 text-white" : "text-slate-400 hover:text-white"
+          }`}
+        >
+          {code.toUpperCase()}
+        </button>
+      ))}
     </div>
   );
 }

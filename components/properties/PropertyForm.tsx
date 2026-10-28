@@ -10,6 +10,7 @@ import { FormMessage } from "@/components/dashboard/FormMessage"
 import { SubmitButton } from "@/components/dashboard/SubmitButton"
 import { useLocale, useDictionary } from "@/components/i18n/LocaleProvider"
 import { SUPPORTED_CURRENCIES } from "@/lib/currency"
+import { LOCALE_TAGS } from "@/lib/i18n/locales"
 
 interface PropertyFormProps {
   /** Editing carries the existing values and a hidden id; creating carries neither. */
@@ -28,7 +29,7 @@ interface PropertyFormProps {
 export function PropertyForm({ property }: PropertyFormProps) {
   const { locale } = useLocale()
   const t = useDictionary()
-  const currencies = new Intl.DisplayNames(locale === "sr" ? "sr-Latn-RS" : "en-US", { type: "currency" })
+  const currencies = new Intl.DisplayNames(LOCALE_TAGS[locale], { type: "currency" })
   const action = property ? updateProperty : createProperty
   const [state, formAction] = useActionState(action, EMPTY_ACTION_STATE)
   useActionRedirect(state)

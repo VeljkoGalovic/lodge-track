@@ -72,7 +72,7 @@ function UnitRow({ unit, canEdit }: { unit: Unit; canEdit: boolean }) {
             {unit.kind ?? t.units.noKind} ·{" "}
             {unit.activeBookings === 0
               ? t.units.noneActive
-              : plural(unit.activeBookings, ACTIVE_BOOKING_FORMS[locale], locale)}
+              : plural(unit.activeBookings, ACTIVE_BOOKING_FORMS[locale])}
           </p>
         </div>
 
@@ -143,11 +143,7 @@ function UnitRow({ unit, canEdit }: { unit: Unit; canEdit: boolean }) {
                   <DialogDescription>
                     {unit.activeBookings > 0
                       ? format(t.units.removeBlocked, {
-                          bookings: plural(
-                            unit.activeBookings,
-                            ACTIVE_BOOKING_FORMS[locale],
-                            locale
-                          ),
+                          bookings: plural(unit.activeBookings, ACTIVE_BOOKING_FORMS[locale]),
                         })
                       : t.units.removeConfirm}
                   </DialogDescription>
@@ -190,7 +186,7 @@ export function UnitsCard({ propertyId, units, canEdit, sharedInventory }: Units
             ? t.units.empty
             : sharedInventory
               ? t.units.inventoryHelp
-              : plural(units.length, UNIT_COUNT_FORMS[locale], locale)}
+              : plural(units.length, UNIT_COUNT_FORMS[locale])}
         </CardDescription>
       </CardHeader>
 

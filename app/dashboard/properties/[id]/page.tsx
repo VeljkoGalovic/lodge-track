@@ -15,12 +15,12 @@ import { cn } from "@/lib/utils"
 import { formatDateRange, monthWindow, statsForWindow } from "@/lib/dashboard-metrics"
 import { currentLocale } from "@/lib/i18n/server"
 import { BOOKING_COUNT_FORMS, EXPENSE_COUNT_FORMS, format, getDictionary, plural } from "@/lib/i18n/dictionaries"
-import type { Locale } from "@/lib/i18n/locales"
+import { LOCALE_TAGS, type Locale } from "@/lib/i18n/locales"
 import { ArrowLeft, Building2, Paperclip, Pencil, Plus, Receipt } from "lucide-react"
 
 /** A `Date` as a plain day, matching how the expenses list renders dates. */
 function formatExpenseDay(date: Date, locale: Locale): string {
-  return date.toLocaleDateString(locale === "sr" ? "sr-Latn-RS" : "en-US", { day: "numeric", month: "short", year: "numeric" })
+  return date.toLocaleDateString(LOCALE_TAGS[locale], { day: "numeric", month: "short", year: "numeric" })
 }
 
 export default async function PropertyPage({ params }: { params: Promise<{ id: string }> }) {
@@ -179,7 +179,7 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
           <CardDescription>
             {upcoming.length === 0
               ? t.pages.properties.nothingUpcoming
-              : format(t.pages.properties.upcomingSummary, { bookings: plural(upcoming.length, BOOKING_COUNT_FORMS[locale], locale) })}
+              : format(t.pages.properties.upcomingSummary, { bookings: plural(upcoming.length, BOOKING_COUNT_FORMS[locale]) })}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -235,7 +235,7 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
               <CardDescription>
                 {expenses.length === 0
                   ? t.pages.properties.noExpenses
-                  : format(t.pages.properties.expenseSummary, { expenses: plural(expenses.length, EXPENSE_COUNT_FORMS[locale], locale), amount: formatCurrency(expenseTotal, displayCurrency) })}
+                  : format(t.pages.properties.expenseSummary, { expenses: plural(expenses.length, EXPENSE_COUNT_FORMS[locale]), amount: formatCurrency(expenseTotal, displayCurrency) })}
               </CardDescription>
             </div>
             {canEdit ? (
@@ -299,7 +299,7 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
               ))}
               {expenses.length > 8 ? (
                 <p className="text-center text-sm text-subtle-foreground">
-                  {format(t.pages.properties.olderExpenses, { expenses: plural(expenses.length - 8, EXPENSE_COUNT_FORMS[locale], locale) })}{" "}
+                  {format(t.pages.properties.olderExpenses, { expenses: plural(expenses.length - 8, EXPENSE_COUNT_FORMS[locale]) })}{" "}
                   <a
                     href={`/dashboard/expenses?propertyId=${property.id}`}
                     className="text-primary hover:underline"
@@ -318,7 +318,7 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
           <CardHeader>
             <CardTitle>{t.pages.properties.pastCancelled}</CardTitle>
             <CardDescription>
-              {format(t.pages.properties.pastSummary, { bookings: plural(bookings.length - upcoming.length, BOOKING_COUNT_FORMS[locale], locale) })}
+              {format(t.pages.properties.pastSummary, { bookings: plural(bookings.length - upcoming.length, BOOKING_COUNT_FORMS[locale]) })}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">

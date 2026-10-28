@@ -9,6 +9,7 @@ import { BookingStatus } from "@prisma/client"
 import Link from "next/link"
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react"
 import { currentLocale } from "@/lib/i18n/server"
+import { LOCALE_TAGS } from "@/lib/i18n/locales"
 import { BOOKING_COUNT_FORMS, format, getDictionary, plural } from "@/lib/i18n/dictionaries"
 
 /** How many booking chips a single day shows before collapsing into "+N more". */
@@ -87,7 +88,7 @@ export default async function CalendarPage({
   const { user, organization } = await requireMembership()
   const locale = await currentLocale(user.locale)
   const t = getDictionary(locale)
-  const dateLocale = locale === "sr" ? "sr-Latn-RS" : "en-US"
+  const dateLocale = LOCALE_TAGS[locale]
   const weekdays = Array.from({ length: 7 }, (_, index) =>
     new Date(2024, 0, 1 + index).toLocaleDateString(dateLocale, { weekday: "short" })
   )
@@ -217,7 +218,7 @@ export default async function CalendarPage({
               <CardDescription>
                 {bookings.length === 0
                   ? t.pages.calendar.noStays
-                  : format(t.pages.calendar.staySummary, { bookings: plural(bookings.length, BOOKING_COUNT_FORMS[locale], locale) })}
+                  : format(t.pages.calendar.staySummary, { bookings: plural(bookings.length, BOOKING_COUNT_FORMS[locale]) })}
               </CardDescription>
             </div>
 

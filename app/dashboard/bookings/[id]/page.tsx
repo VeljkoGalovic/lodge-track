@@ -12,13 +12,13 @@ import { formatDateRange } from "@/lib/dashboard-metrics"
 import { ArrowLeft, CalendarDays, Home, Tag } from "lucide-react"
 import { currentLocale } from "@/lib/i18n/server"
 import { format, getDictionary, NIGHT_FORMS, plural } from "@/lib/i18n/dictionaries"
-import type { Locale } from "@/lib/i18n/locales"
+import { LOCALE_TAGS, type Locale } from "@/lib/i18n/locales"
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
 /** A `Date` as a long day, in the reader's language. */
 function formatLongDay(date: Date, locale: Locale): string {
-  return date.toLocaleDateString(locale === "sr" ? "sr-Latn-RS" : "en-US", {
+  return date.toLocaleDateString(LOCALE_TAGS[locale], {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -75,7 +75,7 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
               {t.pages.bookings.stay}
             </p>
             <p className="mt-1 text-2xl font-semibold text-foreground">
-              {plural(nights, NIGHT_FORMS[locale], locale)}
+              {plural(nights, NIGHT_FORMS[locale])}
             </p>
           </CardContent>
         </Card>

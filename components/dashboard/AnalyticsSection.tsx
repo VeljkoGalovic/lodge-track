@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { percentChange, type ChartPoint, type ProjectedPoint, type ForecastMetadata, projectSeries, projectSeriesWithMeta } from "@/lib/metrics-display"
 import { useDictionary, useLocale } from "@/components/i18n/LocaleProvider"
 import { format } from "@/lib/i18n/dictionaries"
+import { LOCALE_TAGS } from "@/lib/i18n/locales"
 import { formatCurrency } from "@/lib/currency"
 import { monthWindow } from "@/lib/dashboard-metrics"
 
@@ -284,7 +285,7 @@ function ChartPanel({
         >
           <TrendingUp className="h-4 w-4" />
           <span>
-            {format(t.pages.analytics.monthlyChange, { change: new Intl.NumberFormat(locale === "sr" ? "sr-Latn-RS" : "en-US", { signDisplay: "exceptZero", maximumFractionDigits: 1 }).format(change) })}
+            {format(t.pages.analytics.monthlyChange, { change: new Intl.NumberFormat(LOCALE_TAGS[locale], { signDisplay: "exceptZero", maximumFractionDigits: 1 }).format(change) })}
           </span>
         </div>
       )}

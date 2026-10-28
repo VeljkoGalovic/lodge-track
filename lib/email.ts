@@ -1,6 +1,6 @@
 import { Resend } from "resend"
-import { format } from "@/lib/i18n/dictionaries"
 import { getDictionary } from "@/lib/i18n/dictionaries"
+import type { Locale } from "@/lib/i18n/locales"
 
 /**
  * Email service using Resend for transactional emails.
@@ -85,14 +85,10 @@ export function buildResetLink(token: string): string {
 export async function sendVerificationEmail(
   email: string,
   token: string,
-  locale: "en" | "sr" = "en"
+  locale: Locale = "en"
 ): Promise<{ success: boolean; error?: string }> {
-  const t = getDictionary(locale)
+  const t = getDictionary(locale).emails.verifyEmail
   const link = buildVerificationLink(token)
-
-  const subject = locale === "sr"
-    ? "Potvrdite svoj email za LodgeTrack"
-    : "Verify your email for LodgeTrack"
 
   const html = `
     <!DOCTYPE html>
@@ -106,60 +102,43 @@ export async function sendVerificationEmail(
         <h1 style="color: #07090E; margin: 0; font-size: 24px; font-weight: 700;">LodgeTrack</h1>
       </div>
       <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
-        <h2 style="margin-top: 0; color: #1f2937;">${locale === "sr" ? "Potvrdite vašu email adresu" : "Verify your email address"}</h2>
-        <p style="color: #4b5563;">${locale === "sr"
-          ? "Hvala vam na registraciji! Molimo vas da potvrdite vašu email adresu klikom na dugme ispod."
-          : "Thanks for signing up! Please verify your email address by clicking the button below."
-        }</p>
+        <h2 style="margin-top: 0; color: #1f2937;">${t.title}</h2>
+        <p style="color: #4b5563;">${t.intro}</p>
         <div style="text-align: center; margin: 30px 0;">
           <a href="${link}" style="display: inline-block; background: linear-gradient(135deg, #36bfae 0%, #ba87ff 100%); color: #07090E; font-weight: 600; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-size: 16px;">
-            ${locale === "sr" ? "Potvrdi email" : "Verify Email"}
+            ${t.cta}
           </a>
         </div>
-        <p style="color: #6b7280; font-size: 14px;">${locale === "sr"
-          ? "Ako dugme ne radi, kopirajte sledeći link u browser:"
-          : "If the button doesn't work, copy this link to your browser:"
-        }</p>
+        <p style="color: #6b7280; font-size: 14px;">${t.altLink}</p>
         <p style="word-break: break-all; color: #36bfae; font-size: 14px;">${link}</p>
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
-        <p style="color: #9ca3af; font-size: 12px;">${locale === "sr"
-          ? "Ovaj link ističe za 24 sata. Ako niste kreirali nalog, ignorisite ovaj email."
-          : "This link expires in 24 hours. If you didn't create an account, please ignore this email."
-        }</p>
+        <p style="color: #9ca3af; font-size: 12px;">${t.expiry}</p>
       </div>
     </body>
     </html>
   `
 
   const text = `
-${locale === "sr" ? "Potvrdite vašu email adresu za LodgeTrack" : "Verify your email address for LodgeTrack"}
+${t.textTitle}
 
-${locale === "sr"
-  ? "Hvala vam na registraciji! Molimo vas da potvrdite vašu email adresu posetom sledećem linku:"
-  : "Thanks for signing up! Please verify your email address by visiting the link below:"}
+${t.textIntro}
 
 ${link}
 
-${locale === "sr"
-  ? "Ovaj link ističe za 24 sata. Ako niste kreirali nalog, ignorisite ovaj email."
-  : "This link expires in 24 hours. If you didn't create an account, please ignore this email."}
+${t.expiry}
   `
 
-  return sendEmail({ to: email, subject, html, text })
+  return sendEmail({ to: email, subject: t.subject, html, text })
 }
 
 /** Send password reset email. */
 export async function sendPasswordResetEmail(
   email: string,
   token: string,
-  locale: "en" | "sr" = "en"
+  locale: Locale = "en"
 ): Promise<{ success: boolean; error?: string }> {
-  const t = getDictionary(locale)
+  const t = getDictionary(locale).emails.passwordReset
   const link = buildResetLink(token)
-
-  const subject = locale === "sr"
-    ? "Resetujte lozinku za LodgeTrack"
-    : "Reset your LodgeTrack password"
 
   const html = `
     <!DOCTYPE html>
@@ -173,44 +152,31 @@ export async function sendPasswordResetEmail(
         <h1 style="color: #07090E; margin: 0; font-size: 24px; font-weight: 700;">LodgeTrack</h1>
       </div>
       <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
-        <h2 style="margin-top: 0; color: #1f2937;">${locale === "sr" ? "Resetujte vašu lozinku" : "Reset your password"}</h2>
-        <p style="color: #4b5563;">${locale === "sr"
-          ? "Primili smo zahtev za resetovanje lozinke za vaš nalog. Kliknite na dugme ispod da biste postavili novu lozinku."
-          : "We received a request to reset the password for your account. Click the button below to set a new password."
-        }</p>
+        <h2 style="margin-top: 0; color: #1f2937;">${t.title}</h2>
+        <p style="color: #4b5563;">${t.intro}</p>
         <div style="text-align: center; margin: 30px 0;">
           <a href="${link}" style="display: inline-block; background: linear-gradient(135deg, #36bfae 0%, #ba87ff 100%); color: #07090E; font-weight: 600; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-size: 16px;">
-            ${locale === "sr" ? "Resetuj lozinku" : "Reset Password"}
+            ${t.cta}
           </a>
         </div>
-        <p style="color: #6b7280; font-size: 14px;">${locale === "sr"
-          ? "Ako dugme ne radi, kopirajte sledeći link u browser:"
-          : "If the button doesn't work, copy this link to your browser:"
-        }</p>
+        <p style="color: #6b7280; font-size: 14px;">${t.altLink}</p>
         <p style="word-break: break-all; color: #36bfae; font-size: 14px;">${link}</p>
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
-        <p style="color: #9ca3af; font-size: 12px;">${locale === "sr"
-          ? "Ovaj link ističe za 1 sat. Ako niste zatražili reset lozinke, ignorisite ovaj email."
-          : "This link expires in 1 hour. If you didn't request a password reset, please ignore this email."
-        }</p>
+        <p style="color: #9ca3af; font-size: 12px;">${t.expiry}</p>
       </div>
     </body>
     </html>
   `
 
   const text = `
-${locale === "sr" ? "Resetujte lozinku za LodgeTrack" : "Reset your LodgeTrack password"}
+${t.textTitle}
 
-${locale === "sr"
-  ? "Primili smo zahtev za resetovanje lozinke za vaš nalog. Posetite sledeći link da biste postavili novu lozinku:"
-  : "We received a request to reset the password for your account. Visit the link below to set a new password:"}
+${t.textIntro}
 
 ${link}
 
-${locale === "sr"
-  ? "Ovaj link ističe za 1 sat. Ako niste zatražili reset lozinke, ignorisite ovaj email."
-  : "This link expires in 1 hour. If you didn't request a password reset, please ignore this email."}
+${t.expiry}
   `
 
-  return sendEmail({ to: email, subject, html, text })
+  return sendEmail({ to: email, subject: t.subject, html, text })
 }

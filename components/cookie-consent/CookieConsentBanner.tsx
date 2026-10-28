@@ -5,39 +5,10 @@ import Link from "next/link"
 import { X, Cookie, Settings, Check, ChevronDown, ChevronUp } from "lucide-react"
 import { useCookieConsent, type CookieCategory } from "@/lib/cookie-consent"
 import { getDictionary } from "@/lib/i18n/dictionaries"
+import { parseLocale } from "@/lib/i18n/locales"
 
 interface CookieConsentBannerProps {
   locale?: string
-}
-
-const CATEGORY_LABELS: Record<CookieCategory, { en: string; sr: string }> = {
-  necessary: {
-    en: "Strictly Necessary",
-    sr: "Strogo neophodni",
-  },
-  analytics: {
-    en: "Analytics",
-    sr: "Analitika",
-  },
-  marketing: {
-    en: "Marketing",
-    sr: "Marketing",
-  },
-}
-
-const CATEGORY_DESCRIPTIONS: Record<CookieCategory, { en: string; sr: string }> = {
-  necessary: {
-    en: "Required for the website to function properly. Cannot be disabled.",
-    sr: "Neophodni za rad sajta. Ne mogu da se onemoguće.",
-  },
-  analytics: {
-    en: "Help us understand how visitors interact with our website anonymously.",
-    sr: "Pomažu nam da razumemo kako posetioci interaguju sa sajtom anonimno.",
-  },
-  marketing: {
-    en: "Used to track visitors across websites for relevant advertising.",
-    sr: "Korišćeni za praćenje posetilaca preko sajtova za relevantno oglašavanje.",
-  },
 }
 
 function CategoryToggle({
@@ -51,9 +22,9 @@ function CategoryToggle({
   onChange: (enabled: boolean) => void
   locale: string
 }) {
-  const isSr = locale === "sr"
-  const label = CATEGORY_LABELS[category][isSr ? "sr" : "en"]
-  const description = CATEGORY_DESCRIPTIONS[category][isSr ? "sr" : "en"]
+  const t = getDictionary(parseLocale(locale)).cookieConsent
+  const label = t.categories[category]
+  const description = t.descriptions[category]
   const isNecessary = category === "necessary"
 
   return (
@@ -63,7 +34,7 @@ function CategoryToggle({
           <span className="font-medium text-foreground">{label}</span>
           {isNecessary && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30">
-              {isSr ? "Obavezno" : "Required"}
+              {t.required}
             </span>
           )}
         </div>
@@ -74,7 +45,7 @@ function CategoryToggle({
         disabled={isNecessary}
         role="switch"
         aria-checked={enabled}
-        aria-label={`${label}: ${enabled ? (isSr ? "uključeno" : "enabled") : (isSr ? "isključeno" : "disabled")}`}
+        aria-label={`${label}: ${enabled ? t.on : t.off}`}
         className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-white/20 transition-all duration-200 ${
           enabled ? "bg-primary border-primary" : "bg-white/5"
         } ${isNecessary ? "opacity-50 cursor-not-allowed" : ""}`}
@@ -90,10 +61,8 @@ function CategoryToggle({
 }
 
 export async function CookieConsentBannerServer({ locale = "en" }: CookieConsentBannerProps) {
-  const dict = getDictionary(locale as "en" | "sr")
-  const isSr = locale === "sr"
-
-  // We'll use the client-side component for the interactive part
+  // The interactive banner is all client-side; the server variant exists for
+  // the provider boundary.
   return <CookieConsentBannerClient locale={locale} />
 }
 
@@ -107,9 +76,7 @@ export function CookieConsentBannerClient({ locale = "en" }: { locale: string })
     updateCategory,
   } = useCookieConsent()
   const [showPreferences, setShowPreferences] = useState(false)
-  const isSr = locale === "sr"
-
-  const dict = getDictionary(locale as "en" | "sr")
+  const t = getDictionary(parseLocale(locale)).cookieConsent
 
   if (!isLoaded || hasConsent) {
     return null
@@ -130,7 +97,7 @@ export function CookieConsentBannerClient({ locale = "en" }: { locale: string })
       <div
         className="fixed bottom-0 left-0 right-0 z-50 animate-slide-up"
         role="dialog"
-        aria-label={isSr ? "Podešavanja kolačića" : "Cookie preferences"}
+        aria-label={t.settingsDialogAria}
         aria-modal="true"
       >
         <div className="bg-background border-t border-border shadow-2xl max-w-4xl mx-auto">
@@ -143,25 +110,21 @@ export function CookieConsentBannerClient({ locale = "en" }: { locale: string })
               <div>
                 <div className="flex items-center gap-2 text-lg font-semibold text-foreground mb-2">
                   <Cookie className="w-5 h-5 text-primary" />
-                  <span>{isSr ? "Podešavanja kolačića" : "Cookie Preferences"}</span>
+                  <span>{t.settingsTitle}</span>
                 </div>
-                <p className="text-sm text-muted-foreground max-w-2xl">
-                  {isSr
-                    ? "Upravljajte svojim preferencama kolačića ispod. Neophodni kolačići ne mogu da se isključe jer su potrebni za rad sajta."
-                    : "Manage your cookie preferences below. Strictly necessary cookies cannot be disabled as they are required for the website to function."}
-                </p>
+                <p className="text-sm text-muted-foreground max-w-2xl">{t.settingsIntro}</p>
               </div>
               <button
                 onClick={() => setShowPreferences(false)}
                 className="p-1 rounded-lg hover:bg-white/5 transition-colors text-muted-foreground hover:text-foreground"
-                aria-label={isSr ? "Zatvori" : "Close"}
+                aria-label={t.close}
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Categories */}
-            <div className="space-y-3 mb-6" role="group" aria-label={isSr ? "Kategorije kolačića" : "Cookie categories"}>
+            <div className="space-y-3 mb-6" role="group" aria-label={t.categoriesGroupAria}>
               {(["necessary", "analytics", "marketing"] as CookieCategory[]).map((category) => (
                 <CategoryToggle
                   key={category}
@@ -179,19 +142,19 @@ export function CookieConsentBannerClient({ locale = "en" }: { locale: string })
                 onClick={handleAcceptAll}
                 className="flex-1 px-6 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors"
               >
-                {isSr ? "Prihvati sve" : "Accept All"}
+                {t.acceptAll}
               </button>
               <button
                 onClick={handleRejectNonEssential}
                 className="flex-1 px-6 py-3 glass-card text-foreground rounded-xl font-medium border border-white/10 hover:bg-white/5 transition-colors"
               >
-                {isSr ? "Odbij neophodne" : "Reject Non-Essential"}
+                {t.rejectNonEssential}
               </button>
               <button
                 onClick={() => setShowPreferences(false)}
                 className="flex-1 px-6 py-3 glass-card text-foreground rounded-xl font-medium border border-white/10 hover:bg-white/5 transition-colors"
               >
-                {isSr ? "Zatvori" : "Close"}
+                {t.close}
               </button>
             </div>
           </div>
@@ -204,7 +167,7 @@ export function CookieConsentBannerClient({ locale = "en" }: { locale: string })
     <div
       className="fixed bottom-0 left-0 right-0 z-50 animate-slide-up"
       role="dialog"
-      aria-label={isSr ? "Prisutnost kolačića" : "Cookie consent"}
+      aria-label={t.dialogAria}
       aria-modal="true"
     >
       <div className="bg-background border-t border-border shadow-2xl max-w-4xl mx-auto">
@@ -220,12 +183,10 @@ export function CookieConsentBannerClient({ locale = "en" }: { locale: string })
               </div>
               <div className="min-w-0">
                 <h3 className="font-semibold text-foreground">
-                  {isSr ? "Vrednjujemo vašu privatnost" : "We Value Your Privacy"}
+                  {t.title}
                 </h3>
                 <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-                  {isSr
-                    ? "Korišćimo kolačiće za poboljšanje vašeg iskustva. Kliknite \"Prilagodi\" da biste upravljali preferencama."
-                    : "We use cookies to enhance your experience. Click \"Customize\" to manage your preferences."}
+                  {t.intro}
                 </p>
               </div>
             </div>
@@ -236,13 +197,13 @@ export function CookieConsentBannerClient({ locale = "en" }: { locale: string })
                 onClick={handleAcceptAll}
                 className="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors whitespace-nowrap"
               >
-                {isSr ? "Prihvati sve" : "Accept All"}
+                {t.acceptAll}
               </button>
               <button
                 onClick={handleRejectNonEssential}
                 className="px-5 py-2.5 glass-card text-foreground rounded-xl font-medium border border-white/10 hover:bg-white/5 transition-colors whitespace-nowrap"
               >
-                {isSr ? "Odbij neophodne" : "Reject Non-Essential"}
+                {t.rejectNonEssential}
               </button>
               <button
                 onClick={() => setShowPreferences(true)}
@@ -250,7 +211,7 @@ export function CookieConsentBannerClient({ locale = "en" }: { locale: string })
               >
                 <span className="flex items-center gap-1.5">
                   <Settings className="w-4 h-4" />
-                  {isSr ? "Prilagodi" : "Customize"}
+                  {t.customize}
                 </span>
               </button>
             </div>

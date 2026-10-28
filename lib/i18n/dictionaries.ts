@@ -163,6 +163,9 @@ export const en = {
     rateLimitActionReset: "Password reset emails",
     rateLimitActionLogin: "Sign-in attempts",
     rateLimitActionDefault: "This action",
+    rateLimitWindowHour: "hour",
+    rateLimitWindowQuarterHour: "15 minutes",
+    rateLimitAttempts: "{count} per {window}",
     tryAgainPrefix: "You can try again in",
     retryNow: "You can try again now.",
     resendVerificationInfo: "We've sent a fresh verification email to your address. Click the link in it to activate your account (check spam if you don't see it).",
@@ -1300,6 +1303,73 @@ const booking = await api("/bookings", {
     status: "All systems operational",
     copyright: "© 2026 LodgeTrack by Veljko Galović. All rights reserved.",
   },
+  /**
+   * Transactional email copy (lib/email.ts). In the dictionaries rather than
+   * as inline `locale === "sr"` ternaries so a language's email voice ships
+   * with its translation; untranslated locales read as English.
+   */
+  emails: {
+    verifyEmail: {
+      subject: "Verify your email for LodgeTrack",
+      title: "Verify your email address",
+      intro: "Thanks for signing up! Please verify your email address by clicking the button below.",
+      cta: "Verify Email",
+      altLink: "If the button doesn't work, copy this link to your browser:",
+      expiry: "This link expires in 24 hours. If you didn't create an account, please ignore this email.",
+      textTitle: "Verify your email address for LodgeTrack",
+      textIntro: "Thanks for signing up! Please verify your email address by visiting the link below:",
+    },
+    passwordReset: {
+      subject: "Reset your LodgeTrack password",
+      title: "Reset your password",
+      intro: "We received a request to reset the password for your account. Click the button below to set a new password.",
+      cta: "Reset Password",
+      altLink: "If the button doesn't work, copy this link to your browser:",
+      expiry: "This link expires in 1 hour. If you didn't request a password reset, please ignore this email.",
+      textTitle: "Reset your LodgeTrack password",
+      textIntro: "We received a request to reset the password for your account. Visit the link below to set a new password:",
+    },
+  },
+  /** The page a new member lands on from the verification email. */
+  verification: {
+    title: "Verify your email",
+    verifying: "Verifying your email address...",
+    success: "Your email has been verified successfully! You can now sign in.",
+    checkoutFailed: "Unable to start checkout. Please contact support or try again later.",
+    invalidLink: "Invalid or expired verification link. Please request a new one.",
+    genericError: "An error occurred during verification. Please try again.",
+    noToken: "No verification token found. Please click the link in the email you received. If you lost the email, request a fresh one below.",
+    signIn: "Sign In",
+    registerAgain: "Register again",
+    contactUs: "Need help? Contact us at support@lodgetrack.app",
+  },
+  /** The first-visit cookie banner. */
+  cookieConsent: {
+    title: "We Value Your Privacy",
+    intro: 'We use cookies to enhance your experience. Click "Customize" to manage your preferences.',
+    acceptAll: "Accept All",
+    rejectNonEssential: "Reject Non-Essential",
+    customize: "Customize",
+    close: "Close",
+    required: "Required",
+    on: "enabled",
+    off: "disabled",
+    dialogAria: "Cookie consent",
+    settingsTitle: "Cookie Preferences",
+    settingsIntro: "Manage your cookie preferences below. Strictly necessary cookies cannot be disabled as they are required for the website to function.",
+    settingsDialogAria: "Cookie preferences",
+    categoriesGroupAria: "Cookie categories",
+    categories: {
+      necessary: "Strictly Necessary",
+      analytics: "Analytics",
+      marketing: "Marketing",
+    },
+    descriptions: {
+      necessary: "Required for the website to function properly. Cannot be disabled.",
+      analytics: "Help us understand how visitors interact with our website anonymously.",
+      marketing: "Used to track visitors across websites for relevant advertising.",
+    },
+  },
 };
 /**
  * The contract. Deliberately derived from `en` rather than written out by hand —
@@ -1447,6 +1517,9 @@ const sr: Dictionary = {
     rateLimitActionReset: "Emailovi za reset lozinke",
     rateLimitActionLogin: "Pokušaji prijave",
     rateLimitActionDefault: "Ova radnja",
+    rateLimitWindowHour: "na sat",
+    rateLimitWindowQuarterHour: "na 15 minuta",
+    rateLimitAttempts: "{count} pokušaja {window}",
     tryAgainPrefix: "Možete pokušati ponovo za",
     retryNow: "Možete pokušati ponovo.",
     resendVerificationInfo: "Poslali smo svež verifikacioni email na vašu adresu. Kliknite na link u njemu da aktivirate nalog (ako ga ne vidite, proverite i spam).",
@@ -2578,6 +2651,66 @@ const booking = await api("/bookings", {
     status: "Svi sistemi su operativni",
     copyright: "© 2026 LodgeTrack by Veljko Galović. Sva prava zadržana.",
   },
+  emails: {
+    verifyEmail: {
+      subject: "Potvrdite svoj email za LodgeTrack",
+      title: "Potvrdite vašu email adresu",
+      intro: "Hvala vam na registraciji! Molimo vas da potvrdite vašu email adresu klikom na dugme ispod.",
+      cta: "Potvrdi email",
+      altLink: "Ako dugme ne radi, kopirajte sledeći link u browser:",
+      expiry: "Ovaj link ističe za 24 sata. Ako niste kreirali nalog, ignorisite ovaj email.",
+      textTitle: "Potvrdite vašu email adresu za LodgeTrack",
+      textIntro: "Hvala vam na registraciji! Molimo vas da potvrdite vašu email adresu posetom sledećem linku:",
+    },
+    passwordReset: {
+      subject: "Resetujte lozinku za LodgeTrack",
+      title: "Resetujte vašu lozinku",
+      intro: "Primili smo zahtev za resetovanje lozinke za vaš nalog. Kliknite na dugme ispod da biste postavili novu lozinku.",
+      cta: "Resetuj lozinku",
+      altLink: "Ako dugme ne radi, kopirajte sledeći link u browser:",
+      expiry: "Ovaj link ističe za 1 sat. Ako niste zatražili reset lozinke, ignorisite ovaj email.",
+      textTitle: "Resetujte lozinku za LodgeTrack",
+      textIntro: "Primili smo zahtev za resetovanje lozinke za vaš nalog. Posetite sledeći link da biste postavili novu lozinku:",
+    },
+  },
+  verification: {
+    title: "Verifikacija email adrese",
+    verifying: "Verifikujem vašu email adresu...",
+    success: "Vaš email je uspešno verifikovan! Možete se prijaviti.",
+    checkoutFailed: "Nije moguće pokrenuti plaćanje. Molimo vas da kontaktirate podršku ili pokušajte ponovo.",
+    invalidLink: "Nevažeći ili istekao verifikacioni link. Molimo vas da zatražite novi.",
+    genericError: "Došlo je do greške prilikom verifikacije. Pokušajte ponovo.",
+    noToken: "Nije pronađen verifikacioni token. Molimo vas da kliknete na link u emailu koji ste primili. Ako ste izgubili email, zatražite novi ispod.",
+    signIn: "Prijavite se",
+    registerAgain: "Registrujte se ponovo",
+    contactUs: "Potrebna je pomoć? Kontaktirajte nas na support@lodgetrack.app",
+  },
+  cookieConsent: {
+    title: "Vrednjujemo vašu privatnost",
+    intro: 'Korišćimo kolačiće za poboljšanje vašeg iskustva. Kliknite "Prilagodi" da biste upravljali preferencama.',
+    acceptAll: "Prihvati sve",
+    rejectNonEssential: "Odbij neophodne",
+    customize: "Prilagodi",
+    close: "Zatvori",
+    required: "Obavezno",
+    on: "uključeno",
+    off: "isključeno",
+    dialogAria: "Prisutnost kolačića",
+    settingsTitle: "Podešavanja kolačića",
+    settingsIntro: "Upravljajte svojim preferencama kolačića ispod. Neophodni kolačići ne mogu da se isključe jer su potrebni za rad sajta.",
+    settingsDialogAria: "Podešavanja kolačića",
+    categoriesGroupAria: "Kategorije kolačića",
+    categories: {
+      necessary: "Strogo neophodni",
+      analytics: "Analitika",
+      marketing: "Marketing",
+    },
+    descriptions: {
+      necessary: "Neophodni za rad sajta. Ne mogu da se onemoguće.",
+      analytics: "Pomažu nam da razumemo kako posetioci interaguju sa sajtom anonimno.",
+      marketing: "Korišćeni za praćenje posetilaca preko sajtova za relevantno oglašavanje.",
+    },
+  },
 };
 
 /**
@@ -2588,7 +2721,7 @@ const booking = await api("/bookings", {
  * language was added to `LOCALES` without a translation, and shipping English
  * beats shipping a crashed page.
  */
-export const DICTIONARIES: Record<Locale, Dictionary> = {
+export const DICTIONARIES: Partial<Record<Locale, Dictionary>> = {
   en,
   sr,
 } as const
@@ -2613,111 +2746,183 @@ export function format(template: string, values: Record<string, string | number>
 /**
  * Counted nouns.
  *
- * English has two forms and Serbian has three, selected by the last two digits —
- * "1 rezervacija", "2 rezervacije", "5 rezervacija". Threading a bare count
- * through a template would be wrong in Serbian for every plural, so the counting
- * strings declare all three forms and this picks one.
+ * A plural is not a single string: it is the set of forms one count expression
+ * takes, and the language's own rules choose between them. Every `PluralForms`
+ * carries an ordered rule list — the first template whose test matches the
+ * absolute count wins, and each set's last rule is a catch-all, so a table is
+ * total by construction.
  *
- * `few` is unused in English and required anyway, so a language added later can
- * fill it in without the English entries having to change shape.
+ * Builders for the plural systems the app needs:
+ *   - `twoForms`   — only 1 is singular. English, German, Italian, Spanish.
+ *   - `frenchForms` — French puts 0 in the singular as well ("0 nuit").
+ *   - `slavicForms` — Serbian counts in threes by the last two digits: 1,
+ *     2–4, 5+; and 11 takes the "many" form although its final digit is 1.
+ *
+ * A new language picks the builder that matches its grammar and fills in its
+ * own strings; no selection code ever changes.
  */
+export interface PluralRule {
+  match: (absoluteCount: number) => boolean
+  template: string
+}
+
 export interface PluralForms {
-  one: string
-  few: string
-  many: string
+  rules: readonly PluralRule[]
+}
+
+function twoForms(one: string, other: string): PluralForms {
+  return {
+    rules: [
+      { match: (n) => n === 1, template: one },
+      { match: () => true, template: other },
+    ],
+  }
+}
+
+function frenchForms(one: string, other: string): PluralForms {
+  return {
+    rules: [
+      { match: (n) => n === 0 || n === 1, template: one },
+      { match: () => true, template: other },
+    ],
+  }
+}
+
+function slavicForms(one: string, few: string, other: string): PluralForms {
+  return {
+    rules: [
+      { match: (n) => n % 10 === 1 && n % 100 !== 11, template: one },
+      {
+        match: (n) => {
+          const last = n % 10
+          const lastTwo = n % 100
+          // The teens are the exception that catches people out: 11 takes the
+          // "many" form, not the "one" form that its final digit suggests.
+          return last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14)
+        },
+        template: few,
+      },
+      { match: () => true, template: other },
+    ],
+  }
 }
 
 /**
  * Counted nights, per language.
  *
  * Kept beside the dictionaries rather than in them because a plural is not a
- * single string: it is the set of forms one count expression takes, and `plural`
- * is what chooses between them.
+ * single string: it is the set of forms one count expression takes, and
+ * `plural` is what chooses between them. Locales still awaiting their
+ * translation list the English strings under their own plural system, so the
+ * numbers switch over the moment the dictionary lands.
  */
 export const NIGHT_FORMS: Record<Locale, PluralForms> = {
-  en: { one: "{count} night", few: "{count} nights", many: "{count} nights" },
-  // Serbian counts in threes: 1 noć, 2–4 noći, 5+ noći.
-  sr: { one: "{count} noć", few: "{count} noći", many: "{count} noći" },
+  en: twoForms("{count} night", "{count} nights"),
+  sr: slavicForms("{count} noć", "{count} noći", "{count} noći"),
+  // German, Italian and Spanish pluralize like English; French counts 0 in.
+  de: twoForms("{count} night", "{count} nights"),
+  it: twoForms("{count} night", "{count} nights"),
+  fr: frenchForms("{count} night", "{count} nights"),
+  es: twoForms("{count} night", "{count} nights"),
 }
 
-/** "3 units that can be booked independently." — one count expression, two languages. */
+/** "3 units that can be booked independently." */
 export const UNIT_COUNT_FORMS: Record<Locale, PluralForms> = {
-  en: {
-    one: "{count} unit that can be booked independently.",
-    few: "{count} units that can be booked independently.",
-    many: "{count} units that can be booked independently.",
-  },
-  sr: {
-    one: "{count} jedinica koja može da se rezerviše zasebno.",
-    few: "{count} jedinice koje mogu da se rezervišu zasebno.",
-    many: "{count} jedinica koje mogu da se rezervišu zasebno.",
-  },
+  en: twoForms(
+    "{count} unit that can be booked independently.",
+    "{count} units that can be booked independently.",
+  ),
+  sr: slavicForms(
+    "{count} jedinica koja može da se rezerviše zasebno.",
+    "{count} jedinice koje mogu da se rezervišu zasebno.",
+    "{count} jedinica koje mogu da se rezervišu zasebno.",
+  ),
+  // Not yet translated — English strings under the language's own rules.
+  de: twoForms(
+    "{count} unit that can be booked independently.",
+    "{count} units that can be booked independently.",
+  ),
+  it: twoForms(
+    "{count} unit that can be booked independently.",
+    "{count} units that can be booked independently.",
+  ),
+  fr: frenchForms(
+    "{count} unit that can be booked independently.",
+    "{count} units that can be booked independently.",
+  ),
+  es: twoForms(
+    "{count} unit that can be booked independently.",
+    "{count} units that can be booked independently.",
+  ),
 }
 
 /** "2 active bookings" — fed both into a row and into the refusal sentence. */
 export const ACTIVE_BOOKING_FORMS: Record<Locale, PluralForms> = {
-  en: {
-    one: "{count} active booking",
-    few: "{count} active bookings",
-    many: "{count} active bookings",
-  },
-  sr: {
-    one: "{count} aktivna rezervacija",
-    few: "{count} aktivne rezervacije",
-    many: "{count} aktivnih rezervacija",
-  },
+  en: twoForms("{count} active booking", "{count} active bookings"),
+  sr: slavicForms(
+    "{count} aktivna rezervacija",
+    "{count} aktivne rezervacije",
+    "{count} aktivnih rezervacija",
+  ),
+  de: twoForms("{count} active booking", "{count} active bookings"),
+  it: twoForms("{count} active booking", "{count} active bookings"),
+  fr: frenchForms("{count} active booking", "{count} active bookings"),
+  es: twoForms("{count} active booking", "{count} active bookings"),
 }
 
 /** "3 bookings" — counted in the delete-a-property confirmation. */
 export const BOOKING_COUNT_FORMS: Record<Locale, PluralForms> = {
-  en: {
-    one: "{count} booking",
-    few: "{count} bookings",
-    many: "{count} bookings",
-  },
-  sr: {
-    one: "{count} rezervacija",
-    few: "{count} rezervacije",
-    many: "{count} rezervacija",
-  },
+  en: twoForms("{count} booking", "{count} bookings"),
+  sr: slavicForms("{count} rezervacija", "{count} rezervacije", "{count} rezervacija"),
+  de: twoForms("{count} booking", "{count} bookings"),
+  it: twoForms("{count} booking", "{count} bookings"),
+  fr: frenchForms("{count} booking", "{count} bookings"),
+  es: twoForms("{count} booking", "{count} bookings"),
 }
 
 export const EXPENSE_COUNT_FORMS: Record<Locale, PluralForms> = {
-  en: { one: "{count} expense", few: "{count} expenses", many: "{count} expenses" },
-  sr: { one: "{count} trošak", few: "{count} troška", many: "{count} troškova" },
+  en: twoForms("{count} expense", "{count} expenses"),
+  sr: slavicForms("{count} trošak", "{count} troška", "{count} troškova"),
+  de: twoForms("{count} expense", "{count} expenses"),
+  it: twoForms("{count} expense", "{count} expenses"),
+  fr: frenchForms("{count} expense", "{count} expenses"),
+  es: twoForms("{count} expense", "{count} expenses"),
 }
 
 export const MEMBER_COUNT_FORMS: Record<Locale, PluralForms> = {
-  en: { one: "{count} member", few: "{count} members", many: "{count} members" },
-  sr: { one: "{count} član", few: "{count} člana", many: "{count} članova" },
+  en: twoForms("{count} member", "{count} members"),
+  sr: slavicForms("{count} član", "{count} člana", "{count} članova"),
+  de: twoForms("{count} member", "{count} members"),
+  it: twoForms("{count} member", "{count} members"),
+  fr: frenchForms("{count} member", "{count} members"),
+  es: twoForms("{count} member", "{count} members"),
 }
 
 export const LINK_COUNT_FORMS: Record<Locale, PluralForms> = {
-  en: { one: "{count} link", few: "{count} links", many: "{count} links" },
-  sr: { one: "{count} link", few: "{count} linka", many: "{count} linkova" },
+  en: twoForms("{count} link", "{count} links"),
+  sr: slavicForms("{count} link", "{count} linka", "{count} linkova"),
+  de: twoForms("{count} link", "{count} links"),
+  it: twoForms("{count} link", "{count} links"),
+  fr: frenchForms("{count} link", "{count} links"),
+  es: twoForms("{count} link", "{count} links"),
 }
 
 export const ITEM_COUNT_FORMS: Record<Locale, PluralForms> = {
-  en: { one: "{count} item", few: "{count} items", many: "{count} items" },
-  sr: { one: "{count} stavka", few: "{count} stavke", many: "{count} stavki" },
+  en: twoForms("{count} item", "{count} items"),
+  sr: slavicForms("{count} stavka", "{count} stavke", "{count} stavki"),
+  de: twoForms("{count} item", "{count} items"),
+  it: twoForms("{count} item", "{count} items"),
+  fr: frenchForms("{count} item", "{count} items"),
+  es: twoForms("{count} item", "{count} items"),
 }
 
-export function plural(count: number, forms: PluralForms, locale: Locale): string {
-  return format(selectPluralForm(count, locale, forms), { count })
-}
-
-function selectPluralForm(count: number, locale: Locale, forms: PluralForms): string {
+/**
+ * Picks the first plural rule matching `count` (matched on the absolute value,
+ * so a negative count selects the same form as its positive twin) and fills
+ * the `{count}` slot. Rule sets are total by construction — they end in a
+ * catch-all — so the search cannot miss in a correct table.
+ */
+export function plural(count: number, forms: PluralForms): string {
   const n = Math.abs(count)
-
-  if (locale === "sr") {
-    const lastTwo = n % 100
-    const last = n % 10
-    // The teens are the exception that catches people out: 11 takes the "many"
-    // form, not the "one" form that its final digit suggests.
-    if (last === 1 && lastTwo !== 11) return forms.one
-    if (last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14)) return forms.few
-    return forms.many
-  }
-
-  return n === 1 ? forms.one : forms.many
+  return format(forms.rules.find((rule) => rule.match(n))?.template ?? "", { count })
 }

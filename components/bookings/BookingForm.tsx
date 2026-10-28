@@ -295,7 +295,7 @@ export function BookingForm({ properties, units, busy, currency, booking }: Book
 
       {start && end ? (
         <p className="text-xs text-subtle-foreground">
-          {nights > 0 ? plural(nights, NIGHT_FORMS[locale], locale) : t.forms.checkOutAfterCheckIn}
+          {nights > 0 ? plural(nights, NIGHT_FORMS[locale]) : t.forms.checkOutAfterCheckIn}
         </p>
       ) : null}
 

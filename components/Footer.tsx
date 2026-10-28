@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { Activity } from "lucide-react";
 import { getDictionary } from "@/lib/i18n/dictionaries";
+import type { Locale } from "@/lib/i18n/locales";
 
 function GithubIcon({ size = 15 }: { size?: number }) {
   return (
@@ -26,7 +27,7 @@ function LinkedInIcon({ size = 15 }: { size?: number }) {
   );
 }
 
-async function getFooterData(locale: "en" | "sr" = "en") {
+async function getFooterData(locale: Locale = "en") {
   const t = getDictionary(locale).footer;
 
   const columns = [
@@ -62,7 +63,7 @@ async function getFooterData(locale: "en" | "sr" = "en") {
   return { t, columns, socials };
 }
 
-export async function Footer({ locale = "en" }: { locale?: "en" | "sr" } = {}) {
+export async function Footer({ locale = "en" }: { locale?: Locale } = {}) {
   const { t, columns, socials } = await getFooterData(locale);
 
   return (

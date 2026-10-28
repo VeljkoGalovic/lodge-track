@@ -1,5 +1,5 @@
 import { cookies, headers } from "next/headers"
-import { DEFAULT_LOCALE, parseLocale, type Locale } from "./locales"
+import { COUNTRY_TO_LOCALE, DEFAULT_LOCALE, parseLocale, type Locale } from "./locales"
 
 /**
  * Holds the member's chosen language between requests.
@@ -46,9 +46,11 @@ export async function currentLocale(userLocale?: string | null): Promise<Locale>
  * Unlike `currentLocale`, there is no member to fall back on, so the resolver
  * is: an explicit choice wins (the navbar's language toggle writes
  * `LOCALE_COOKIE`), then the visitor's country as stamped by the Cloudflare
- * tunnel — Serbia's ISO 3166-1 alpha-2 code is "RS"; "SR" would be Suriname —
- * and finally the default for everyone else. Reading headers/cookies makes the
- * page render per request, which is intended: the language is per-visitor.
+ * tunnel is matched against `COUNTRY_TO_LOCALE`, and finally the default for
+ * everyone else. Countries whose primary language is ambiguous (Belgium,
+ * Switzerland…), and countries with no entry, fall through together.
+ * Reading headers/cookies makes the page render per request, which is
+ * intended: the language is per-visitor.
  */
 export async function visitorLocale(): Promise<Locale> {
   const store = await cookies()
@@ -56,7 +58,11 @@ export async function visitorLocale(): Promise<Locale> {
   if (chosen) return parseLocale(chosen)
 
   const headersList = await headers()
-  if (headersList.get("cf-ipcountry") === "RS") return "sr"
+  const country = headersList.get("cf-ipcountry")?.toUpperCase()
+  if (country) {
+    const mapped = COUNTRY_TO_LOCALE[country]
+    if (mapped) return mapped
+  }
 
   return DEFAULT_LOCALE
 }
