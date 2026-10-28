@@ -27,6 +27,7 @@ const inter = Inter({
  * marketing page, which is a fixed English brand surface.
  */
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.lodgetrack.com"),
   title: "LodgeTrack | Simplify Your Property Management",
   description:
     "Cutting-edge software to manage properties, bookings, and revenue in one unified platform. Built for small to medium rental businesses.",

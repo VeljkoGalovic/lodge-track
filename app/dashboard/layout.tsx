@@ -1,5 +1,6 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
+import type { Metadata } from "next"
 import { getOrgFeatures } from "@/lib/subscriptions"
 import { buildActivity } from "@/lib/activity"
 import { currentLocale } from "@/lib/i18n/server"
@@ -13,6 +14,15 @@ import { headers } from "next/headers"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
+}
+
+/**
+ * The dashboard is private data behind a session — no search engine should
+ * ever index it. robots.txt blocks the crawl; the meta twin covers the
+ * crawler that follows a link somewhere in spite of it.
+ */
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
 }
 
 export default async function DashboardLayout({ children }: DashboardLayoutProps) {

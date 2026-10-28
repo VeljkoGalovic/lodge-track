@@ -5,8 +5,14 @@ import { Pricing } from "@/components/Pricing";
 import { About } from "@/components/About";
 import { Footer } from "@/components/Footer";
 import { LenisProvider } from "@/components/LenisProvider";
+import type { Metadata } from "next";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { visitorLocale } from "@/lib/i18n/server";
+
+export const metadata: Metadata = {
+  // `www` is the sole canonical host; the apex redirects at the edge.
+  alternates: { canonical: "https://www.lodgetrack.com" },
+};
 
 /**
  * The marketing page is a fixed dark brand experience.
