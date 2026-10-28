@@ -5,6 +5,7 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs" // Change from "bcrypt" to "bcryptjs"
 import type { Role } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
+import { canonicalizeEmail } from "@/lib/email"
 import { checkRateLimit, getRateLimitIdentifier, RATE_LIMIT_CONFIGS } from "@/lib/rate-limit"
 
 /**
@@ -63,15 +64,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const code = typeof credentials?.code === "string" ? credentials.code.trim() : ""
         if (!email || !password) return null
 
-        // Rate limiting for login attempts (by email)
-        const loginIdentifier = getRateLimitIdentifier(null, email)
+        // Alias collapse: `name.surname@gmail.com`, `namesurname@gmail.com` and
+        // `name.surname+tag@gmail.com` all resolve to the one stored account.
+        // Null (unparseable) fails with the same generic path as a miss below.
+        const canonicalEmail = canonicalizeEmail(email)
+        if (!canonicalEmail) {
+          await bcrypt.compare(password, TIMING_EQUALISER_HASH)
+          return null
+        }
+
+        // Rate limiting for login attempts (by email) — by the canonical
+        // address, so a brute-forcer cannot split the bucket across aliases.
+        const loginIdentifier = getRateLimitIdentifier(null, canonicalEmail)
         const loginRateLimit = await checkRateLimit(loginIdentifier, RATE_LIMIT_CONFIGS.login)
         if (!loginRateLimit.allowed) {
           // Return null to fail authentication - error will be shown on sign-in page
           return null
         }
 
-        const user = await prisma.user.findUnique({ where: { email } })
+        const user = await prisma.user.findUnique({ where: { email: canonicalEmail } })
 
         if (!user?.passwordHash) {
           await bcrypt.compare(password, TIMING_EQUALISER_HASH)
@@ -97,7 +108,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           if (!secret) throw new SecondFactorUnavailable()
 
           // Rate limiting for 2FA attempts (by email)
-          const twoFactorIdentifier = getRateLimitIdentifier(null, email)
+          const twoFactorIdentifier = getRateLimitIdentifier(null, canonicalEmail)
           const twoFactorRateLimit = await checkRateLimit(twoFactorIdentifier, RATE_LIMIT_CONFIGS.two_factor)
           if (!twoFactorRateLimit.allowed) {
             throw new SecondFactorInvalid()

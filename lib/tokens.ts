@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { generateToken } from "@/lib/crypto"
+import { canonicalizeEmail } from "@/lib/email"
 
 /**
  * Token utilities for email verification and password reset.
@@ -23,7 +24,10 @@ export async function createVerificationToken(
   await prisma.verificationToken.create({
     data: {
       token,
-      email: email.toLowerCase(),
+      // Canonical, not merely lowercase: token rows must key to the stored
+      // (canonicalized) user email even when a caller passes a Gmail alias
+      // spelling of it. Fallback keeps old behaviour for non-parseable input.
+      email: canonicalizeEmail(email) ?? email.toLowerCase(),
       purpose,
       expiresAt,
     },
@@ -104,7 +108,7 @@ export async function cleanupExpiredTokens(): Promise<number> {
 export async function invalidateUserTokens(email: string, purpose: TokenPurpose): Promise<number> {
   const result = await prisma.verificationToken.updateMany({
     where: {
-      email: email.toLowerCase(),
+      email: canonicalizeEmail(email) ?? email.toLowerCase(),
       purpose,
       usedAt: null,
     },

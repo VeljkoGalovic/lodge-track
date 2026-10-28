@@ -44,7 +44,8 @@ vi.mock("@/lib/tokens", () => ({
   verifyAndConsumeToken: vi.fn().mockResolvedValue("test@example.com"),
   invalidateUserTokens: vi.fn().mockResolvedValue(0),
 }))
-vi.mock("@/lib/email", () => ({
+vi.mock("@/lib/email", async (importOriginal) => ({
+  ...(await importOriginal()),
   sendVerificationEmail: vi.fn().mockResolvedValue({ success: true }),
   sendPasswordResetEmail: vi.fn().mockResolvedValue({ success: true }),
 }))
@@ -327,6 +328,34 @@ describe("registerUser with onboarding preferences", () => {
     const { sendVerificationEmail, sendPasswordResetEmail } = await import("@/lib/email")
     vi.mocked(sendVerificationEmail).mockResolvedValue({ success: true })
     vi.mocked(sendPasswordResetEmail).mockResolvedValue({ success: true })
+  })
+
+  it("registerUser stores the canonical email, alias collapse included", async () => {
+    const formData = new FormData()
+    formData.set("email", "Veljko.Galovic+lists@GOOGLEMAIL.com")
+    formData.set("password", "SecurePass123!")
+    formData.set("termsAccepted", "on")
+    formData.set("isOver18", "on")
+
+    const result = await registerUser({}, formData)
+    expect(result.success).toBeTruthy()
+
+    expect(db.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          email: "veljkogalovic@gmail.com",
+        }),
+      })
+    )
+  })
+
+  it("registerUser answers the alias conflict in plain words", async () => {
+    const formData = new FormData()
+    formData.set("email", "+never@gmail.com")
+    formData.set("password", "SecurePass123!")
+
+    const result = await registerUser({}, formData)
+    expect(result.error).toBe("Enter a valid email address.")
   })
 
   it("registerUser accepts locale, theme, and currency preferences", async () => {

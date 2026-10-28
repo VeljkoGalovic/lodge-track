@@ -12,6 +12,7 @@ import {
   isOwner,
 } from "@/lib/authorization"
 import { generateToken } from "@/lib/crypto"
+import { canonicalizeEmail } from "@/lib/email"
 
 const ROLES = Object.values(Role)
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -36,7 +37,13 @@ export async function inviteMember(
     return { error: "You do not have permission to invite members." }
   }
 
-  const email = field(formData, "email").toLowerCase()
+  // Alias collapse on invitations too: inviting `a.b@gmail.com` when `ab@gmail.com`
+  // is already a member (or already invited) treats those as one person, and the
+  // invitation is stored under the canonical address so the eventual registration
+  // cannot collide with a differently-spelled one.
+  const canonical = canonicalizeEmail(field(formData, "email"))
+  if (!canonical) return { error: "Enter a valid email address." }
+  const email = canonical
   const role = field(formData, "role") || "MANAGER"
 
   if (!EMAIL_PATTERN.test(email)) return { error: "Enter a valid email address." }

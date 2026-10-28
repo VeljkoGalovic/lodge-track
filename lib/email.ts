@@ -9,6 +9,67 @@ import type { Locale } from "@/lib/i18n/locales"
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
+/**
+ * Canonicalises an email address so alias forms collapse to one identity.
+ *
+ * Providers differ in which characters they ignore, so the collapse is
+ * provider-scoped:
+ *
+ * - **Google** (`gmail.com`, `googlemail.com`) ignores dots in the local part
+ *   and treats `googlemail.com` as a synonym for `gmail.com` — Gmail and
+ *   Google Workspace hosted domains both. Workspace domains cannot be detected
+ *   from the address alone (we are not doing an MX lookup per registration),
+ *   so only Google's own two domains get the dot treatment.
+ * - **Plus tags** (`foo+anything@…`) route to `foo@…` on every major provider
+ *   — Gmail, Outlook, Yahoo, iCloud, Proton, Fastmail. De-facto standard, so
+ *   the tag is stripped for *all* domains. A provider treating `+` as a
+ *   literal (rare, e.g. some on-prem Exchange layouts with shared `+` style
+ *   addresses) would see two genuinely distinct local parts collapsed; the
+ *   known failure mode is a false "email already exists" at registration, not
+ *   an account takeover — signing in still requires the password.
+ * - **Case** folds to lowercase. RFC 5321 technically allows case-sensitive
+ *   local parts, but no real provider honours it.
+ *
+ * Returns `null` for anything unrepresentable: no `@` (or more than one),
+ * an empty local or domain, or a local part that is nothing but a plus tag
+ * (`+tag@gmail.com`). Callers treat `null` as "enter a valid email address".
+ *
+ * The function is idempotent: canonicalising an already-canonical address is a
+ * no-op, which is what makes it safe to run over both stored values and user
+ * input everywhere an email crosses a database lookup.
+ */
+export function canonicalizeEmail(raw: string): string | null {
+  const trimmed = raw.trim().toLowerCase()
+  if (!trimmed) return null
+
+  // Exactly one @ — split("") on a plain address, anything else is invalid.
+  const at = trimmed.indexOf("@")
+  if (at === -1 || trimmed.indexOf("@", at + 1) !== -1) return null
+
+  let local = trimmed.slice(0, at)
+  let domain = trimmed.slice(at + 1)
+  if (!local || !domain) return null
+
+  // Drop the plus tag: everything from the first `+` to the end of the local
+  // part. `foo+bar+baz@…` → `foo@…` (the whole remainder is one tag).
+  const plus = local.indexOf("+")
+  if (plus !== -1) local = local.slice(0, plus)
+  if (!local) return null
+
+  // Google's domains ignore dots and spell the same mailbox two ways.
+  if (domain === "googlemail.com") domain = "gmail.com"
+  if (domain === "gmail.com") {
+    local = local.replace(/\./g, "")
+    if (!local) return null // a local part that was nothing but dots/plus
+  }
+
+  // Sanity caps from RFC 5321, checked post-canonicalisation (it can only
+  // shorten an address, so a canonical form that fits was valid all along).
+  if (local.length > 64 || trimmed.length > 254) return null
+
+  return `${local}@${domain}`
+}
+
 /** Base URL for email links - dynamically determined based on environment. */
 function getBaseUrl(): string {
   // 1. Explicit override via env var (highest priority)

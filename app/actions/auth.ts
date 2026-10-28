@@ -4,7 +4,7 @@
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { createVerificationToken, verifyAndConsumeToken, invalidateUserTokens } from "@/lib/tokens"
-import { sendVerificationEmail, sendPasswordResetEmail, buildResetLink } from "@/lib/email"
+import { sendVerificationEmail, sendPasswordResetEmail, buildResetLink, canonicalizeEmail } from "@/lib/email"
 import { checkRateLimit, getRateLimitIdentifier, humanizeRetrySeconds, RATE_LIMIT_CONFIGS } from "@/lib/rate-limit"
 import { redirect } from "next/navigation"
 import { getLegalVersionDate } from "@/lib/markdown"
@@ -67,17 +67,22 @@ async function requestVerificationResend(email: string): Promise<VerificationRes
 const COMMON_RETRY_HINT = "Please try again in a minute."
 
 export async function registerUser(prevState: { error?: string; success?: string }, formData: FormData): Promise<{ error?: string; success?: string; redirect?: string }> {
-  const email = formData.get("email") as string
-  const password = formData.get("password") as string
+  const rawEmail = formData.get("email") as string
   const name = formData.get("name") as string
+  const password = formData.get("password") as string
   const termsAccepted = formData.get("termsAccepted") === "on"
   const isOver18 = formData.get("isOver18") === "on"
   const locale = formData.get("locale") as string
   const theme = formData.get("theme") as string
   const currency = formData.get("currency") as string
 
+  // Alias collapse happens before everything else: the account is stored
+  // under its canonical address, so Gmail dot forms and plus tags all share
+  // one registration even if they were typed differently at different times.
+  const email = canonicalizeEmail(rawEmail)
+
   if (!email || !password) {
-    return { error: "Email and password are required." }
+    return { error: email === null ? "Enter a valid email address." : "Email and password are required." }
   }
 
   if (!termsAccepted) {
@@ -217,10 +222,13 @@ export async function registerUser(prevState: { error?: string; success?: string
  * Send password reset email - creates a reset token and sends it via Resend
  */
 export async function sendPasswordReset(prevState: { error?: string; success?: string }, formData: FormData): Promise<{ error?: string; success?: string; redirect?: string }> {
-  const email = formData.get("email") as string
+  const rawEmail = formData.get("email") as string
+  // Alias collapse: a reset request sent to a Gmail dot form or plus-tagged
+  // address must land on the same account (and burn the same rate-limit bucket).
+  const email = rawEmail ? canonicalizeEmail(rawEmail) : null
 
   if (!email) {
-    return { error: "Email is required." }
+    return { error: rawEmail?.trim() ? "Enter a valid email address." : "Email is required." }
   }
 
   // Rate limiting for password reset requests
@@ -304,7 +312,7 @@ export async function sendVerificationEmailAction(email: string): Promise<{ succ
     return { success: false, error: "Email is required." }
   }
 
-  const result = await requestVerificationResend(email)
+  const result = await requestVerificationResend(canonicalizeEmail(email) ?? email)
 
   if (result.ok) {
     return { success: true }
