@@ -36,7 +36,10 @@ bundle; only ~65 MB ships over rsync.
 ./deploy/vps/deploy-remote.sh --skip-build   # ship last build as-is
 ```
 
-Green check afterwards: `curl -sI https://www.lodgetrack.com/api/auth/session | head -1`.
+Green check afterwards: `curl -s https://www.lodgetrack.com/api/auth/session -w '%{http_code}'`
+(expect `200null` — a `null` session for anonymous visitors). Do **not** use
+`curl -I` here: HEAD requests to the auth.js API route always answer 400 (the
+route has no HEAD handler); browsers never send HEAD, so it's cosmetic.
 
 ## Tag-driven release pipeline (GitHub → server)
 
