@@ -63,13 +63,18 @@ fi
 sha="$(jq -r .target_commitish <<<"$latest")"
 log "new release detected: $tag (commit $sha)"
 
-asset_url="$(jq -r --arg want "${ASSET_PREFIX}${tag}.tar.gz" \
-  '.assets[] | select(.name == $want) | .browser_download_url' <<<"$latest" | head -n1)"
-[[ -n "$asset_url" && "$asset_url" != "null" ]] || die "release $tag has no ${ASSET_PREFIX}${tag}.tar.gz asset — push the tag through the Release workflow first"
+# Asset resolution: use the asset's API id, not its browser_download_url —
+# GitHub's browser download links 404 for API tokens on private repos; the
+# documented download path is `/releases/assets/<id>` with an
+# `Accept: application/octet-stream` header and a redirect-following client.
+asset_id="$(jq -r --arg want "${ASSET_PREFIX}${tag}.tar.gz" \
+  '[.assets[] | select(.name == $want) | .id] | first // empty' <<<"$latest")"
+[[ -n "$asset_id" ]] || die "release $tag has no ${ASSET_PREFIX}${tag}.tar.gz asset — push the tag through the Release workflow first"
 
 mkdir -p "$STAGING/$tag"
-log "downloading $asset_url"
-curl -fsSL "${AUTH[@]}" "$asset_url" | tar -xz -C "$STAGING/$tag" \
+log "downloading asset $asset_id via API"
+curl -fsSL -H "Accept: application/octet-stream" "${AUTH[@]}" \
+  "https://api.github.com/repos/$REPO/releases/assets/$asset_id" | tar -xz -C "$STAGING/$tag" \
   || die "download/unpack of $tag failed"
 
 [[ -f "$STAGING/$tag/server.js" && -d "$STAGING/$tag/.next/static" ]] \
