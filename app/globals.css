@@ -217,6 +217,22 @@
   body {
     @apply bg-background text-foreground overflow-x-hidden;
   }
+
+  /* Mobile scroll canvas. On phones the dashboard shell is not a fixed
+     viewport (the document body is the scroll surface), which means iOS's
+     rubber-band overscroll and collapsing URL bar can reveal the area behind
+     the app without any `background-*` paint — it shows up as a white strip
+     flickering under the app, "like a footer". Two counter-measures:
+     the browser chrome keeps the theme's background color, and the body is
+     forbidden from rubber-banding. Desktop scrolls inside the shell, where
+     neither artifact can appear, so the desktop paint is untouched. */
+  @media (max-width: 767px) {
+    html,
+    body {
+      overscroll-behavior-y: none;
+      background-color: var(--color-background, #07090e);
+    }
+  }
 }
 
 /* Utilities for glassmorphism and specific glows */

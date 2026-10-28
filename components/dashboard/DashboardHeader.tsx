@@ -27,7 +27,15 @@ export function DashboardHeader({ orgName, features, userName, userEmail, attent
   const t = useDictionary()
 
   return (
-    <header className="z-30 flex h-16 shrink-0 items-center gap-4 border-b border-border bg-background/80 px-4 backdrop-blur-xl md:px-6">
+    <header
+      // On a phone the body is the scroll surface, so the bar is pinned
+      // (sticky) — which is also why everything the member needs stays an
+      // icon reachable without scrolling. The org name and the tier badge
+      // are hidden below md: they are the only wide items and a phone
+      // screen has no room to spare; every remaining control fits without
+      // any horizontal clipping. Desktop is unchanged.
+      className="max-md:sticky max-md:top-0 z-30 flex h-16 shrink-0 items-center gap-4 border-b border-border bg-background/80 px-4 backdrop-blur-xl md:px-6"
+    >
       <Button
         variant="ghost"
         size="icon"
@@ -40,8 +48,8 @@ export function DashboardHeader({ orgName, features, userName, userEmail, attent
 
       <div className="flex flex-1 items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
-          <h1 className="truncate text-lg font-semibold tracking-tight text-foreground">{orgName}</h1>
-          <Badge variant="secondary" className={getTierBadgeColor(features.tier)}>
+          <h1 className="hidden truncate text-lg font-semibold tracking-tight text-foreground md:block">{orgName}</h1>
+          <Badge variant="secondary" className={`hidden md:inline-flex ${getTierBadgeColor(features.tier)}`}>
             {features.tier}
           </Badge>
         </div>

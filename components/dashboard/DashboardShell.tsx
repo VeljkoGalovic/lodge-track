@@ -59,7 +59,7 @@ export function DashboardShell({
   return (
     <LocaleProvider locale={locale}>
       <ThemeProvider initialPreference={theme}>
-        <div className="relative flex h-svh w-full overflow-hidden bg-background">
+        <div className="relative flex min-h-dvh w-full bg-background md:h-svh md:overflow-hidden">
           {/* Ambient atmosphere — decorative, sits behind all content. */}
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
             <div className="ambient-orb -left-40 -top-40 h-[32rem] w-[32rem] bg-primary/10 blur-[120px]" />
@@ -95,8 +95,12 @@ export function DashboardShell({
             </aside>
           </FocusTrap>
 
-          {/* Main column */}
-          <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
+          {/* Main column. On a phone the shell does not pinch the page into its
+              own internal scroller: the document body is the scroll surface
+              (more predictable on iOS, and what a phone app reads as natural),
+              so the column is unclipped below md. Desktop keeps the exact
+              previous geometry — fixed viewport, inner scroll. */}
+          <div className="relative z-10 flex min-w-0 flex-1 flex-col md:overflow-hidden">
             <DashboardHeader
               orgName={orgName}
               features={features}
@@ -105,7 +109,10 @@ export function DashboardShell({
               attentionCount={attentionCount}
               onMenuClick={() => setMobileOpen(true)}
             />
-            <main id="main-content" className="flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8">
+            <main
+              id="main-content"
+              className="flex-1 py-6 px-4 md:overflow-y-auto md:px-8 md:py-8"
+            >
               <div className="mx-auto w-full max-w-7xl">{children}</div>
             </main>
           </div>
