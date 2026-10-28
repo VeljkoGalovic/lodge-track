@@ -20,6 +20,10 @@ fi
 echo "==> assemble standalone"
 cp -r public .next/standalone/
 cp -r .next/static .next/standalone/.next/
+# `next build` copies the repo .env into the bundle; shipping it would
+# clobber the server's own /opt/lodgetrack/.env on every rsync (it did, once).
+# The runtime reads the env from its working directory, so the copy goes.
+rm -f .next/standalone/.env
 
 echo "==> rsync to $TARGET:$DEST"
 # NOTE: the repo .env is deliberately NOT copied into the bundle. The server's
