@@ -293,6 +293,23 @@ export function hasValidAccess(
   return false // CANCELED, PAST_DUE, etc.
 }
 
+/**
+ * Whether this subscription still owes the hosted provider a checkout.
+ *
+ * By product design every registered organization starts on a paid tier with a
+ * 30-day trial and is walked to Lemon Squeezy's hosted checkout. A lifetime
+ * ("comp") subscription never went through — and never goes through — that
+ * flow: it is a deliberate grant recorded without billing identifiers, so
+ * demanding them would bounce its owner to a hosted checkout forever.
+ */
+export function needsHostedCheckout(
+  subscription: { tier: SubscriptionTier; isLifetimeFree: boolean } | null | undefined
+): boolean {
+  if (!subscription) return false
+  if (subscription.isLifetimeFree) return false
+  return subscription.tier === "STARTER" || subscription.tier === "PRO" || subscription.tier === "BUSINESS"
+}
+
 /** The subscription object inside a Lemon Squeezy webhook payload. */
 export interface SubscriptionWebhookData {
   type: string

@@ -6,7 +6,7 @@ import { LocaleProvider } from "@/components/i18n/LocaleProvider"
 import Link from "next/link"
 import { verifyAndConsumeToken } from "@/lib/tokens"
 import { prisma } from "@/lib/prisma"
-import { createCheckoutUrl } from "@/lib/billing"
+import { createCheckoutUrl, needsHostedCheckout } from "@/lib/billing"
 import { redirect } from "next/navigation"
 import { requestOrigin } from "@/lib/origin"
 import { isRedirectError } from "next/dist/client/components/redirect-error"
@@ -38,12 +38,12 @@ export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageP
         const origin = await requestOrigin()
 
         if (user?.organization?.subscription) {
-          const tier = user.organization.subscription.tier
-          // All three tiers are paid - trigger checkout for STARTER, PRO, and BUSINESS
-          if (tier === "STARTER" || tier === "PRO" || tier === "BUSINESS") {
+          // All three tiers are paid — but a lifetime grant never checks out.
+          const { subscription: sub } = user.organization
+          if (needsHostedCheckout(sub)) {
             // Create checkout URL and redirect
             const checkoutUrl = await createCheckoutUrl({
-              tier,
+              tier: sub.tier,
               email: user.email,
               orgId: user.orgId,
               redirectUrl: `${origin}/dashboard/billing?checkout=complete`,

@@ -7,9 +7,8 @@ import { currentLocale } from "@/lib/i18n/server"
 import { currentThemePreference } from "@/lib/theme-server"
 import { redirect } from "next/navigation"
 import { DashboardShell } from "@/components/dashboard/DashboardShell"
-import { hasValidAccess } from "@/lib/billing"
+import { createCheckoutUrl, hasValidAccess, needsHostedCheckout } from "@/lib/billing"
 import { requestOrigin } from "@/lib/origin"
-import { createCheckoutUrl } from "@/lib/billing"
 import { headers } from "next/headers"
 
 interface DashboardLayoutProps {
@@ -85,13 +84,14 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
 
   const attentionCount = buildActivity(bookingsResult, preferences, now).length
 
-  // Subscription payment guard: ensure paid tiers have completed checkout
-  // If user has a paid tier (STARTER, PRO, BUSINESS) but subscription lacks billing identifiers,
-  // they haven't completed Lemon Squeezy checkout - redirect to checkout
-  // This must run BEFORE the billing access guard, because a CANCELED status with no
-  // billing identifiers means "never completed checkout" not "access revoked after having access"
-  const paidTiers = ["STARTER", "PRO", "BUSINESS"] as const
-  if (subscription && paidTiers.includes(subscription.tier)) {
+  // Subscription payment guard: ensure paid tiers have completed checkout.
+  // If the tier is a paid one but the subscription lacks billing identifiers,
+  // they haven't completed Lemon Squeezy checkout — except for a deliberate
+  // lifetime grant, which by definition never carries identifiers and must
+  // reach the dashboard untouched. This runs BEFORE the billing access guard,
+  // because a CANCELED status with no billing identifiers means "never
+  // completed checkout", not "access revoked after having access".
+  if (subscription && needsHostedCheckout(subscription)) {
     const hasBillingIdentifiers = subscription.billingCustomerId && subscription.billingSubscriptionId
 
     if (!hasBillingIdentifiers) {
@@ -135,6 +135,7 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
 
   // Check if onboarding is completed for paid subscriptions
   // Only show wizard for organizations with an active paid subscription
+  const paidTiers = ["STARTER", "PRO", "BUSINESS"] as const
   const isPaidTier = subscription && paidTiers.includes(subscription.tier)
   const needsOnboarding = Boolean(isPaidTier && !org.onboardingCompleted)
 
