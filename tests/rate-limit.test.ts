@@ -255,7 +255,7 @@ describe("Fix 2: Rate limiting on auth endpoints", () => {
   })
 
   it("sendPasswordReset rejects when rate limit exceeded", async () => {
-    db.rateLimit.count.mockResolvedValue(3) // At limit for password_reset (max 3)
+    db.rateLimit.count.mockResolvedValue(5) // At limit for password_reset (max 5)
     db.rateLimit.findFirst.mockResolvedValue({
       createdAt: new Date(Date.now() - 30 * 60 * 1000),
     })
@@ -286,7 +286,7 @@ describe("Fix 2: Rate limiting on auth endpoints", () => {
     // The quota is only consumed for an account that will actually receive a
     // mail, so the recovery test needs an existing unverified user.
     db.user.findUnique.mockResolvedValue({ email: "test@example.com", emailVerified: null })
-    db.rateLimit.count.mockResolvedValue(3) // At limit for email_verification (max 3)
+    db.rateLimit.count.mockResolvedValue(5) // At limit for email_verification (max 5)
     db.rateLimit.findFirst.mockResolvedValue({
       createdAt: new Date(Date.now() - 30 * 60 * 1000),
     })

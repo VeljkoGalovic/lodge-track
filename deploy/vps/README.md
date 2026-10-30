@@ -115,7 +115,11 @@ before calling the cutover done.
   all auth rate limiting at runtime (kill-switch for phone-testing sessions —
   validated by `tests/rate-limit-kill-switch.test.ts`). It is a server-only
   key: the repo's dev env must never carry it, and it comes off the moment
-  real-user testing ends so prod buckets resume.
+  real-user testing ends so prod buckets resume. With it off, the limiter
+  runs in two layers: per-email buckets (login 20/h, 2FA 10/h, verification
+  and reset 5/h, register 5/h) against password guessing, and a per-IP cap on
+  the login endpoint (40/15 min; other auth endpoints 100/15 min) against
+  floods.
 
 - Environment history, for the record: the repo `.env` used to be copied over
   the server's on every deploy, which silently erased the server-only keys

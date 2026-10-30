@@ -19,14 +19,39 @@ export interface RateLimitConfig {
 
 /**
  * Default rate limit configurations per action.
- * These are conservative defaults that can be overridden.
+ *
+ * Two layers keep the honest user moving and the brute-forcer out:
+ *
+ *  - Per-action buckets below are keyed by the canonical EMAIL: they are the
+ *    wall against password guessing on a specific account. Loose enough that
+ *    a human double-checking a login or resending a verification email is
+ *    never locked out; tight enough that 24/7 guessing makes no progress.
+ *  - The per-IP layer lives in `guardAuthEndpointRateLimit` (`AUTH_CALLBACK_IP`
+ *    for the login endpoint, the general API quota for the rest): it is the
+ *    wall against a flood of attempts across many addresses from one source,
+ *    which is what overloads the server. Worst case an IP may issue ~40 auth
+ *    posts per 15 min — a rounding error of load.
+ *
+ * The `RATE_LIMIT_DISABLED` kill-switch short-circuits both layers (see
+ * checkRateLimit), so a testing box can sleep on policy.
  */
 export const RATE_LIMIT_CONFIGS: Record<string, RateLimitConfig> = {
   register: { maxAttempts: 5, windowMinutes: 60, action: "register" },
-  login: { maxAttempts: 10, windowMinutes: 15, action: "login" },
-  password_reset: { maxAttempts: 3, windowMinutes: 60, action: "password_reset" },
-  email_verification: { maxAttempts: 3, windowMinutes: 60, action: "email_verification" },
-  two_factor: { maxAttempts: 5, windowMinutes: 15, action: "two_factor" },
+  login: { maxAttempts: 20, windowMinutes: 60, action: "login" },
+  password_reset: { maxAttempts: 5, windowMinutes: 60, action: "password_reset" },
+  email_verification: { maxAttempts: 5, windowMinutes: 60, action: "email_verification" },
+  two_factor: { maxAttempts: 10, windowMinutes: 60, action: "two_factor" },
+}
+
+/**
+ * Per-IP cap for login attempts specifically (the callback endpoint). People
+ * on one connection — an office, a household, a phone behind carrier NAT —
+ * share this bucket, so it is generous; a credential-stuffing script is not.
+ */
+export const AUTH_CALLBACK_IP_CONFIG: RateLimitConfig = {
+  maxAttempts: 40,
+  windowMinutes: 15,
+  action: "auth_callback_ip",
 }
 
 export interface RateLimitResult {

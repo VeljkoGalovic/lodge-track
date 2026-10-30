@@ -18,9 +18,9 @@ export const metadata: Metadata = {
 
 const ACTION_LIMITS: Record<string, { maxAttempts: string; window: "hour" | "quarterHour" }> = {
   register: { maxAttempts: "5", window: "hour" },
-  login: { maxAttempts: "10", window: "quarterHour" },
-  email_verification: { maxAttempts: "3", window: "hour" },
-  password_reset: { maxAttempts: "3", window: "hour" },
+  login: { maxAttempts: "20", window: "hour" },
+  email_verification: { maxAttempts: "5", window: "hour" },
+  password_reset: { maxAttempts: "5", window: "hour" },
 }
 
 export default async function RateLimitPage({ searchParams }: RateLimitPageProps) {

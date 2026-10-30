@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import {
-  RATE_LIMIT_CONFIGS,
+  AUTH_CALLBACK_IP_CONFIG,
   enforceRateLimit,
   getRateLimitIdentifier,
   type RateLimitConfig,
@@ -41,6 +41,10 @@ function rateLimitResponse(config: RateLimitConfig, retryAfterSeconds?: number):
   return new NextResponse(
     JSON.stringify({
       error: "Too many requests. Please try again later.",
+      // The rate_limited code + seconds to wait let the sign-in panel route
+      // the visitor to the real rate-limit page (with its countdown) instead
+      // of an unexplained error the same way the email-limiter path does.
+      code: `rate_limited:${retryAfter}`,
       retryAfter,
     }),
     {
@@ -83,8 +87,10 @@ export async function guardApiRateLimit(
 }
 
 /**
- * Rate limit a nextauth auth endpoint the same way the proxy middleware did:
- * per-action configs, with free passes for `session` and `csrf` probe calls.
+ * Rate limit the NextAuth endpoints per IP. The login callback gets its own
+ * flood cap; every other auth endpoint rides the general API quota — the old
+ * fallback (the register config, 5 per hour) could lock a shared connection
+ * out of signing out.
  * Returns a 429 response when exceeded, otherwise `null`.
  */
 export async function guardAuthEndpointRateLimit(request: NextRequest | Request): Promise<NextResponse | null> {
@@ -95,8 +101,9 @@ export async function guardAuthEndpointRateLimit(request: NextRequest | Request)
     return null
   }
 
-  const subAction = pathname.replace("/api/auth/", "").split("/")[0]
-  const config = RATE_LIMIT_CONFIGS[subAction] || RATE_LIMIT_CONFIGS.register
+  const config = pathname.startsWith("/api/auth/callback")
+    ? AUTH_CALLBACK_IP_CONFIG
+    : API_GENERAL_CONFIG
   const identifier = getRateLimitIdentifier(clientIpFrom(request))
 
   try {
