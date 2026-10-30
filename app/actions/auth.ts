@@ -235,7 +235,7 @@ export async function sendPasswordReset(prevState: { error?: string; success?: s
   const identifier = getRateLimitIdentifier(null, email)
   const rateLimitResult = await checkRateLimit(identifier, RATE_LIMIT_CONFIGS.password_reset)
   if (!rateLimitResult.allowed) {
-    return { error: `Too many password reset requests. Please try again in ${rateLimitResult.retryAfterSeconds} seconds.` }
+    return { error: `Too many password reset requests. Please try again in ${humanizeRetrySeconds(rateLimitResult.retryAfterSeconds ?? 0)}.` }
   }
 
   const user = await prisma.user.findUnique({

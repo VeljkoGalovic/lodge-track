@@ -41,6 +41,24 @@ class EmailNotVerified extends CredentialsSignin {
   code = "email_not_verified"
 }
 
+/**
+ * A login or second-factor attempt whose rate-limit bucket was exhausted.
+ *
+ * Raised *with the seconds still to wait* encoded in its `code` — Auth.js
+ * hands that string to `signIn(..., { redirect: false })`, and the sign-in
+ * panel turns it into a navigation to the rate-limit page. Raising this
+ * instead of failing the authentication exists precisely so a lockout no
+ * longer answers "wrong password" (which reads as an account problem) but
+ * says "wait, here is the page with the countdown".
+ */
+class LoginRateLimited extends CredentialsSignin {
+  code = "rate_limited"
+  constructor(retryAfterSeconds: number) {
+    super()
+    this.code = `rate_limited:${Math.max(1, Math.round(retryAfterSeconds))}`
+  }
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" }, // Required when using Credentials provider
@@ -78,8 +96,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const loginIdentifier = getRateLimitIdentifier(null, canonicalEmail)
         const loginRateLimit = await checkRateLimit(loginIdentifier, RATE_LIMIT_CONFIGS.login)
         if (!loginRateLimit.allowed) {
-          // Return null to fail authentication - error will be shown on sign-in page
-          return null
+          // Not a credentials failure — surface the lockout (seconds to wait)
+          // so the sign-in page can walk the visitor to the rate-limit page.
+          throw new LoginRateLimited(loginRateLimit.retryAfterSeconds ?? RATE_LIMIT_CONFIGS.login.windowMinutes * 60)
         }
 
         const user = await prisma.user.findUnique({ where: { email: canonicalEmail } })
@@ -111,7 +130,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           const twoFactorIdentifier = getRateLimitIdentifier(null, canonicalEmail)
           const twoFactorRateLimit = await checkRateLimit(twoFactorIdentifier, RATE_LIMIT_CONFIGS.two_factor)
           if (!twoFactorRateLimit.allowed) {
-            throw new SecondFactorInvalid()
+            throw new LoginRateLimited(twoFactorRateLimit.retryAfterSeconds ?? RATE_LIMIT_CONFIGS.two_factor.windowMinutes * 60)
           }
 
           if (!code) throw new SecondFactorRequired()

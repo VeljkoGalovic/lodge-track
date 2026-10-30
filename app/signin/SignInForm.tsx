@@ -71,6 +71,14 @@ export function SignInForm() {
           setError("")
           break
         default:
+          // The limiter encodes its seconds to wait in the code — send the
+          // visitor to the real page (with the countdown) instead of showing
+          // an unexplained "invalid credentials" for a deliberate lockout.
+          if (result.code!.startsWith("rate_limited:")) {
+            const retrySeconds = Number.parseInt(result.code!.slice("rate_limited:".length), 10)
+            window.location.assign(`/rate-limit?action=${needsCode ? "two_factor" : "login"}&retry=${Number.isFinite(retrySeconds) ? retrySeconds : 900}`)
+            break
+          }
           setNeedsCode(false)
           setEmailNotVerified(false)
           setError(t.auth.invalidCredentials)
