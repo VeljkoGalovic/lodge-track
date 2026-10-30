@@ -155,16 +155,23 @@ export function SetupWizard({ onComplete, subscriptionTier = "STARTER" }: SetupW
   // Controlled open, never closes until complete
   return (
     <Dialog open onOpenChange={() => {}}>
-      <DialogContent className="max-w-xl sm:max-w-2xl">
+      <DialogContent className="max-w-xl sm:max-w-2xl max-md:p-4">
         <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-6">
-          {/* Progress Indicator */}
-          <nav aria-label={t.onboarding.setupWizard?.progress || "Setup wizard steps"} className="mb-6">
+          {/* Progress Indicator. Stays pinned while the dialog scrolls so the
+              indicator is not carried off by the content it tracks; on phones
+              it is compact, because every pixel of top chrome competes with
+              the walkthrough demo the user is meant to read — the footer is
+              what scrolling is for. */}
+          <nav
+            aria-label={t.onboarding.setupWizard?.progress || "Setup wizard steps"}
+            className="mb-6 sticky top-0 z-10 bg-popover/95 backdrop-blur-xl max-md:-mx-6 max-md:-mt-6 max-md:px-6 max-md:pt-6 max-md:mb-2"
+          >
             <ol className="flex items-center justify-between" role="list">
               {([1, 2, 3, 4, 5, 6, 7, 8] as WizardStep[]).map((s) => (
                 <React.Fragment key={s}>
                   <li aria-current={s === step ? "step" : undefined} className="flex items-center">
                     <div className={clsx(
-                      "flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors",
+                      "flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors max-md:h-6 max-md:w-6 max-md:text-xs",
                       s < step
                         ? "bg-primary text-primary-foreground"
                         : s === step
@@ -330,7 +337,7 @@ export function SetupWizard({ onComplete, subscriptionTier = "STARTER" }: SetupW
 
                 <FormMessage error={state.error} success={state.success} />
 
-                <div className="rounded-xl border border-border/50 bg-popover/50 p-6 space-y-4">
+                <div className="rounded-xl border border-border/50 bg-popover/50 p-6 space-y-4 max-md:p-4">
                   <div className="space-y-3">
                     <p className="text-sm text-muted-foreground">
                       {t.onboarding.setupWizard?.walkthroughNext?.replace("{feature}", t.onboarding.setupWizard?.[walkthroughStep.featureKey] || walkthroughStep.featureKey) || `Next: ${walkthroughStep.featureKey}`}
@@ -404,7 +411,7 @@ export function SetupWizard({ onComplete, subscriptionTier = "STARTER" }: SetupW
                   // BUSINESS Tier: Celebration
                   <div className="space-y-4">
                     <div className={clsx(
-                      "rounded-xl border p-6 text-center",
+                      "rounded-xl border p-6 text-center max-md:p-4",
                       tierBadgeColor
                     )}>
                       <Crown className={clsx("mx-auto h-12 w-12 mb-4", tierBadgeColor.replace("border-", "").replace("bg-", "").replace("text-", "text-"))} />
@@ -443,7 +450,7 @@ export function SetupWizard({ onComplete, subscriptionTier = "STARTER" }: SetupW
                   // STARTER/PRO Tiers: Upsell
                   <div className="space-y-4">
                     <div className={clsx(
-                      "rounded-xl border p-6",
+                      "rounded-xl border p-6 max-md:p-4",
                       nextTierBadgeColor
                     )}>
                       <div className="flex items-center justify-between mb-4">
