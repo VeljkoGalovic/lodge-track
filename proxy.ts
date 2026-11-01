@@ -36,9 +36,18 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // HSTS — tell browsers to stop attempting plain HTTP for a year.
+  // The Cloudflare edge already 301s http→https; this pins the host so
+  // future visits by returning users never renegotiate insecurely.
+  // If HSTS is ever enabled at the Cloudflare edge (SSL/TLS → Edge
+  // Certificates), remove this header to avoid emitting it twice.
+  const HSTS = "max-age=31536000; includeSubDomains"
+
   // Skip proxy for static assets, Next.js internals, and public pages
   if (SKIPPED_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
-    return NextResponse.next()
+    const response = NextResponse.next()
+    response.headers.set("Strict-Transport-Security", HSTS)
+    return response
   }
 
   // =========================================================================
@@ -46,6 +55,7 @@ export async function proxy(request: NextRequest) {
   // =========================================================================
   const response = NextResponse.next()
 
+  response.headers.set("Strict-Transport-Security", HSTS)
   response.headers.set("X-Content-Type-Options", "nosniff")
   response.headers.set("X-Frame-Options", "DENY")
   response.headers.set("X-XSS-Protection", "1; mode=block")
