@@ -48,3 +48,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# agent/tooling working files — local only
+AGENTS.md
+CLAUDE.md
+.claude/
+.claude-todo.md
+docs/superpowers/
+
+# internal working artifacts
+backup.sql
+api-audit-report.md
+file-upload-audit.md
+*AUDIT_REPORT.md
