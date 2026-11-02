@@ -8,7 +8,7 @@ import { DICTIONARIES, NIGHT_FORMS, BOOKING_COUNT_FORMS, EXPENSE_COUNT_FORMS } f
  * `{placeholder}` sets survive translation verbatim, and that the plural-table
  * fillers stopped being English clones once a language shipped.
  */
-const NEW_LOCALES = ["de", "it", "fr", "es"] as const
+const NEW_LOCALES = ["de", "it", "fr", "es", "pt"] as const
 
 function placeholdersOf(s: string): string {
   return (s.match(/\{[a-zA-Z]+\}/g) ?? []).sort().join(",")

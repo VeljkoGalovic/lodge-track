@@ -1,5 +1,5 @@
 import type { Locale as DateFnsLocale } from "date-fns"
-import { de, es, fr, it, srLatn } from "date-fns/locale"
+import { de, es, fr, it, pt, srLatn } from "date-fns/locale"
 import type { Locale } from "./locales"
 
 /**
@@ -19,4 +19,5 @@ export const LOCALE_DATEFNS: Record<Locale, DateFnsLocale | undefined> = {
   it: it,
   fr: fr,
   es: es,
+  pt: pt,
 }

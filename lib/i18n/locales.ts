@@ -13,7 +13,7 @@
  *      one.
  * No other file needs to change: everything else iterates `LOCALES`.
  */
-export const LOCALES = ["en", "sr", "de", "it", "fr", "es"] as const
+export const LOCALES = ["en", "sr", "de", "it", "fr", "es", "pt"] as const
 
 export type Locale = (typeof LOCALES)[number]
 
@@ -46,6 +46,7 @@ export const LOCALE_LABELS: Record<Locale, string> = {
   it: "Italiano",
   fr: "Français",
   es: "Español",
+  pt: "Português",
 }
 
 /**
@@ -59,6 +60,7 @@ export const LOCALE_TAGS: Record<Locale, string> = {
   it: "it-IT",
   fr: "fr-FR",
   es: "es-ES",
+  pt: "pt-PT",
 }
 
 /**
@@ -70,7 +72,10 @@ export const LOCALE_TAGS: Record<Locale, string> = {
  * languages…) sit out and fall to the default. Spanish Latin America is listed
  * in full because it shares the `es` written language; dialect differences in
  * address forms ("tu" vs "usted") are a styling matter for each translation,
- * not a reason for more locales.
+ * not a reason for more locales. Portuguese works the same way: `pt` serves
+ * Portugal and the Lusophone countries (Brazil, Angola, Mozambique, Cape
+ * Verde, Guinea-Bissau, São Tomé & Príncipe, Timor-Leste), whose differences
+ * are likewise a styling matter.
  */
 export const COUNTRY_TO_LOCALE: Record<string, Locale> = {
   RS: "sr",
@@ -80,4 +85,6 @@ export const COUNTRY_TO_LOCALE: Record<string, Locale> = {
   ES: "es", MX: "es", AR: "es", CL: "es", CO: "es", PE: "es", UY: "es",
   VE: "es", EC: "es", BO: "es", PY: "es", GT: "es", HN: "es", NI: "es",
   SV: "es", PA: "es", CR: "es", DO: "es", CU: "es",
+  PT: "pt", BR: "pt", AO: "pt", MZ: "pt",
+  CV: "pt", GW: "pt", ST: "pt", TL: "pt",
 }

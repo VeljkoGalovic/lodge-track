@@ -47,10 +47,15 @@ describe("country routing table", () => {
     for (const country of spanishAmerica) {
       expect(COUNTRY_TO_LOCALE[country], country).toBe("es")
     }
+    expect(COUNTRY_TO_LOCALE.PT).toBe("pt")
+    const lusophone = ["BR", "AO", "MZ", "CV", "GW", "ST", "TL"]
+    for (const country of lusophone) {
+      expect(COUNTRY_TO_LOCALE[country], country).toBe("pt")
+    }
   })
 
   it("multilingual and unmapped countries stay out, falling to the default", () => {
-    for (const country of ["CH", "BE", "LU", "BA", "HR", "ME", "MK", "US", "GB", "CA", "BR", "PT"]) {
+    for (const country of ["CH", "BE", "LU", "BA", "HR", "ME", "MK", "US", "GB", "CA"]) {
       expect(COUNTRY_TO_LOCALE[country], `${country} should have no route`).toBeUndefined()
     }
     expect(COUNTRY_TO_LOCALE.RS).toBeDefined()
